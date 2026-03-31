@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment variables (NEVER commit credentials)
+.env
+.env.local
+
+# Reports (generated, not tracked)
+reports/*.html
+reports/*.json
+reports/*.pdf
+
+# Test artifacts
+test_bridge.py
+test_financial.py
+test_report.py

@@ -1,0 +1,315 @@
+{
+  "metadata": {
+    "tool": "CloudSec Audit Toolkit",
+    "version": "1.0.0",
+    "timestamp": "2026-03-21T13:19:25Z",
+    "tenant_id": "f81124f7-40c1-4d23-9453-bc66b4151916",
+    "total_checks": 20,
+    "api_calls": 28
+  },
+  "scores": {
+    "passed": 8,
+    "failed": 10,
+    "errors": 2,
+    "score_pct": 40
+  },
+  "results": [
+    {
+      "id": "IDN-001",
+      "title": "Users without MFA enabled",
+      "category": "Identity",
+      "passed": false,
+      "finding_count": 3,
+      "details": "3 out of 6 users have no MFA method registered",
+      "findings": [
+        {
+          "resource_name": "alice@contoso.com",
+          "detail": "No MFA method registered"
+        },
+        {
+          "resource_name": "bob@contoso.com",
+          "detail": "No MFA method registered"
+        },
+        {
+          "resource_name": "charlie@contoso.com",
+          "detail": "No MFA method registered"
+        }
+      ]
+    },
+    {
+      "id": "IDN-002",
+      "title": "Admin accounts without MFA",
+      "category": "Identity",
+      "passed": true,
+      "finding_count": 0,
+      "details": "All admin accounts have MFA enabled",
+      "findings": []
+    },
+    {
+      "id": "IDN-003",
+      "title": "Guest accounts with elevated privileges",
+      "category": "Identity",
+      "passed": true,
+      "finding_count": 0,
+      "details": "No guest accounts with elevated privileges found",
+      "findings": []
+    },
+    {
+      "id": "IDN-004",
+      "title": "Inactive user accounts (>90 days)",
+      "category": "Identity",
+      "passed": false,
+      "finding_count": 2,
+      "details": "2 accounts inactive for more than 90 days",
+      "findings": [
+        {
+          "resource_name": "old.user@contoso.com",
+          "detail": "Last sign-in: 2025-11-01"
+        },
+        {
+          "resource_name": "departed@contoso.com",
+          "detail": "Last sign-in: 2025-09-15"
+        }
+      ]
+    },
+    {
+      "id": "IDN-005",
+      "title": "Users with password never expires",
+      "category": "Identity",
+      "passed": false,
+      "finding_count": 4,
+      "details": "4 accounts have password never expires enabled",
+      "findings": [
+        {
+          "resource_name": "admin1@contoso.com",
+          "detail": "Password never expires"
+        },
+        {
+          "resource_name": "service@contoso.com",
+          "detail": "Password never expires"
+        },
+        {
+          "resource_name": "test@contoso.com",
+          "detail": "Password never expires"
+        },
+        {
+          "resource_name": "legacy@contoso.com",
+          "detail": "Password never expires"
+        }
+      ]
+    },
+    {
+      "id": "ROL-001",
+      "title": "Number of Global Administrators",
+      "category": "Roles",
+      "passed": false,
+      "finding_count": 7,
+      "details": "7 Global Administrator assignments found (recommended: \u22645)",
+      "findings": [
+        {
+          "resource_name": "admin1@contoso.com",
+          "detail": "Global Administrator"
+        },
+        {
+          "resource_name": "admin2@contoso.com",
+          "detail": "Global Administrator"
+        },
+        {
+          "resource_name": "admin3@contoso.com",
+          "detail": "Global Administrator"
+        },
+        {
+          "resource_name": "admin4@contoso.com",
+          "detail": "Global Administrator"
+        },
+        {
+          "resource_name": "admin5@contoso.com",
+          "detail": "Global Administrator"
+        }
+      ]
+    },
+    {
+      "id": "ROL-002",
+      "title": "Permanent privileged role assignments",
+      "category": "Roles",
+      "passed": false,
+      "finding_count": 5,
+      "details": "5 permanent role assignments (PIM/JIT not used)",
+      "findings": [
+        {
+          "resource_name": "admin1@contoso.com",
+          "detail": "Permanent Global Admin"
+        }
+      ]
+    },
+    {
+      "id": "ROL-003",
+      "title": "Users with multiple privileged roles",
+      "category": "Roles",
+      "passed": false,
+      "finding_count": 2,
+      "details": "2 users hold multiple privileged roles",
+      "findings": [
+        {
+          "resource_name": "admin1@contoso.com",
+          "detail": "Global Admin + Exchange Admin"
+        }
+      ]
+    },
+    {
+      "id": "ROL-004",
+      "title": "Service principals with directory roles",
+      "category": "Roles",
+      "passed": true,
+      "finding_count": 0,
+      "details": "No service principals with directory roles",
+      "findings": []
+    },
+    {
+      "id": "CAP-001",
+      "title": "Conditional Access policies present",
+      "category": "Conditional Access",
+      "passed": true,
+      "finding_count": 0,
+      "details": "3 Conditional Access policies found",
+      "findings": []
+    },
+    {
+      "id": "CAP-002",
+      "title": "Legacy authentication blocked",
+      "category": "Conditional Access",
+      "passed": false,
+      "finding_count": 1,
+      "details": "No policy blocking legacy authentication",
+      "findings": [
+        {
+          "resource_name": "Legacy Auth",
+          "detail": "No blocking policy found"
+        }
+      ]
+    },
+    {
+      "id": "CAP-003",
+      "title": "MFA policy for administrators",
+      "category": "Conditional Access",
+      "passed": true,
+      "finding_count": 0,
+      "details": "MFA policy targeting admin roles found",
+      "findings": []
+    },
+    {
+      "id": "CAP-004",
+      "title": "Risky sign-in blocking policy",
+      "category": "Conditional Access",
+      "passed": false,
+      "finding_count": 1,
+      "details": "No risky sign-in blocking policy found",
+      "findings": [
+        {
+          "resource_name": "Risk Detection",
+          "detail": "No policy configured"
+        }
+      ]
+    },
+    {
+      "id": "TNT-001",
+      "title": "Self-service password reset configuration",
+      "category": "Tenant",
+      "passed": true,
+      "finding_count": 0,
+      "details": "SSPR is enabled",
+      "findings": []
+    },
+    {
+      "id": "TNT-002",
+      "title": "User consent to applications restricted",
+      "category": "Tenant",
+      "passed": false,
+      "finding_count": 1,
+      "details": "Users can consent to any application",
+      "findings": [
+        {
+          "resource_name": "User Consent",
+          "detail": "Unrestricted consent enabled"
+        }
+      ]
+    },
+    {
+      "id": "TNT-003",
+      "title": "External collaboration settings",
+      "category": "Tenant",
+      "passed": false,
+      "finding_count": 1,
+      "details": "Any user can invite external guests",
+      "findings": [
+        {
+          "resource_name": "Guest Access",
+          "detail": "All users can invite guests"
+        }
+      ]
+    },
+    {
+      "id": "TNT-004",
+      "title": "Security Defaults or Conditional Access",
+      "category": "Tenant",
+      "passed": true,
+      "finding_count": 0,
+      "details": "Conditional Access policies are active (Security Defaults disabled)",
+      "findings": []
+    },
+    {
+      "id": "APP-001",
+      "title": "Applications with excessive MS Graph permissions",
+      "category": "Applications",
+      "passed": false,
+      "finding_count": 2,
+      "details": "2 applications with high-risk permissions",
+      "findings": [
+        {
+          "resource_name": "LegacyApp",
+          "detail": "Directory.ReadWrite.All"
+        },
+        {
+          "resource_name": "TestApp",
+          "detail": "Mail.ReadWrite"
+        }
+      ]
+    },
+    {
+      "id": "APP-002",
+      "title": "Application credentials expiring within 30 days",
+      "category": "Applications",
+      "passed": false,
+      "finding_count": 1,
+      "details": "1 credential expiring soon",
+      "findings": [
+        {
+          "resource_name": "ProdApp",
+          "detail": "Expires 2026-04-15"
+        }
+      ]
+    },
+    {
+      "id": "APP-003",
+      "title": "Applications without assigned owner",
+      "category": "Applications",
+      "passed": false,
+      "finding_count": 3,
+      "details": "3 applications have no owner assigned",
+      "findings": [
+        {
+          "resource_name": "OldApp1",
+          "detail": "No owner"
+        },
+        {
+          "resource_name": "OldApp2",
+          "detail": "No owner"
+        },
+        {
+          "resource_name": "TestApp",
+          "detail": "No owner"
+        }
+      ]
+    }
+  ]
+}
