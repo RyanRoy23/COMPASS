@@ -77,6 +77,20 @@
             "full_implementation": "Créer un comité de sécurité avec gouvernance formalisée, reporting trimestriel à la direction générale.",
             "effort": "medium"
           }
+        },
+        {
+          "id": "NIS2-D01-R05",
+          "title": "Engagement budgétaire et reporting de la direction",
+          "description": "La direction alloue un budget cybersécurité explicite, reçoit un reporting régulier sur la posture cyber, et assume la responsabilité personnelle introduite par NIS 2 article 20.",
+          "question": "La direction alloue-t-elle un budget cybersécurité explicite révisé annuellement et reçoit-elle un reporting cyber régulier (au moins trimestriel) ?",
+          "iso27001_refs": ["A.5.1", "A.5.4"],
+          "iso27001_controls": ["Politiques de sécurité de l'information", "Responsabilités de la direction"],
+          "evidence_examples": ["Budget cyber documenté", "CR de revues direction trimestrielles", "Slides reporting COMEX/CODIR"],
+          "remediation": {
+            "quick_win": "Mettre en place un reporting cyber trimestriel à la direction avec 5 indicateurs clés.",
+            "full_implementation": "Budget cyber explicite, reporting mensuel au comité sécurité et trimestriel au COMEX, formalisation de la responsabilité personnelle des dirigeants conformément à l'article 20 de NIS 2.",
+            "effort": "medium"
+          }
         }
       ]
     },
@@ -192,6 +206,20 @@
             "quick_win": "Définir la composition de la cellule de crise et les procédures d'escalade.",
             "full_implementation": "Réaliser des exercices de crise semestriels (tabletop + technique), intégrer les leçons apprises.",
             "effort": "medium"
+          }
+        },
+        {
+          "id": "NIS2-D03-R04",
+          "title": "Tests effectifs du PCA et exercices de crise",
+          "description": "Le PCA et le dispositif de gestion de crise sont testés régulièrement par des exercices techniques (pas seulement tabletop) couvrant des scénarios cyber réalistes : ransomware, indisponibilité prolongée, compromission supply chain.",
+          "question": "Le PCA et le dispositif de gestion de crise sont-ils testés au moins une fois par an avec des exercices techniques (pas seulement tabletop) sur des scénarios cyber réalistes ?",
+          "iso27001_refs": ["A.5.30", "A.8.13"],
+          "iso27001_controls": ["Préparation des TIC pour la continuité d'activité", "Sauvegarde des informations"],
+          "evidence_examples": ["CR d'exercices techniques annuels", "Scénarios joués (ransomware, SI indisponible)", "Indicateurs de performance des exercices (RTO réel mesuré)"],
+          "remediation": {
+            "quick_win": "Organiser un exercice tabletop semestriel sur un scénario ransomware avec la cellule de crise.",
+            "full_implementation": "Programme annuel : 1 exercice technique complet (bascule effective sur site de secours), 2 exercices tabletop par an, mesure des écarts entre RTO théorique et RTO observé, REX systématique.",
+            "effort": "high"
           }
         }
       ]
@@ -382,6 +410,34 @@
             "quick_win": "Rédiger et faire signer une charte informatique à tous les collaborateurs.",
             "full_implementation": "Déployer des GPO de sécurité (verrouillage, complexité MDP, mises à jour automatiques), contrôler la conformité.",
             "effort": "low"
+          }
+        },
+        {
+          "id": "NIS2-D07-R04",
+          "title": "Mesure d'efficacité de la sensibilisation",
+          "description": "L'efficacité du programme de sensibilisation est mesurée par des indicateurs concrets : taux de clic sur phishing simulé, taux de signalement des emails suspects, évolution dans le temps, formation ciblée pour les profils à risque détectés.",
+          "question": "Mesurez-vous l'efficacité réelle de votre programme de sensibilisation par des indicateurs concrets (taux de clic phishing, taux de signalement, évolution dans le temps) ?",
+          "iso27001_refs": ["A.6.3", "A.5.1"],
+          "iso27001_controls": ["Sensibilisation, apprentissage et formation en sécurité de l'information", "Politiques de sécurité de l'information"],
+          "evidence_examples": ["Tableau de bord des campagnes phishing", "Évolution du taux de clic mois par mois", "Suivi des collaborateurs en formation renforcée", "KPI de signalement des emails suspects"],
+          "remediation": {
+            "quick_win": "Lancer une campagne de phishing simulé avec mesure du taux de clic et du taux de signalement.",
+            "full_implementation": "Programme structuré : campagnes mensuelles, tableau de bord d'efficacité, formation ciblée automatique pour les collaborateurs ayant échoué, KPI consolidés et reportés à la direction.",
+            "effort": "medium"
+          }
+        },
+        {
+          "id": "NIS2-D07-R05",
+          "title": "Filtrage Internet et contrôle des périphériques",
+          "description": "Des dispositifs techniques contrôlent l'accès Internet (proxy, DNS filtering), l'usage des périphériques externes (USB, disques amovibles) et la prolifération du shadow IT (services SaaS non approuvés).",
+          "question": "Disposez-vous de dispositifs techniques de filtrage Internet (proxy, DNS), de contrôle des périphériques USB et de détection du shadow IT ?",
+          "iso27001_refs": ["A.8.1", "A.8.7", "A.8.22"],
+          "iso27001_controls": ["Terminaux utilisateurs", "Protection contre les logiciels malveillants", "Séparation des réseaux"],
+          "evidence_examples": ["Configuration du proxy/DNS filtering", "Politique de contrôle USB (chiffrement obligatoire ou blocage)", "Outil CASB ou DLP pour shadow IT", "Liste des sites/services bloqués"],
+          "remediation": {
+            "quick_win": "Activer un filtrage DNS de base (ex : Cisco Umbrella, NextDNS) et bloquer les ports USB sur les postes critiques.",
+            "full_implementation": "Solution complète : proxy avec catégorisation, contrôle USB granulaire (chiffrement obligatoire), CASB pour détecter le shadow IT, politique d'usage Internet documentée et appliquée.",
+            "effort": "medium"
           }
         }
       ]

@@ -61,13 +61,13 @@ def run_demo_mode(with_bridge=False, with_financial=False, profile=None, report_
             with_bridge = False
 
     demo_answers = {
-        "NIS2-D01-R01": 2, "NIS2-D01-R02": 2, "NIS2-D01-R03": 1, "NIS2-D01-R04": 2,
+        "NIS2-D01-R01": 2, "NIS2-D01-R02": 2, "NIS2-D01-R03": 1, "NIS2-D01-R04": 2, "NIS2-D01-R05": 1,
         "NIS2-D02-R01": 2, "NIS2-D02-R02": 1, "NIS2-D02-R03": 0, "NIS2-D02-R04": 1,
-        "NIS2-D03-R01": 1, "NIS2-D03-R02": 2, "NIS2-D03-R03": 0,
+        "NIS2-D03-R01": 1, "NIS2-D03-R02": 2, "NIS2-D03-R03": 0, "NIS2-D03-R04": 0,
         "NIS2-D04-R01": 0, "NIS2-D04-R02": 1, "NIS2-D04-R03": 0,
         "NIS2-D05-R01": 1, "NIS2-D05-R02": 2, "NIS2-D05-R03": 2,
         "NIS2-D06-R01": 1, "NIS2-D06-R02": 0,
-        "NIS2-D07-R01": 2, "NIS2-D07-R02": 1, "NIS2-D07-R03": 2,
+        "NIS2-D07-R01": 2, "NIS2-D07-R02": 1, "NIS2-D07-R03": 2, "NIS2-D07-R04": 0, "NIS2-D07-R05": 1,
         "NIS2-D08-R01": 2, "NIS2-D08-R02": 2,
         "NIS2-D09-R01": 2, "NIS2-D09-R02": 2, "NIS2-D09-R03": 1, "NIS2-D09-R04": 1,
         "NIS2-D10-R01": 3, "NIS2-D10-R02": 2, "NIS2-D10-R03": 1,
