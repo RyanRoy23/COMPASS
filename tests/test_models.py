@@ -292,3 +292,119 @@ class TestLoadFramework:
         domains = load_framework()
         total = sum(len(d.sub_requirements) for d in domains)
         assert total == 35
+
+# ═══════════════════════════════════════════════════════════════
+# TESTS — DORA Mapping (mapping NIS 2 ↔ DORA)
+# ═══════════════════════════════════════════════════════════════
+
+class TestDORAMapping:
+    """Vérifie le mapping entre les questions NIS 2 et les exigences DORA."""
+
+    def test_dora_fields_loaded_from_json(self):
+        """Les champs dora_refs et dora_pillar doivent être chargés depuis le JSON."""
+        domains = load_framework()
+        
+        # NIS2-D01-R01 doit avoir un mapping DORA Art. 9
+        for domain in domains:
+            for req in domain.sub_requirements:
+                if req.id == "NIS2-D01-R01":
+                    assert "DORA Art. 9" in req.dora_refs
+                    assert req.dora_pillar == "ICT Risk Management"
+                    return
+        
+        pytest.fail("NIS2-D01-R01 introuvable dans le référentiel")
+
+    def test_unmapped_questions_have_empty_dora_fields(self):
+        """Les questions sans mapping DORA (ex: D05, D08) doivent avoir des champs vides."""
+        domains = load_framework()
+        
+        for domain in domains:
+            for req in domain.sub_requirements:
+                if req.id == "NIS2-D05-R01":
+                    # D05 n'est pas mappé DORA dans notre matrice
+                    assert req.dora_refs == []
+                    assert req.dora_pillar == ""
+                    return
+        
+        pytest.fail("NIS2-D05-R01 introuvable dans le référentiel")
+
+    def test_total_questions_with_dora_mapping(self):
+        """16 questions doivent avoir un mapping DORA (selon la matrice validée)."""
+        domains = load_framework()
+        
+        mapped_count = sum(
+            1 for domain in domains 
+            for req in domain.sub_requirements 
+            if req.dora_pillar
+        )
+        
+        assert mapped_count == 16, f"Attendu 16 questions mappées DORA, trouvé {mapped_count}"
+
+    def test_dora_coverage_returns_all_pillars(self, sample_remediation):
+        """La propriété dora_coverage doit retourner tous les piliers présents."""
+        # Créer une assessment avec deux questions sur deux piliers différents
+        req1 = SubRequirement(
+            id="TEST-R01",
+            title="Test 1", description="D", question="Q",
+            iso27001_refs=[], iso27001_controls=[], evidence_examples=[],
+            remediation=sample_remediation,
+            dora_refs=["DORA Art. 5"],
+            dora_pillar="ICT Risk Management",
+        )
+        req1.maturity = MaturityLevel.DEFINED  # Couvert
+        
+        req2 = SubRequirement(
+            id="TEST-R02",
+            title="Test 2", description="D", question="Q",
+            iso27001_refs=[], iso27001_controls=[], evidence_examples=[],
+            remediation=sample_remediation,
+            dora_refs=["DORA Art. 17"],
+            dora_pillar="ICT-Related Incident Management",
+        )
+        req2.maturity = MaturityLevel.NOT_IMPLEMENTED  # Pas couvert
+        
+        domain = Domain(
+            id="TEST", title="Test", article_ref="X",
+            weight=1.0, description="X",
+            sub_requirements=[req1, req2],
+        )
+        
+        result = AssessmentResult(domains=[domain])
+        coverage = result.dora_coverage
+        
+        # Deux piliers doivent apparaître
+        assert "ICT Risk Management" in coverage
+        assert "ICT-Related Incident Management" in coverage
+        
+        # ICT Risk Management : 1/1 = 100%
+        assert coverage["ICT Risk Management"]["coverage_pct"] == 100.0
+        # Incident Management : 0/1 = 0%
+        assert coverage["ICT-Related Incident Management"]["coverage_pct"] == 0.0
+
+    def test_dora_coverage_global_with_real_data(self):
+        """Avec le référentiel réel et les réponses du mode démo, vérifier la cohérence."""
+        domains = load_framework()
+        
+        demo_answers = {
+            "NIS2-D01-R01": 2, "NIS2-D01-R02": 2, "NIS2-D01-R03": 1, "NIS2-D01-R04": 2, "NIS2-D01-R05": 1,
+            "NIS2-D02-R01": 2, "NIS2-D02-R02": 1, "NIS2-D02-R03": 0, "NIS2-D02-R04": 1,
+            "NIS2-D03-R01": 1, "NIS2-D03-R02": 2, "NIS2-D03-R03": 0, "NIS2-D03-R04": 0,
+            "NIS2-D04-R01": 0, "NIS2-D04-R02": 1, "NIS2-D04-R03": 0,
+            "NIS2-D06-R01": 1,
+        }
+        
+        for domain in domains:
+            for req in domain.sub_requirements:
+                if req.id in demo_answers:
+                    req.maturity = MaturityLevel(demo_answers[req.id])
+        
+        result = AssessmentResult(domains=domains)
+        coverage = result.dora_coverage
+        
+        # 4 piliers doivent être présents (Information Sharing n'est pas dans les questions)
+        assert len(coverage) == 4
+        
+        # ICT Risk Management : 3 questions à niveau ≥ 2 sur 5 = 60%
+        assert coverage["ICT Risk Management"]["coverage_pct"] == 60.0
+        assert coverage["ICT Risk Management"]["covered_questions"] == 3
+        assert coverage["ICT Risk Management"]["total_questions"] == 5

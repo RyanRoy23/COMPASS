@@ -106,6 +106,8 @@ class SubRequirement:
     iso27001_controls: list[str]
     evidence_examples: list[str]
     remediation: Remediation
+    dora_refs: list[str] = field(default_factory=list)
+    dora_pillar: str = ""
     maturity: Optional[MaturityLevel] = None
     notes: str = ""
 
@@ -223,7 +225,57 @@ class AssessmentResult:
                     if req.is_assessed and req.maturity.value >= 2:
                         coverage[ref] = True
         return coverage
-
+     
+    @property
+    def dora_coverage(self) -> dict[str, dict]:
+        """
+        Couverture DORA par pilier.
+        
+        Retourne un dictionnaire structuré par pilier :
+        {
+            "ICT Risk Management": {
+                "total_questions": 5,
+                "covered_questions": 3,
+                "coverage_pct": 60.0,
+                "questions": ["NIS2-D01-R01", ...],
+                "dora_articles": ["DORA Art. 5", "DORA Art. 6", ...]
+            },
+            ...
+        }
+        
+        Une question est "couverte" si elle est évaluée à maturité ≥ 2.
+        """
+        pillars = {}
+        for domain in self.domains:
+            for req in domain.sub_requirements:
+                if not req.dora_pillar:
+                    continue
+                
+                pillar = req.dora_pillar
+                if pillar not in pillars:
+                    pillars[pillar] = {
+                        "total_questions": 0,
+                        "covered_questions": 0,
+                        "questions": [],
+                        "dora_articles": set(),
+                    }
+                
+                pillars[pillar]["total_questions"] += 1
+                pillars[pillar]["questions"].append(req.id)
+                for art in req.dora_refs:
+                    pillars[pillar]["dora_articles"].add(art)
+                
+                if req.is_assessed and req.maturity.value >= 2:
+                    pillars[pillar]["covered_questions"] += 1
+        
+        # Calculer les pourcentages et convertir les sets en listes
+        for pillar in pillars:
+            total = pillars[pillar]["total_questions"]
+            covered = pillars[pillar]["covered_questions"]
+            pillars[pillar]["coverage_pct"] = round(covered / total * 100, 1) if total > 0 else 0
+            pillars[pillar]["dora_articles"] = sorted(list(pillars[pillar]["dora_articles"]))
+        
+        return pillars
 
 def load_framework(path: str = None) -> list[Domain]:
     """Load the NIS 2 framework from JSON and return Domain objects."""
@@ -251,6 +303,8 @@ def load_framework(path: str = None) -> list[Domain]:
                     full_implementation=rem["full_implementation"],
                     effort=EffortLevel(rem["effort"]),
                 ),
+                dora_refs=r.get("dora_refs", []),
+                dora_pillar=r.get("dora_pillar", ""),
             ))
         domains.append(Domain(
             id=d["id"],

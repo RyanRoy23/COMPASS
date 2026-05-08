@@ -483,6 +483,70 @@ def generate_report(
             background: var(--red-dim);
             color: var(--red);
         }}
+
+        /* ── DORA COVERAGE ── */
+        .dora-intro {{
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            padding: 14px 18px;
+            background: var(--bg-card);
+            border-left: 3px solid var(--orange);
+            border-radius: 6px;
+        }}
+        
+        .dora-pillars {{
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }}
+        
+        .dora-pillar-row {{
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px 18px;
+            display: grid;
+            grid-template-columns: 2.5fr 1fr 80px 1.5fr;
+            align-items: center;
+            gap: 16px;
+        }}
+        
+        .dora-pillar-name {{
+            font-size: 14px;
+            font-weight: 500;
+        }}
+        
+        .dora-pillar-articles {{
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }}
+        
+        .dora-pillar-bar {{
+            height: 8px;
+            background: var(--bg-primary);
+            border-radius: 4px;
+            overflow: hidden;
+        }}
+        
+        .dora-pillar-bar-fill {{
+            height: 100%;
+            border-radius: 4px;
+        }}
+        
+        .dora-pillar-pct {{
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            font-weight: 600;
+            text-align: right;
+        }}
+        
+        .dora-pillar-count {{
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }}
         
         /* ── FOOTER ── */
         .footer {{
@@ -948,7 +1012,93 @@ def generate_report(
             </div>
         </div>
 """
-
+    # ── SECTION : Couverture DORA (mapping) ──
+    # Récupérer la couverture DORA via la nouvelle propriété du modèle
+    from nis2_analyzer.core.models import AssessmentResult
+    temp_result = AssessmentResult(domains=domains)
+    dora_coverage = temp_result.dora_coverage
+    
+    # Calculer la couverture globale DORA
+    total_dora_questions = sum(p["total_questions"] for p in dora_coverage.values())
+    total_dora_covered = sum(p["covered_questions"] for p in dora_coverage.values())
+    dora_global_pct = round(total_dora_covered / total_dora_questions * 100, 1) if total_dora_questions > 0 else 0
+    
+    # Liste de tous les piliers DORA (incluant les non couverts)
+    all_dora_pillars = [
+        "ICT Risk Management",
+        "ICT-Related Incident Management",
+        "Digital Operational Resilience Testing",
+        "ICT Third-Party Risk",
+        "Information Sharing",
+    ]
+    
+    html += f"""
+        <div class="section">
+            <div class="section-title">
+                <div class="icon">⊞</div>
+                Couverture DORA — {dora_global_pct}% (mapping NIS 2 ↔ DORA)
+            </div>
+            <div class="dora-intro">
+                Cette section reflète un mapping entre les questions NIS 2 de cet outil 
+                et les exigences DORA (Digital Operational Resilience Act). 
+                Ce n'est pas une évaluation DORA complète : certaines exigences DORA 
+                spécifiques (TLPT, registre d'information des prestataires TIC, partage 
+                d'information sur les cybermenaces) ne sont pas évaluées par cet outil 
+                et nécessitent une démarche complémentaire.
+            </div>
+            <div class="dora-pillars">
+"""
+    
+    for pillar_name in all_dora_pillars:
+        pillar_data = dora_coverage.get(pillar_name)
+        
+        if pillar_data:
+            pct = pillar_data["coverage_pct"]
+            covered = pillar_data["covered_questions"]
+            total = pillar_data["total_questions"]
+            articles = ", ".join(pillar_data["dora_articles"])
+            
+            # Couleur selon le pourcentage
+            if pct >= 66:
+                color = "var(--green)"
+            elif pct >= 33:
+                color = "var(--orange)"
+            else:
+                color = "var(--red)"
+            
+            html += f"""
+                <div class="dora-pillar-row">
+                    <div>
+                        <div class="dora-pillar-name">{pillar_name}</div>
+                        <div class="dora-pillar-articles">{articles}</div>
+                    </div>
+                    <div class="dora-pillar-bar">
+                        <div class="dora-pillar-bar-fill" style="width: {pct}%; background: {color};"></div>
+                    </div>
+                    <div class="dora-pillar-pct" style="color: {color}">{pct}%</div>
+                    <div class="dora-pillar-count">{covered}/{total} questions</div>
+                </div>
+"""
+        else:
+            # Pilier non couvert par l'outil
+            html += f"""
+                <div class="dora-pillar-row">
+                    <div>
+                        <div class="dora-pillar-name">{pillar_name}</div>
+                        <div class="dora-pillar-articles">Non couvert par cet outil</div>
+                    </div>
+                    <div class="dora-pillar-bar">
+                        <div class="dora-pillar-bar-fill" style="width: 0%; background: var(--red);"></div>
+                    </div>
+                    <div class="dora-pillar-pct" style="color: var(--red)">—</div>
+                    <div class="dora-pillar-count" style="color: var(--red)">Audit externe requis</div>
+                </div>
+"""
+    
+    html += """
+            </div>
+        </div>
+"""
     # ── FOOTER ──
     html += f"""
         <div class="footer">

@@ -29,6 +29,8 @@
           "question": "Disposez-vous d'une Politique de Sécurité des Systèmes d'Information (PSSI) formalisée, approuvée par la direction et communiquée à l'ensemble des collaborateurs ?",
           "iso27001_refs": ["A.5.1", "A.5.2"],
           "iso27001_controls": ["Politiques de sécurité de l'information", "Rôles et responsabilités liés à la sécurité de l'information"],
+          "dora_refs": ["DORA Art. 9"],
+          "dora_pillar": "ICT Risk Management",
           "evidence_examples": ["PSSI signée et datée", "Preuve de communication aux collaborateurs", "CR de revue annuelle"],
           "remediation": {
             "quick_win": "Rédiger une PSSI cadre basée sur le template ANSSI et la faire valider par la direction.",
@@ -43,6 +45,8 @@
           "question": "Appliquez-vous une méthodologie formalisée d'analyse des risques cybersécurité (ex : EBIOS RM, ISO 27005, FAIR) ?",
           "iso27001_refs": ["A.5.1", "A.8.8"],
           "iso27001_controls": ["Politiques de sécurité de l'information", "Gestion des vulnérabilités techniques"],
+          "dora_refs": ["DORA Art. 6"],
+          "dora_pillar": "ICT Risk Management",
           "evidence_examples": ["Document de méthodologie", "Analyses de risques réalisées", "Registre des risques"],
           "remediation": {
             "quick_win": "Adopter EBIOS RM et réaliser une première analyse sur le périmètre le plus critique.",
@@ -57,6 +61,8 @@
           "question": "Maintenez-vous un inventaire des actifs critiques (SI, données, services) et une cartographie des risques cyber régulièrement mise à jour ?",
           "iso27001_refs": ["A.5.9", "A.5.10"],
           "iso27001_controls": ["Inventaire des informations et autres actifs associés", "Utilisation acceptable des informations et des actifs"],
+          "dora_refs": ["DORA Art. 8"],
+          "dora_pillar": "ICT Risk Management",
           "evidence_examples": ["Inventaire des actifs", "Cartographie des risques", "Date de dernière mise à jour"],
           "remediation": {
             "quick_win": "Recenser les 20 actifs les plus critiques et leurs propriétaires.",
@@ -71,6 +77,8 @@
           "question": "Les rôles et responsabilités en matière de cybersécurité sont-ils clairement définis (RSSI nommé, comité sécurité, reporting direction) ?",
           "iso27001_refs": ["A.5.2", "A.5.3", "A.5.4"],
           "iso27001_controls": ["Rôles et responsabilités", "Séparation des tâches", "Responsabilités de la direction"],
+          "dora_refs": ["DORA Art. 5"],
+          "dora_pillar": "ICT Risk Management",
           "evidence_examples": ["Organigramme sécurité", "Fiche de poste RSSI", "CR comité sécurité"],
           "remediation": {
             "quick_win": "Nommer un RSSI et définir ses responsabilités par écrit.",
@@ -85,6 +93,8 @@
           "question": "La direction alloue-t-elle un budget cybersécurité explicite révisé annuellement et reçoit-elle un reporting cyber régulier (au moins trimestriel) ?",
           "iso27001_refs": ["A.5.1", "A.5.4"],
           "iso27001_controls": ["Politiques de sécurité de l'information", "Responsabilités de la direction"],
+          "dora_refs": ["DORA Art. 5"],
+          "dora_pillar": "ICT Risk Management",
           "evidence_examples": ["Budget cyber documenté", "CR de revues direction trimestrielles", "Slides reporting COMEX/CODIR"],
           "remediation": {
             "quick_win": "Mettre en place un reporting cyber trimestriel à la direction avec 5 indicateurs clés.",
@@ -108,6 +118,8 @@
           "question": "Disposez-vous d'une procédure formalisée de gestion des incidents de sécurité couvrant la détection, la classification, la réponse et la clôture ?",
           "iso27001_refs": ["A.5.24", "A.5.25", "A.5.26"],
           "iso27001_controls": ["Planification et préparation de la gestion des incidents", "Appréciation et décision", "Réponse aux incidents"],
+          "dora_refs": ["DORA Art. 17"],
+          "dora_pillar": "ICT-Related Incident Management",
           "evidence_examples": ["Procédure de gestion d'incidents", "Playbooks de réponse", "Historique des incidents traités"],
           "remediation": {
             "quick_win": "Rédiger une procédure de gestion d'incidents avec une matrice de classification (critique/majeur/mineur).",
@@ -122,6 +134,8 @@
           "question": "Disposez-vous de moyens techniques de détection des incidents de sécurité (SIEM, EDR, NDR, SOC) ?",
           "iso27001_refs": ["A.8.15", "A.8.16"],
           "iso27001_controls": ["Journalisation", "Surveillance des activités"],
+          "dora_refs": ["DORA Art. 17"],
+          "dora_pillar": "ICT-Related Incident Management",
           "evidence_examples": ["Architecture SOC", "Contrat SOC externalisé", "Dashboards de détection", "Règles de corrélation"],
           "remediation": {
             "quick_win": "Activer la journalisation centralisée sur les actifs critiques et mettre en place des alertes basiques.",
@@ -136,6 +150,8 @@
           "question": "Avez-vous un processus de notification des incidents aux autorités compétentes (ANSSI/CSIRT) respectant les délais NIS 2 (24h/72h/1 mois) ?",
           "iso27001_refs": ["A.5.24", "A.5.5"],
           "iso27001_controls": ["Planification et préparation de la gestion des incidents", "Contact avec les autorités"],
+          "dora_refs": ["DORA Art. 19"],
+          "dora_pillar": "ICT-Related Incident Management",
           "evidence_examples": ["Procédure de notification", "Template de rapport", "Liste de contacts autorités"],
           "remediation": {
             "quick_win": "Identifier les points de contact ANSSI/CSIRT, créer un template de notification avec les champs obligatoires NIS 2.",
@@ -150,6 +166,8 @@
           "question": "Réalisez-vous systématiquement un retour d'expérience (post-mortem) après chaque incident significatif avec des actions d'amélioration ?",
           "iso27001_refs": ["A.5.27"],
           "iso27001_controls": ["Retour d'expérience des incidents de sécurité de l'information"],
+          "dora_refs": ["DORA Art. 18"],
+          "dora_pillar": "ICT-Related Incident Management",
           "evidence_examples": ["Rapports post-mortem", "Actions correctives issues des REX", "Suivi de mise en œuvre"],
           "remediation": {
             "quick_win": "Créer un template de post-mortem et l'appliquer au prochain incident.",
@@ -173,6 +191,8 @@
           "question": "Disposez-vous d'un Plan de Continuité d'Activité (PCA) formalisé couvrant les scénarios de perturbation majeure des systèmes d'information ?",
           "iso27001_refs": ["A.5.29", "A.5.30"],
           "iso27001_controls": ["Sécurité de l'information durant une perturbation", "Préparation des TIC pour la continuité d'activité"],
+          "dora_refs": ["DORA Art. 25"],
+          "dora_pillar": "Digital Operational Resilience Testing",
           "evidence_examples": ["PCA documenté", "Scénarios de continuité", "RPO/RTO définis par application critique"],
           "remediation": {
             "quick_win": "Identifier les 10 processus métier les plus critiques et définir leurs RPO/RTO.",
@@ -187,6 +207,8 @@
           "question": "Votre stratégie de sauvegarde est-elle formalisée, les sauvegardes régulièrement testées, et les délais de restauration vérifiés ?",
           "iso27001_refs": ["A.8.13"],
           "iso27001_controls": ["Sauvegarde des informations"],
+          "dora_refs": ["DORA Art. 25"],
+          "dora_pillar": "Digital Operational Resilience Testing",
           "evidence_examples": ["Politique de sauvegarde", "Résultats de tests de restauration", "Logs de sauvegarde"],
           "remediation": {
             "quick_win": "Vérifier que tous les actifs critiques sont sauvegardés et réaliser un test de restauration.",
@@ -215,6 +237,8 @@
           "question": "Le PCA et le dispositif de gestion de crise sont-ils testés au moins une fois par an avec des exercices techniques (pas seulement tabletop) sur des scénarios cyber réalistes ?",
           "iso27001_refs": ["A.5.30", "A.8.13"],
           "iso27001_controls": ["Préparation des TIC pour la continuité d'activité", "Sauvegarde des informations"],
+          "dora_refs": ["DORA Art. 25"],
+          "dora_pillar": "Digital Operational Resilience Testing",
           "evidence_examples": ["CR d'exercices techniques annuels", "Scénarios joués (ransomware, SI indisponible)", "Indicateurs de performance des exercices (RTO réel mesuré)"],
           "remediation": {
             "quick_win": "Organiser un exercice tabletop semestriel sur un scénario ransomware avec la cellule de crise.",
@@ -238,6 +262,8 @@
           "question": "Évaluez-vous systématiquement les risques cybersécurité de vos fournisseurs et prestataires critiques avant et pendant la relation contractuelle ?",
           "iso27001_refs": ["A.5.19", "A.5.20", "A.5.21"],
           "iso27001_controls": ["Sécurité de l'information dans les relations avec les fournisseurs", "Prise en compte de la sécurité dans les accords avec les fournisseurs", "Gestion de la sécurité dans la chaîne d'approvisionnement TIC"],
+          "dora_refs": ["DORA Art. 28", "DORA Art. 29"],
+          "dora_pillar": "ICT Third-Party Risk",
           "evidence_examples": ["Questionnaire d'évaluation fournisseurs", "Résultats d'évaluation", "Registre des fournisseurs critiques"],
           "remediation": {
             "quick_win": "Identifier les 10 fournisseurs IT les plus critiques et leur envoyer un questionnaire de sécurité.",
@@ -252,6 +278,8 @@
           "question": "Vos contrats avec les fournisseurs critiques incluent-ils des clauses de cybersécurité (exigences, SLA, notification d'incidents, droit d'audit) ?",
           "iso27001_refs": ["A.5.20"],
           "iso27001_controls": ["Prise en compte de la sécurité de l'information dans les accords avec les fournisseurs"],
+          "dora_refs": ["DORA Art. 30"],
+          "dora_pillar": "ICT Third-Party Risk",
           "evidence_examples": ["Clauses types de sécurité", "Contrats avec annexes sécurité", "SLA documentés"],
           "remediation": {
             "quick_win": "Rédiger un annexe sécurité type à intégrer dans les nouveaux contrats.",
@@ -266,6 +294,8 @@
           "question": "Disposez-vous d'un dispositif de surveillance continue de vos fournisseurs critiques (revues périodiques, suivi des incidents, KPI) ?",
           "iso27001_refs": ["A.5.22"],
           "iso27001_controls": ["Surveillance, révision et gestion des changements des services fournis"],
+          "dora_refs": ["DORA Art. 28"],
+          "dora_pillar": "ICT Third-Party Risk",
           "evidence_examples": ["Planning de revues fournisseurs", "KPI fournisseurs", "CR de revues"],
           "remediation": {
             "quick_win": "Planifier une revue annuelle avec chaque fournisseur critique.",
@@ -340,6 +370,8 @@
           "question": "Disposez-vous d'un programme d'audit de sécurité régulier incluant audits internes, tests d'intrusion et revues de configuration ?",
           "iso27001_refs": ["A.5.35", "A.5.36"],
           "iso27001_controls": ["Revue indépendante de la sécurité de l'information", "Conformité aux politiques et normes"],
+          "dora_refs": ["DORA Art. 24"],
+          "dora_pillar": "Digital Operational Resilience Testing",
           "evidence_examples": ["Programme d'audit annuel", "Rapports de pentest", "Plan de remédiation issu des audits"],
           "remediation": {
             "quick_win": "Planifier un test d'intrusion externe annuel sur le périmètre exposé.",
