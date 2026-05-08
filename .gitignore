@@ -36,3 +36,8 @@ reports/*.pdf
 test_bridge.py
 test_financial.py
 test_report.py
+# pytest-cov artifacts
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
