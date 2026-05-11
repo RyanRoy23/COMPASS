@@ -1,5 +1,5 @@
 # NIS 2 Risk Analyzer
-Évaluation de conformité NIS 2 Article 21 avec quantification du risque financier et **transparence méthodologique** sur le périmètre d'évaluation.
+Évaluation de conformité NIS 2 Article 21 avec mapping DORA et ISO 27001:2022, quantification du risque financier, et **transparence méthodologique** sur le périmètre d'évaluation.
 
 La majorité des outils d'évaluation NIS 2 demandent "avez-vous déployé le MFA ?" et l'utilisateur coche "oui". Personne ne vérifie, et personne ne dit ce qui n'a pas été évalué.
 
@@ -9,10 +9,10 @@ Cet outil propose une approche différente : il distingue explicitement, dans ch
 
 ## Ce que fait l'outil
 
-NIS 2 Risk Analyzer évalue la conformité d'une organisation aux 10 mesures de l'Article 21 de la Directive NIS 2 (UE 2022/2555) en combinant **quatre couches** :
+NIS 2 Risk Analyzer évalue la conformité d'une organisation aux 10 mesures de l'Article 21 de la Directive NIS 2 (UE 2022/2555) en combinant **cinq couches** :
 
 **1. Évaluation de conformité structurée**
-31 questions couvrant les 10 domaines de l'Article 21, avec scoring pondéré (A-F), identification des gaps, plan de remédiation priorisé, et mapping vers 41 contrôles ISO 27001:2022 Annex A.
+35 questions couvrant les 10 domaines de l'Article 21, avec scoring pondéré (A-F), identification des gaps, plan de remédiation priorisé, et mapping vers 43 contrôles ISO 27001:2022 Annex A.
 
 **2. Bridge technique — CloudSec Audit Toolkit**
 Connexion optionnelle avec le CloudSec Audit Toolkit pour importer les résultats d'un audit Azure/Entra ID (20 contrôles via MS Graph API). Les réponses techniques disponibles sont pré-remplies automatiquement avec des preuves — pas des déclarations. Pour les organisations non-Azure ou les actifs non connectés, la collecte reste manuelle.
@@ -20,7 +20,10 @@ Connexion optionnelle avec le CloudSec Audit Toolkit pour importer les résultat
 **3. Périmètre d'évaluation explicite**
 Chaque rapport distingue visuellement les mesures **prouvées** par audit technique, **déclarées** par questionnaire, et **non couvertes** par l'outil. L'objectif est d'éviter le faux sentiment de complétude qui caractérise la plupart des outils GRC : un score NIS 2 partiel mais transparent vaut mieux qu'un score apparemment complet mais aveugle aux zones non évaluées.
 
-**4. Quantification du risque financier**
+**4. Mapping DORA (Digital Operational Resilience Act)**
+16 questions NIS 2 sont mappées aux articles DORA pertinents, regroupées par les 5 piliers du règlement : ICT Risk Management, ICT-Related Incident Management, Digital Operational Resilience Testing, ICT Third-Party Risk, Information Sharing. Le rapport affiche la couverture par pilier et signale explicitement les exigences DORA non couvertes (TLPT, registre d'information des prestataires TIC, partage d'information sur les cybermenaces). Utile pour les entités soumises à la fois à NIS 2 et DORA (banques, assurances, sociétés de gestion).
+
+**5. Quantification du risque financier**
 Chaque gap est traduit en impact financier estimé selon la méthode ALE (Annualized Loss Expectancy), basée sur des données publiques : IBM Cost of a Data Breach 2024, Panorama de la cybermenace ANSSI, rapports Coveware, barème des sanctions NIS 2 (Article 34). Le rapport indique l'exposition annuelle estimée et la valeur des quick wins en euros.
 
 ---
@@ -240,7 +243,7 @@ Chaque gap est relié à des scénarios d'incident avec un coût estimé.
 
 ## Rapport HTML
 
-Le rapport HTML unifié consolide les quatre couches en un seul document autonome (aucune dépendance externe requise pour l'ouverture) :
+Le rapport HTML unifié consolide les cinq couches en un seul document autonome (aucune dépendance externe requise pour l'ouverture) :
 
 - Score global + grade (A-F)
 - **Périmètre d'évaluation : distinction visuelle prouvé / déclaré / non couvert**
@@ -250,6 +253,7 @@ Le rapport HTML unifié consolide les quatre couches en un seul document autonom
 - Top risques par exposition et top remédiations par ROI
 - Plan de remédiation en 4 phases (immédiat, court, moyen, long terme)
 - Couverture ISO 27001:2022 Annex A (contrôles couverts/non couverts)
+- **Couverture DORA par pilier (mapping NIS 2 ↔ DORA, 5 piliers)**
 
 ---
 
@@ -257,9 +261,11 @@ Le rapport HTML unifié consolide les quatre couches en un seul document autonom
 
 ### Récemment livré
 - Section "Périmètre d'évaluation" dans le rapport HTML : distinction visuelle prouvé/déclaré/non couvert
+- Couverture étendue des dimensions organisationnelles : engagement direction (article 20 NIS 2), tests effectifs PCA, mesure d'efficacité de la sensibilisation, filtrage Internet et contrôle des périphériques (passage de 31 à 35 questions)
+- Suite de tests unitaires automatisés (45 tests, couverture 86% sur le moteur de scoring) et CI/CD GitHub Actions
+- Mapping DORA via les 16 questions NIS 2 pertinentes : couverture des 5 piliers (ICT Risk Management, Incident Management, Resilience Testing, Third-Party Risk, Information Sharing) avec transparence sur les zones non couvertes (TLPT, registre TIC, partage d'information)
 
 ### En cours (priorité 1)
-- Couverture étendue des dimensions organisationnelles : gouvernance, gestion de crise, supervision des fournisseurs, sensibilisation et formation
 - Documentation détaillée du compte de service Azure (permissions minimales, durcissement, audit)
 - Quantification financière étendue aux gaps organisationnels
 
@@ -291,6 +297,9 @@ Le bridge technique ne couvre actuellement qu'Azure/Entra ID. Les environnements
 
 **Couverture organisationnelle limitée**
 NIS 2 est à environ 60-70% un cadre organisationnel : qualité de la gouvernance, engagement effectif de la direction, gestion de crise, supervision des fournisseurs, formation et sensibilisation. Ces dimensions sont actuellement évaluées par questionnaire déclaratif uniquement, sans mécanisme de validation. La transparence du rapport (section "Périmètre d'évaluation") signale explicitement ces zones, mais elles nécessitent un audit externe pour être réellement vérifiées.
+
+**Mapping DORA partiel**
+Le mapping DORA ne constitue pas une évaluation DORA complète. Trois exigences DORA spécifiques ne sont pas couvertes par l'outil : le TLPT (Threat-Led Penetration Testing, article 26), le registre d'information des prestataires TIC (article 28(3)), et le partage d'information sur les cybermenaces (article 45). Une évaluation DORA complète nécessite un référentiel dédié et un audit complémentaire, en particulier pour les entités financières significatives soumises au régime de supervision directe.
 
 **Risque du compte de service Azure**
 Le bridge CloudSec nécessite un compte Azure avec des permissions de lecture (Global Reader, Security Reader). Ce compte devient une cible potentielle s'il est compromis. La documentation détaille les permissions minimales à accorder et les bonnes pratiques de protection (Conditional Access, MFA, audit du compte). L'outil ne dispose d'aucune permission d'écriture.
