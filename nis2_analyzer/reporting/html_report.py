@@ -17,11 +17,17 @@ Pourquoi HTML et pas PDF ?
 - Le RSSI peut l'envoyer par email et le DG l'ouvre en 1 clic.
 """
 
+import html
 import json
 import os
 from datetime import datetime, timezone
 from nis2_analyzer.core.models import Domain, ComplianceGrade, MaturityLevel
 from nis2_analyzer.core.scoring import ScoringEngine
+
+
+def _h(value: str) -> str:
+    """Échappe les caractères HTML pour prévenir les injections XSS."""
+    return html.escape(str(value), quote=True)
 
 
 def _fmt_eur(amount: float) -> str:
@@ -96,7 +102,7 @@ def generate_report(
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NIS 2 Risk Analyzer — Rapport {org_name}</title>
+    <title>NIS 2 Risk Analyzer — Rapport {_h(org_name)}</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
         
@@ -695,7 +701,7 @@ def generate_report(
         <div class="header">
             <div class="header-badge">NIS 2 — Article 21</div>
             <h1>Rapport de Conformité & Analyse de Risque</h1>
-            <div class="subtitle">{org_name}</div>
+            <div class="subtitle">{_h(org_name)}</div>
             <div class="meta">Généré le {timestamp} — NIS 2 Risk Analyzer v1.0.0</div>
         </div>
         
