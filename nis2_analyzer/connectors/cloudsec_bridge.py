@@ -516,26 +516,43 @@ class CloudSecBridge:
     def load_cloudsec_report(self, json_path: str) -> dict:
         """
         Charge le rapport JSON du CloudSec Audit Toolkit.
-        
+
         Ce fichier est généré par : python -m cloudsec.cli --output report.json
         Il contient les résultats des 20 checks avec :
         - metadata (date, version, tenant)
         - results (chaque check avec passed/failed, findings, details)
         - scores (passed, failed, errors)
         """
-        if not os.path.exists(json_path):
+        # Résolution du chemin absolu pour prévenir le path traversal
+        resolved = os.path.realpath(os.path.abspath(json_path))
+        if not os.path.exists(resolved):
             raise FileNotFoundError(
                 f"Rapport CloudSec non trouvé : {json_path}\n"
                 f"Lancez d'abord : python -m cloudsec.cli --output {json_path}"
             )
-        
-        with open(json_path, "r", encoding="utf-8") as f:
-            self.cloudsec_data = json.load(f)
-        
-        # Validation basique
-        if "results" not in self.cloudsec_data:
-            raise ValueError("Format de rapport CloudSec invalide — clé 'results' manquante")
-        
+
+        if not resolved.endswith(".json"):
+            raise ValueError(f"Le fichier bridge doit être un fichier .json : {json_path}")
+
+        with open(resolved, "r", encoding="utf-8") as f:
+            try:
+                self.cloudsec_data = json.load(f)
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Rapport CloudSec invalide — JSON malformé : {e}") from e
+
+        # Validation du schéma minimum attendu
+        required_keys = {"results"}
+        missing = required_keys - set(self.cloudsec_data.keys())
+        if missing:
+            raise ValueError(
+                f"Format de rapport CloudSec invalide — clés manquantes : {', '.join(missing)}"
+            )
+
+        if not isinstance(self.cloudsec_data["results"], dict):
+            raise ValueError(
+                "Format de rapport CloudSec invalide — 'results' doit être un objet JSON"
+            )
+
         return self.cloudsec_data
     
     def _determine_maturity(self, check_id: str, check_result: dict) -> tuple[MaturityLevel, str]:
