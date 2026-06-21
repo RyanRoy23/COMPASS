@@ -1,5 +1,5 @@
 """
-NIS 2 Compliance Gap Analyzer — Assessment Exporter
+COMPASS — Assessment Exporter
 Exporte les résultats de l'évaluation en JSON.
 
 Pourquoi un fichier séparé pour l'export ?

@@ -1,5 +1,5 @@
 """
-NIS 2 Risk Analyzer — CLI Entry Point
+COMPASS — CLI Entry Point
 Usage : python -m nis2_analyzer [options]
 
 Modes disponibles :
@@ -387,7 +387,7 @@ def _parse_profile(args):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="NIS 2 Risk Analyzer — Conformite, audit technique et quantification financiere",
+        description="COMPASS — Compliance Posture Assessment System",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Exemples :
@@ -486,7 +486,7 @@ Exemples :
                 print(f"  {GREEN}Resultats exportes : {path}{RESET}")
                 print()
 
-            print(f"  {DIM}Merci d'avoir utilise NIS 2 Risk Analyzer.{RESET}")
+            print(f"  {DIM}Merci d'avoir utilise COMPASS.{RESET}")
             print(f"  {DIM}github.com/RyanRoy23{RESET}")
             print()
 

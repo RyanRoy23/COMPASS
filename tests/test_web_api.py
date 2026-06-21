@@ -12,7 +12,7 @@ class TestIndexPage:
         res = client.get("/")
         assert res.status_code == 200
         assert "text/html" in res.headers["content-type"]
-        assert "NIS 2 Risk Analyzer" in res.text
+        assert "COMPASS" in res.text
 
     def test_html_contains_form(self):
         res = client.get("/")
