@@ -385,6 +385,72 @@ def _parse_profile(args):
     )
 
 
+def _cmd_qualify(args):
+    """Qualification NIS 2 Art. 3 — affiche la categorie et les obligations."""
+    from nis2_analyzer.core.entity_qualification import qualify_entity, EntityProfile, EntityCategory, ALL_SECTORS
+
+    sector = getattr(args, "sector", "autre") or "autre"
+    employees = getattr(args, "employees", 0) or 0
+    revenue = getattr(args, "revenue", 0.0) or 0.0
+    org_name = getattr(args, "org_name", None) or "Organisation"
+
+    profile = EntityProfile(
+        sector=sector,
+        employees=employees,
+        annual_revenue_eur=revenue,
+        is_critical_infrastructure=getattr(args, "critical_infra", False),
+        provides_essential_digital_service=getattr(args, "essential_digital", False),
+        org_name=org_name,
+    )
+
+    result = qualify_entity(profile)
+    cat = result.category
+
+    color_map = {
+        EntityCategory.ESSENTIAL:   RED,
+        EntityCategory.IMPORTANT:   YELLOW,
+        EntityCategory.OUT_OF_SCOPE: DIM,
+    }
+    cat_color = color_map.get(cat, WHITE)
+
+    sector_label = ALL_SECTORS.get(sector, sector)
+    print()
+    print(f"  {BOLD}{CYAN}Qualification NIS 2 — Article 3{RESET}")
+    print(f"  {DIM}Organisation : {org_name}{RESET}")
+    print(f"  {DIM}Secteur      : {sector_label} (Annexe {result.sector_annex}){RESET}")
+    print(f"  {DIM}Taille       : {employees} ETP | {revenue/1e6:.1f}M€ CA{RESET}")
+    print()
+    print(f"  Categorie : {cat_color}{BOLD}{result.category.label.upper()}{RESET}")
+    print()
+
+    print(f"  {WHITE}{BOLD}Motifs de qualification :{RESET}")
+    for r in result.reasons:
+        print(f"    {DIM}•{RESET} {r}")
+    print()
+
+    print(f"  {WHITE}{BOLD}Obligations principales :{RESET}")
+    o = result.obligations
+    print(f"    Supervision           : {o['supervision']}")
+    print(f"    Early warning         : {o['notification_early_warning']}")
+    print(f"    Rapport complet       : {o['notification_full_report']}")
+    print(f"    Rapport final         : {o['notification_final_report']}")
+    print(f"    Sanction max (entite) : {cat_color}{o['sanction_max_persons_morales']}{RESET}")
+    print(f"    Audit obligatoire     : {'Oui' if o['audit_obligatoire'] else 'Non'}")
+    print()
+
+    if result.recommendations:
+        print(f"  {WHITE}{BOLD}Recommandations :{RESET}")
+        for rec in result.recommendations:
+            print(f"    {GREEN}→{RESET} {rec}")
+        print()
+
+    if result.caveats:
+        print(f"  {WHITE}{BOLD}Points d'attention :{RESET}")
+        for c in result.caveats:
+            print(f"    {YELLOW}⚠{RESET}  {c}")
+        print()
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="COMPASS — Compliance Posture Assessment System",
@@ -430,8 +496,21 @@ Exemples :
                         help="Compare deux assessments par leur ID (ex: --compare 1 3)")
     parser.add_argument("--no-save", action="store_true",
                         help="Ne pas sauvegarder cet assessment dans l'historique")
+    parser.add_argument("--qualify", action="store_true",
+                        help="Qualification NIS 2 Art. 3 : determine si l'entite est Essentielle ou Importante")
+    parser.add_argument("--employees", type=int, default=0,
+                        help="Nombre de salaries (pour --qualify)")
+    parser.add_argument("--critical-infra", action="store_true",
+                        help="Entite identifiee comme infrastructure critique nationale (pour --qualify)")
+    parser.add_argument("--essential-digital", action="store_true",
+                        help="Fournit un service numerique essentiel DNS/IXP/cloud/CDN/MSP (pour --qualify)")
 
     args = parser.parse_args()
+
+    # ── Qualification NIS 2 Art. 3 ──
+    if args.qualify:
+        _cmd_qualify(args)
+        return
 
     # ── Commandes d'historique (pas d'assessment) ──
     if args.history:

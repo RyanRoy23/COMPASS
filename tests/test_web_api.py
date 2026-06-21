@@ -144,6 +144,47 @@ class TestHistoryEndpoint:
         assert client.get("/api/history/999999").status_code == 404
 
 
+class TestQualifyEndpoint:
+    def _qualify(self, **kwargs):
+        defaults = {"sector": "energie", "employees": 300, "annual_revenue_eur": 60_000_000, "org_name": "TestOrg"}
+        defaults.update(kwargs)
+        return client.post("/api/qualify", json=defaults)
+
+    def test_essential_entity(self):
+        res = self._qualify(sector="energie", employees=300, annual_revenue_eur=60_000_000)
+        assert res.status_code == 200
+        assert res.json()["category"] == "essentielle"
+
+    def test_important_entity_annex_ii(self):
+        res = self._qualify(sector="industrie", employees=200, annual_revenue_eur=40_000_000)
+        assert res.status_code == 200
+        assert res.json()["category"] == "importante"
+
+    def test_out_of_scope(self):
+        res = self._qualify(sector="autre", employees=20, annual_revenue_eur=1_000_000)
+        assert res.status_code == 200
+        assert res.json()["category"] == "hors_champ"
+
+    def test_response_has_obligations(self):
+        res = self._qualify(sector="sante", employees=500, annual_revenue_eur=100_000_000)
+        data = res.json()
+        assert "obligations" in data
+        assert "sanction_max_persons_morales" in data["obligations"]
+
+    def test_invalid_sector_returns_422(self):
+        res = self._qualify(sector="secteur_inexistant")
+        assert res.status_code == 422
+
+    def test_xss_in_org_name(self):
+        res = self._qualify(org_name="<script>alert(1)</script>")
+        assert res.status_code == 200
+        assert "<script>" not in res.json().get("category_label", "")
+
+    def test_administration_always_essential(self):
+        res = self._qualify(sector="administration", employees=5, annual_revenue_eur=0)
+        assert res.json()["category"] == "essentielle"
+
+
 class TestCompareEndpoint:
     def test_unknown_ids_return_404(self):
         assert client.get("/api/compare/999998/999999").status_code == 404

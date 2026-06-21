@@ -9,6 +9,7 @@ Endpoints :
   GET  /                   → interface HTML principale
   GET  /api/framework      → liste des domaines et questions
   POST /api/assess         → soumet les réponses, retourne le scoring complet
+  POST /api/qualify        → qualification NIS 2 Art. 3 (EE/EI/hors champ)
   GET  /api/history        → historique des assessments
   GET  /api/history/{id}   → détail d'un assessment
   GET  /api/compare/{a}/{b}→ comparaison de deux assessments
@@ -25,6 +26,9 @@ from nis2_analyzer.core.models import load_framework, MaturityLevel
 from nis2_analyzer.core.scoring import ScoringEngine
 from nis2_analyzer.core.database import (
     save_assessment, list_assessments, get_assessment, compare_assessments
+)
+from nis2_analyzer.core.entity_qualification import (
+    qualify_entity, EntityProfile, ALL_SECTORS
 )
 
 app = FastAPI(
@@ -51,6 +55,15 @@ class AssessmentRequest(BaseModel):
         ...,
         description="Mapping requirement_id → maturity (0-3)",
     )
+
+
+class QualifyRequest(BaseModel):
+    org_name: str = Field("Organisation", min_length=1, max_length=200)
+    sector: str = Field(..., description=f"Clé de secteur parmi : {', '.join(ALL_SECTORS)}")
+    employees: int = Field(0, ge=0, description="Nombre de salariés")
+    annual_revenue_eur: float = Field(0.0, ge=0, description="CA annuel en euros")
+    is_critical_infrastructure: bool = Field(False)
+    provides_essential_digital_service: bool = Field(False)
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -83,6 +96,28 @@ def get_framework():
             for d in domains
         ]
     }
+
+
+@app.post("/api/qualify")
+def api_qualify(body: QualifyRequest):
+    """
+    Qualifie l'entité selon NIS 2 Art. 3 et retourne la catégorie + obligations.
+    """
+    if body.sector not in ALL_SECTORS:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Secteur inconnu : '{body.sector}'. Valeurs acceptées : {list(ALL_SECTORS.keys())}"
+        )
+    profile = EntityProfile(
+        sector=body.sector,
+        employees=body.employees,
+        annual_revenue_eur=body.annual_revenue_eur,
+        is_critical_infrastructure=body.is_critical_infrastructure,
+        provides_essential_digital_service=body.provides_essential_digital_service,
+        org_name=html.escape(body.org_name.strip()),
+    )
+    result = qualify_entity(profile)
+    return result.to_dict()
 
 
 @app.post("/api/assess", status_code=201)
