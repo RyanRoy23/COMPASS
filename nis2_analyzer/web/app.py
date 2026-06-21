@@ -1,5 +1,5 @@
 """
-NIS 2 Risk Analyzer — Interface Web (FastAPI)
+COMPASS — Interface Web (FastAPI)
 
 Expose le moteur d'évaluation via une API REST + une interface HTML.
 Conçu pour être minimal : pas de framework JS, pas de build step,
@@ -28,7 +28,7 @@ from nis2_analyzer.core.database import (
 )
 
 app = FastAPI(
-    title="NIS 2 Risk Analyzer",
+    title="COMPASS",
     description="API d'évaluation de conformité NIS 2 — Article 21",
     version="1.1.0",
 )

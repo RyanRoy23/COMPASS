@@ -1,5 +1,5 @@
 """
-NIS 2 Risk Analyzer — Risk Quantification Engine
+COMPASS — Risk Quantification Engine
 Traduit chaque gap de conformité en impact financier estimé.
 
 Méthodologie de calcul :

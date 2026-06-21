@@ -1,2 +1,2 @@
-"""NIS 2 Compliance Gap Analyzer — Article 21 Assessment Tool"""
+"""COMPASS — Compliance Posture Assessment System"""
 __version__ = "1.0.0"

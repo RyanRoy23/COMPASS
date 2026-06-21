@@ -1,5 +1,5 @@
 """
-NIS 2 Risk Analyzer — Financial Impact Database
+COMPASS — Financial Impact Database
 Base de données des coûts d'incidents et scénarios de risque.
 
 Toutes les données sont sourcées publiquement :

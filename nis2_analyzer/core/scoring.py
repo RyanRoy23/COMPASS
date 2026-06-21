@@ -1,5 +1,5 @@
 """
-NIS 2 Compliance Gap Analyzer — Scoring Engine
+COMPASS — Scoring Engine
 Calculates compliance scores, identifies gaps, and generates prioritized action plans.
 """
 
@@ -156,8 +156,8 @@ class ScoringEngine:
 
         return {
             "metadata": {
-                "tool": "NIS 2 Compliance Gap Analyzer",
-                "version": "1.0.0",
+                "tool": "COMPASS",
+                "version": "1.1.0",
                 "timestamp": result.timestamp,
                 "organization": org_name,
                 "framework": "NIS 2 Directive — Article 21",
