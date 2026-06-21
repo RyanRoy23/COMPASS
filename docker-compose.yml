@@ -1,0 +1,12 @@
+services:
+  nis2-analyzer:
+    build: .
+    image: nis2-risk-analyzer:latest
+    volumes:
+      - nis2_history:/home/nis2user/.nis2_analyzer
+      - ./reports:/app/reports
+    stdin_open: true
+    tty: true
+
+volumes:
+  nis2_history:
