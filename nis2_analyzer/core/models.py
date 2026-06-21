@@ -1,5 +1,5 @@
 """
-NIS 2 Compliance Gap Analyzer — Core Models
+COMPASS — Core Models
 Data structures for the assessment framework, scoring, and gap analysis.
 """
 
@@ -171,7 +171,7 @@ class AssessmentResult:
     """Complete assessment result with scoring and gap analysis."""
     domains: list[Domain]
     organization_name: str = "Organisation"
-    assessor: str = "NIS 2 Compliance Gap Analyzer"
+    assessor: str = "COMPASS"
     timestamp: str = ""
 
     @property

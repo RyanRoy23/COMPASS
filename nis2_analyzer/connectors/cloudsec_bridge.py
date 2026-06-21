@@ -1,5 +1,5 @@
 """
-NIS 2 Risk Analyzer — CloudSec Bridge
+COMPASS — CloudSec Bridge
 Connecte les résultats du CloudSec Audit Toolkit aux exigences NIS 2.
 
 C'est le fichier clé du projet — celui qui différencie l'outil de tout
@@ -493,7 +493,7 @@ MAPPING_CLOUDSEC_TO_NIS2 = {
 
 class CloudSecBridge:
     """
-    Pont entre CloudSec Audit Toolkit et NIS 2 Risk Analyzer.
+    Pont entre CloudSec Audit Toolkit et COMPASS.
     
     Workflow :
     1. load_cloudsec_report() → charge le JSON du CloudSec Audit

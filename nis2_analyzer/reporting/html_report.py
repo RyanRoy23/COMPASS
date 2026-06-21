@@ -1,5 +1,5 @@
 """
-NIS 2 Risk Analyzer — HTML Report Generator
+COMPASS — HTML Report Generator
 Génère un rapport HTML unifié consolidant les 3 couches :
 1. Score de conformité NIS 2
 2. Preuves techniques (bridge CloudSec)
@@ -102,7 +102,7 @@ def generate_report(
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NIS 2 Risk Analyzer — Rapport {_h(org_name)}</title>
+    <title>COMPASS — Rapport {_h(org_name)}</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
         
@@ -702,7 +702,7 @@ def generate_report(
             <div class="header-badge">NIS 2 — Article 21</div>
             <h1>Rapport de Conformité & Analyse de Risque</h1>
             <div class="subtitle">{_h(org_name)}</div>
-            <div class="meta">Généré le {timestamp} — NIS 2 Risk Analyzer v1.0.0</div>
+            <div class="meta">Généré le {timestamp} — COMPASS v1.1.0</div>
         </div>
         
         <!-- SCORE HERO -->
@@ -1108,7 +1108,7 @@ def generate_report(
     # ── FOOTER ──
     html += f"""
         <div class="footer">
-            <p>NIS 2 Risk Analyzer v1.0.0 — Généré le {timestamp}</p>
+            <p>COMPASS v1.1.0 — Généré le {timestamp}</p>
             <p style="margin-top: 4px;">Développé par Ryan Roy TASSEH TAGNY — 
                 <a href="https://github.com/RyanRoy23">github.com/RyanRoy23</a></p>
             <p style="margin-top: 8px; font-size: 11px;">

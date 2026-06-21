@@ -1,5 +1,5 @@
 """
-NIS 2 Compliance Gap Analyzer — Interactive Assessment
+COMPASS — Interactive Assessment
 Module qui guide l'utilisateur à travers les 31 questions du référentiel NIS 2.
 
 Architecture :
@@ -52,7 +52,7 @@ def display_banner():
     """
     print()
     print(f"  {CYAN}{'=' * 56}{RESET}")
-    print(f"  {CYAN}||{RESET}  {WHITE}{BOLD}NIS 2 Compliance Gap Analyzer{RESET}             {CYAN}||{RESET}")
+    print(f"  {CYAN}||{RESET}  {WHITE}{BOLD}COMPASS{RESET}             {CYAN}||{RESET}")
     print(f"  {CYAN}||{RESET}  {DIM}Article 21 — Assessment interactif{RESET}        {CYAN}||{RESET}")
     print(f"  {CYAN}{'=' * 56}{RESET}")
     print()

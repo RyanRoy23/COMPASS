@@ -1,5 +1,5 @@
 """
-NIS 2 Risk Analyzer — Couche de persistance SQLite
+COMPASS — Couche de persistance SQLite
 Sauvegarde chaque assessment et permet le suivi de la progression dans le temps.
 
 Pourquoi SQLite et pas un fichier JSON par assessment ?
