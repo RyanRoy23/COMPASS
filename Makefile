@@ -1,4 +1,4 @@
-.PHONY: build run demo history test shell clean
+.PHONY: build run demo history test shell clean web
 
 build:
 	docker build -t nis2-risk-analyzer:latest .
@@ -17,6 +17,9 @@ test:
 
 shell:
 	docker compose run --rm --entrypoint bash nis2-analyzer
+
+web:
+	pip install -q -r requirements-web.txt && python serve.py
 
 clean:
 	docker compose down -v
