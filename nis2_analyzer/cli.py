@@ -385,6 +385,59 @@ def _parse_profile(args):
     )
 
 
+def _cmd_governance():
+    """Questionnaire interactif de gouvernance Art. 20."""
+    from nis2_analyzer.core.governance import GOVERNANCE_QUESTIONS, assess_governance
+
+    print()
+    print(f"  {BOLD}{CYAN}Gouvernance NIS 2 — Article 20{RESET}")
+    print(f"  {DIM}Évaluation de la responsabilité de l'organe de direction{RESET}")
+    print()
+    print(f"  {DIM}Niveaux : 0 = Absent  1 = Informel  2 = Formalisé  3 = Piloté{RESET}")
+    print()
+
+    responses: dict[str, int] = {}
+    for q in GOVERNANCE_QUESTIONS:
+        print(f"  {CYAN}{q.id}{RESET} [{q.pillar}] — {WHITE}{q.title}{RESET}")
+        print(f"  {DIM}{q.question}{RESET}")
+        while True:
+            try:
+                answer = input(f"    {WHITE}Maturité (0-3) >{RESET} ").strip()
+            except (EOFError, KeyboardInterrupt):
+                print()
+                return
+            if answer in ('0', '1', '2', '3'):
+                responses[q.id] = int(answer)
+                break
+            print(f"    {RED}Entrez 0, 1, 2 ou 3.{RESET}")
+        print()
+
+    result = assess_governance(responses)
+    d = result.to_dict()
+
+    gc = {
+        "A": GREEN, "B": BLUE, "C": YELLOW, "D": RED, "F": RED
+    }.get(result.grade, WHITE)
+
+    risk_color = {
+        "ÉLEVÉ": RED, "MODÉRÉ": YELLOW, "FAIBLE": GREEN
+    }.get(result.liability_risk, WHITE)
+
+    print(f"  {CYAN}{'═' * 56}{RESET}")
+    print(f"  {WHITE}Score gouvernance :{RESET}  {gc}{BOLD}{result.overall_score}%{RESET}  |  {WHITE}Grade :{RESET}  {gc}{BOLD}{result.grade}{RESET}")
+    print(f"  {WHITE}Gaps :{RESET} {YELLOW}{result.total_gaps}{RESET}  |  {WHITE}Critiques :{RESET} {RED}{result.critical_gaps}{RESET}")
+    print(f"  {WHITE}Risque responsabilité dirigeants :{RESET} {risk_color}{BOLD}{result.liability_risk}{RESET}")
+    print(f"  {CYAN}{'═' * 56}{RESET}")
+    print()
+
+    if d["recommendations"]:
+        print(f"  {WHITE}{BOLD}Plan d'action :{RESET}")
+        for rec in d["recommendations"]:
+            pc = RED if rec["priority"] == "CRITIQUE" else YELLOW if rec["priority"] == "ÉLEVÉE" else WHITE
+            print(f"    {pc}[{rec['priority']}]{RESET} {rec['action']}")
+        print()
+
+
 def _cmd_qualify(args):
     """Qualification NIS 2 Art. 3 — affiche la categorie et les obligations."""
     from nis2_analyzer.core.entity_qualification import qualify_entity, EntityProfile, EntityCategory, ALL_SECTORS
@@ -498,6 +551,8 @@ Exemples :
                         help="Ne pas sauvegarder cet assessment dans l'historique")
     parser.add_argument("--qualify", action="store_true",
                         help="Qualification NIS 2 Art. 3 : determine si l'entite est Essentielle ou Importante")
+    parser.add_argument("--governance", action="store_true",
+                        help="Questionnaire de gouvernance NIS 2 Art. 20 (organe de direction)")
     parser.add_argument("--employees", type=int, default=0,
                         help="Nombre de salaries (pour --qualify)")
     parser.add_argument("--critical-infra", action="store_true",
@@ -510,6 +565,11 @@ Exemples :
     # ── Qualification NIS 2 Art. 3 ──
     if args.qualify:
         _cmd_qualify(args)
+        return
+
+    # ── Gouvernance Art. 20 ──
+    if args.governance:
+        _cmd_governance()
         return
 
     # ── Commandes d'historique (pas d'assessment) ──
