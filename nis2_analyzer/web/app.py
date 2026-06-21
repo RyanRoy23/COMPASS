@@ -16,9 +16,10 @@ Endpoints :
 """
 
 import html
+import tempfile
 from pathlib import Path
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -33,6 +34,7 @@ from nis2_analyzer.core.entity_qualification import (
 from nis2_analyzer.core.governance import (
     assess_governance, get_questions_schema
 )
+from nis2_analyzer.reporting.evidence_package import build_evidence_package
 
 app = FastAPI(
     title="COMPASS",
@@ -210,6 +212,47 @@ def get_assessment_detail(assessment_id: int):
     if result is None:
         raise HTTPException(status_code=404, detail=f"Assessment #{assessment_id} introuvable.")
     return result
+
+
+@app.post("/api/evidence-package")
+def api_evidence_package(body: AssessmentRequest):
+    """
+    Génère un dossier de preuves ZIP à partir des réponses au questionnaire.
+    Retourne le fichier ZIP en téléchargement direct.
+    """
+    org_name = html.escape(body.org_name.strip())
+
+    for req_id, value in body.responses.items():
+        if value not in (0, 1, 2, 3):
+            raise HTTPException(
+                status_code=422,
+                detail=f"Maturité invalide pour {req_id} : {value}."
+            )
+
+    domains = load_framework()
+    answered = 0
+    for domain in domains:
+        for req in domain.sub_requirements:
+            if req.id in body.responses:
+                req.maturity = MaturityLevel(body.responses[req.id])
+                answered += 1
+
+    if answered == 0:
+        raise HTTPException(status_code=422, detail="Aucune réponse valide fournie.")
+
+    engine = ScoringEngine()
+    analysis = engine.full_analysis(domains, org_name)
+
+    tmp = tempfile.NamedTemporaryFile(suffix=".zip", delete=False)
+    tmp.close()
+    build_evidence_package(analysis, tmp.name, domains_obj=domains)
+
+    safe_name = org_name.replace(" ", "_").replace("/", "_")[:40]
+    return FileResponse(
+        tmp.name,
+        media_type="application/zip",
+        filename=f"compass_evidence_{safe_name}.zip",
+    )
 
 
 @app.get("/api/compare/{id_a}/{id_b}")

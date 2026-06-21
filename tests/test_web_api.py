@@ -144,6 +144,36 @@ class TestHistoryEndpoint:
         assert client.get("/api/history/999999").status_code == 404
 
 
+class TestEvidencePackageEndpoint:
+    def _payload(self, org="TestOrg"):
+        responses = {f"NIS2-D0{d}-R0{r}": 2
+                     for d in range(1, 10) for r in range(1, 4)
+                     if f"NIS2-D0{d}-R0{r}" in [
+                         "NIS2-D01-R01","NIS2-D01-R02","NIS2-D02-R01","NIS2-D02-R02",
+                     ]}
+        return {"org_name": org, "responses": {"NIS2-D01-R01": 2, "NIS2-D01-R02": 1}}
+
+    def test_returns_zip(self):
+        res = client.post("/api/evidence-package", json=self._payload())
+        assert res.status_code == 200
+        assert "zip" in res.headers["content-type"]
+
+    def test_zip_is_valid(self):
+        import io, zipfile
+        res = client.post("/api/evidence-package", json=self._payload())
+        zf = zipfile.ZipFile(io.BytesIO(res.content))
+        assert "manifest.json" in zf.namelist()
+        assert "assessment.json" in zf.namelist()
+
+    def test_empty_responses_422(self):
+        res = client.post("/api/evidence-package", json={"org_name": "Test", "responses": {}})
+        assert res.status_code == 422
+
+    def test_invalid_maturity_422(self):
+        res = client.post("/api/evidence-package", json={"org_name": "Test", "responses": {"NIS2-D01-R01": 9}})
+        assert res.status_code == 422
+
+
 class TestGovernanceEndpoint:
     def test_questions_endpoint(self):
         res = client.get("/api/governance/questions")

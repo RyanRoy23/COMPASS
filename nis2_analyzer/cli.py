@@ -88,7 +88,7 @@ def run_demo_mode(with_bridge=False, with_financial=False, profile=None, report_
         _generate_report(domains, org_name, financial_dict, bridge_result, report_path)
 
     _save_assessment(domains, org_name, skip=no_save)
-    return domains, org_name
+    return domains, org_name, financial_dict
 
 
 def run_bridge_interactive(bridge_path, profile=None, report_path=None, no_save=False):
@@ -385,6 +385,19 @@ def _parse_profile(args):
     )
 
 
+def _generate_evidence_package(domains, org_name, evidence_path):
+    """Génère le dossier de preuves ZIP."""
+    from nis2_analyzer.core.scoring import ScoringEngine
+    from nis2_analyzer.reporting.evidence_package import build_evidence_package
+
+    engine = ScoringEngine()
+    analysis = engine.full_analysis(domains, org_name)
+    path = build_evidence_package(analysis, evidence_path, domains_obj=domains)
+    print(f"  {GREEN}{BOLD}Dossier de preuves genere : {path}{RESET}")
+    print(f"  {DIM}Contenu : manifest.json, assessment.json, gaps_action_plan.csv, evidence_summary.html{RESET}")
+    print()
+
+
 def _cmd_governance():
     """Questionnaire interactif de gouvernance Art. 20."""
     from nis2_analyzer.core.governance import GOVERNANCE_QUESTIONS, assess_governance
@@ -553,6 +566,8 @@ Exemples :
                         help="Qualification NIS 2 Art. 3 : determine si l'entite est Essentielle ou Importante")
     parser.add_argument("--governance", action="store_true",
                         help="Questionnaire de gouvernance NIS 2 Art. 20 (organe de direction)")
+    parser.add_argument("--evidence", "-e", default=None,
+                        help="Chemin du dossier de preuves ZIP de sortie (ex: reports/preuves.zip)")
     parser.add_argument("--employees", type=int, default=0,
                         help="Nombre de salaries (pour --qualify)")
     parser.add_argument("--critical-infra", action="store_true",
@@ -586,8 +601,10 @@ Exemples :
         profile = _parse_profile(args)
 
     try:
+        domains, org_name, financial_dict = None, None, None
+
         if args.demo:
-            run_demo_mode(
+            domains, org_name, financial_dict = run_demo_mode(
                 with_bridge=args.bridge,
                 with_financial=(profile is not None),
                 profile=profile,
@@ -608,7 +625,6 @@ Exemples :
 
             domains, org_name = run_assessment()
 
-            financial_dict = None
             if profile:
                 financial_dict = _run_financial(domains, profile)
 
@@ -628,6 +644,10 @@ Exemples :
             print(f"  {DIM}Merci d'avoir utilise COMPASS.{RESET}")
             print(f"  {DIM}github.com/RyanRoy23{RESET}")
             print()
+
+        # ── Dossier de preuves (commun à tous les modes) ──
+        if args.evidence and domains and org_name:
+            _generate_evidence_package(domains, org_name, args.evidence)
 
     except KeyboardInterrupt:
         print(f"\n\n  {YELLOW}Evaluation annulee.{RESET}\n")
