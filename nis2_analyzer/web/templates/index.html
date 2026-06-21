@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NIS 2 Risk Analyzer</title>
+  <style>
+    :root {
+      --bg: #0A0E1A;
+      --surface: #111827;
+      --border: #1F2937;
+      --accent: #3B82F6;
+      --accent-light: #60A5FA;
+      --green: #10B981;
+      --yellow: #F59E0B;
+      --red: #EF4444;
+      --text: #F9FAFB;
+      --muted: #6B7280;
+      --radius: 8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+
+    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; align-items: center; gap: 1rem; }
+    header h1 { font-size: 1.2rem; font-weight: 600; }
+    header span { background: var(--accent); color: #fff; font-size: 0.7rem; padding: 2px 8px; border-radius: 99px; font-weight: 600; }
+
+    nav { display: flex; gap: 0.5rem; padding: 1rem 2rem; border-bottom: 1px solid var(--border); }
+    nav button { background: none; border: 1px solid var(--border); color: var(--muted); padding: 0.4rem 1rem; border-radius: var(--radius); cursor: pointer; font-size: 0.85rem; transition: all .15s; }
+    nav button.active, nav button:hover { border-color: var(--accent); color: var(--accent-light); }
+
+    main { max-width: 900px; margin: 0 auto; padding: 2rem; }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ── Form ── */
+    .form-header { margin-bottom: 1.5rem; }
+    .form-header h2 { font-size: 1.3rem; margin-bottom: 0.3rem; }
+    .form-header p { color: var(--muted); font-size: 0.9rem; }
+
+    .org-input { width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 0.6rem 1rem; border-radius: var(--radius); font-size: 1rem; margin-bottom: 1.5rem; outline: none; }
+    .org-input:focus { border-color: var(--accent); }
+
+    .domain-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 1rem; overflow: hidden; }
+    .domain-header { padding: 0.8rem 1rem; background: #161D2E; font-weight: 600; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; }
+    .domain-weight { color: var(--muted); font-size: 0.75rem; font-weight: 400; }
+    .req-row { padding: 0.7rem 1rem; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 1rem; }
+    .req-question { flex: 1; font-size: 0.85rem; color: #D1D5DB; }
+    .maturity-group { display: flex; gap: 4px; }
+    .maturity-group label { cursor: pointer; }
+    .maturity-group input { display: none; }
+    .maturity-btn { display: inline-block; width: 32px; height: 28px; line-height: 28px; text-align: center; border-radius: 4px; font-size: 0.8rem; font-weight: 600; border: 1px solid var(--border); color: var(--muted); transition: all .1s; }
+    .maturity-group input:checked + .maturity-btn { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    .submit-row { margin-top: 1.5rem; display: flex; gap: 1rem; align-items: center; }
+    .btn { background: var(--accent); color: #fff; border: none; padding: 0.65rem 1.5rem; border-radius: var(--radius); font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: opacity .15s; }
+    .btn:hover { opacity: 0.85; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-outline { background: none; border: 1px solid var(--border); color: var(--text); }
+    #form-status { font-size: 0.85rem; color: var(--muted); }
+
+    /* ── Results ── */
+    .score-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .score-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; text-align: center; }
+    .score-card .label { font-size: 0.75rem; color: var(--muted); margin-bottom: 0.3rem; }
+    .score-card .value { font-size: 2rem; font-weight: 700; }
+    .score-card .sub { font-size: 0.8rem; color: var(--muted); }
+
+    .domain-results { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.5rem; }
+    .domain-result { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.7rem 1rem; display: flex; align-items: center; gap: 1rem; }
+    .domain-result .name { flex: 1; font-size: 0.85rem; }
+    .domain-result .bar-wrap { width: 140px; height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; }
+    .domain-result .bar { height: 100%; border-radius: 99px; transition: width .3s; }
+    .domain-result .pct { width: 40px; text-align: right; font-size: 0.8rem; font-weight: 600; }
+
+    .gaps-list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .gap-item { background: var(--surface); border-left: 3px solid var(--red); border-radius: 0 var(--radius) var(--radius) 0; padding: 0.6rem 1rem; font-size: 0.82rem; }
+    .gap-item.critical { border-color: var(--red); }
+    .gap-item.normal { border-color: var(--yellow); }
+    .gap-title { font-weight: 600; margin-bottom: 0.2rem; }
+    .gap-action { color: var(--muted); }
+
+    section h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.8rem; color: var(--accent-light); }
+
+    /* ── History ── */
+    .history-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .history-table th { text-align: left; padding: 0.5rem 0.8rem; color: var(--muted); font-weight: 500; border-bottom: 1px solid var(--border); }
+    .history-table td { padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--border); }
+    .history-table tr:hover td { background: var(--surface); }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 0.75rem; font-weight: 600; }
+    .badge-A { background: #064E3B; color: #34D399; }
+    .badge-B { background: #1E3A5F; color: #60A5FA; }
+    .badge-C { background: #3B2C00; color: #FCD34D; }
+    .badge-D, .badge-E, .badge-F { background: #3B1212; color: #FCA5A5; }
+
+    .empty-state { text-align: center; padding: 3rem; color: var(--muted); }
+    .empty-state p { margin-bottom: 1rem; }
+
+    .error-msg { background: #3B1212; border: 1px solid var(--red); color: #FCA5A5; padding: 0.7rem 1rem; border-radius: var(--radius); font-size: 0.85rem; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>NIS 2 Risk Analyzer</h1>
+  <span>Article 21</span>
+</header>
+
+<nav>
+  <button class="active" onclick="showPage('assessment')">Évaluation</button>
+  <button onclick="showPage('results')">Résultats</button>
+  <button onclick="showPage('history'); loadHistory()">Historique</button>
+</nav>
+
+<main>
+
+  <!-- ── PAGE : ÉVALUATION ── -->
+  <div id="page-assessment" class="page active">
+    <div class="form-header">
+      <h2>Évaluation de conformité NIS 2</h2>
+      <p>Répondez aux questions ci-dessous en évaluant votre niveau de maturité de 0 (non implémenté) à 3 (optimisé).</p>
+    </div>
+    <input class="org-input" id="org-name" type="text" placeholder="Nom de l'organisation (ex: TT Corporation)" maxlength="200">
+    <div id="framework-container"><p style="color:var(--muted)">Chargement du questionnaire…</p></div>
+    <div class="submit-row">
+      <button class="btn" id="submit-btn" onclick="submitAssessment()" disabled>Lancer l'évaluation</button>
+      <button class="btn btn-outline" onclick="fillDemo()">Mode démo</button>
+      <span id="form-status"></span>
+    </div>
+    <div id="form-error"></div>
+  </div>
+
+  <!-- ── PAGE : RÉSULTATS ── -->
+  <div id="page-results" class="page">
+    <div id="results-container"><p style="color:var(--muted)">Lancez une évaluation pour voir les résultats.</p></div>
+  </div>
+
+  <!-- ── PAGE : HISTORIQUE ── -->
+  <div id="page-history" class="page">
+    <div id="history-container"><p style="color:var(--muted)">Chargement…</p></div>
+  </div>
+
+</main>
+
+<script>
+  let _framework = null;
+
+  // ── Navigation ────────────────────────────────────────────────────────────
+  function showPage(name) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    document.getElementById('page-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  // ── Chargement du framework ───────────────────────────────────────────────
+  async function loadFramework() {
+    const res = await fetch('/api/framework');
+    _framework = await res.json();
+    renderForm(_framework.domains);
+    document.getElementById('submit-btn').disabled = false;
+  }
+
+  function renderForm(domains) {
+    const container = document.getElementById('framework-container');
+    container.innerHTML = domains.map(d => `
+      <div class="domain-card">
+        <div class="domain-header">
+          ${esc(d.title)}
+          <span class="domain-weight">Poids ×${d.weight}</span>
+        </div>
+        ${d.requirements.map(r => `
+          <div class="req-row">
+            <div class="req-question">${esc(r.question)}</div>
+            <div class="maturity-group">
+              ${[0,1,2,3].map(v => `
+                <label>
+                  <input type="radio" name="${r.id}" value="${v}">
+                  <span class="maturity-btn">${v}</span>
+                </label>
+              `).join('')}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `).join('');
+  }
+
+  // ── Démo ─────────────────────────────────────────────────────────────────
+  function fillDemo() {
+    const demo = {
+      "NIS2-D01-R01":2,"NIS2-D01-R02":2,"NIS2-D01-R03":1,"NIS2-D01-R04":2,"NIS2-D01-R05":1,
+      "NIS2-D02-R01":2,"NIS2-D02-R02":1,"NIS2-D02-R03":0,"NIS2-D02-R04":1,
+      "NIS2-D03-R01":1,"NIS2-D03-R02":2,"NIS2-D03-R03":0,"NIS2-D03-R04":0,
+      "NIS2-D04-R01":0,"NIS2-D04-R02":1,"NIS2-D04-R03":0,
+      "NIS2-D05-R01":1,"NIS2-D05-R02":2,"NIS2-D05-R03":2,
+      "NIS2-D06-R01":1,"NIS2-D06-R02":0,
+      "NIS2-D07-R01":2,"NIS2-D07-R02":1,"NIS2-D07-R03":2,"NIS2-D07-R04":0,"NIS2-D07-R05":1,
+      "NIS2-D08-R01":2,"NIS2-D08-R02":2,
+      "NIS2-D09-R01":2,"NIS2-D09-R02":2,"NIS2-D09-R03":1,"NIS2-D09-R04":1,
+      "NIS2-D10-R01":3,"NIS2-D10-R02":2,"NIS2-D10-R03":1,
+    };
+    document.getElementById('org-name').value = 'TT Corporation';
+    for (const [id, val] of Object.entries(demo)) {
+      const input = document.querySelector(`input[name="${id}"][value="${val}"]`);
+      if (input) input.checked = true;
+    }
+    document.getElementById('form-status').textContent = 'Réponses démo chargées.';
+  }
+
+  // ── Soumission ────────────────────────────────────────────────────────────
+  async function submitAssessment() {
+    const orgName = document.getElementById('org-name').value.trim();
+    if (!orgName) {
+      showError('Veuillez saisir le nom de l\'organisation.');
+      return;
+    }
+
+    const responses = {};
+    document.querySelectorAll('.maturity-group input:checked').forEach(input => {
+      responses[input.name] = parseInt(input.value);
+    });
+
+    if (Object.keys(responses).length === 0) {
+      showError('Veuillez répondre à au moins une question.');
+      return;
+    }
+
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.textContent = 'Calcul en cours…';
+    clearError();
+
+    try {
+      const res = await fetch('/api/assess', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ org_name: orgName, responses }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || 'Erreur serveur');
+      }
+
+      const data = await res.json();
+      renderResults(data);
+      // Switch vers résultats
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+      document.getElementById('page-results').classList.add('active');
+      document.querySelectorAll('nav button')[1].classList.add('active');
+
+    } catch (e) {
+      showError(e.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Lancer l\'évaluation';
+    }
+  }
+
+  // ── Rendu des résultats ───────────────────────────────────────────────────
+  function renderResults(data) {
+    const s = data.scores;
+    const gradeColor = { A:'#10B981', B:'#3B82F6', C:'#F59E0B', D:'#F97316', E:'#EF4444', F:'#DC2626' };
+    const color = gradeColor[s.grade] || '#6B7280';
+
+    const domainRows = (data.domains || []).map(d => {
+      const pct = d.score || 0;
+      const barColor = pct >= 70 ? 'var(--green)' : pct >= 40 ? 'var(--yellow)' : 'var(--red)';
+      return `
+        <div class="domain-result">
+          <span class="name">${esc(d.title)}</span>
+          <div class="bar-wrap"><div class="bar" style="width:${pct}%;background:${barColor}"></div></div>
+          <span class="pct">${pct}%</span>
+        </div>`;
+    }).join('');
+
+    const gapItems = (data.gaps || []).slice(0, 10).map(g => `
+      <div class="gap-item ${g.is_critical ? 'critical' : 'normal'}">
+        <div class="gap-title">${esc(g.title || g.requirement_id)}</div>
+        <div class="gap-action">${esc(g.remediation_summary || '')}</div>
+      </div>`).join('');
+
+    document.getElementById('results-container').innerHTML = `
+      <div class="form-header">
+        <h2>${esc(data.metadata?.organization || 'Résultats')}</h2>
+        <p>Assessment #${data.assessment_id} — ${data.metadata?.timestamp?.slice(0,10) || ''}</p>
+      </div>
+      <div class="score-grid">
+        <div class="score-card">
+          <div class="label">Score global</div>
+          <div class="value" style="color:${color}">${s.overall_score}%</div>
+          <div class="sub">sur 100%</div>
+        </div>
+        <div class="score-card">
+          <div class="label">Grade</div>
+          <div class="value" style="color:${color}">${s.grade}</div>
+          <div class="sub">${s.grade_description?.slice(0,40) || ''}</div>
+        </div>
+        <div class="score-card">
+          <div class="label">Gaps identifiés</div>
+          <div class="value" style="color:var(--red)">${s.total_gaps}</div>
+          <div class="sub">dont ${s.total_critical_gaps} critiques</div>
+        </div>
+        <div class="score-card">
+          <div class="label">Évalués</div>
+          <div class="value">${s.total_assessed}</div>
+          <div class="sub">sur ${s.total_requirements} exigences</div>
+        </div>
+      </div>
+      <section>
+        <h3>Score par domaine</h3>
+        <div class="domain-results">${domainRows}</div>
+      </section>
+      ${gapItems ? `<section><h3>Principaux gaps à traiter</h3><div class="gaps-list">${gapItems}</div></section>` : ''}
+    `;
+  }
+
+  // ── Historique ────────────────────────────────────────────────────────────
+  async function loadHistory() {
+    const container = document.getElementById('history-container');
+    container.innerHTML = '<p style="color:var(--muted)">Chargement…</p>';
+    try {
+      const res = await fetch('/api/history?limit=50');
+      const data = await res.json();
+      const rows = data.assessments;
+
+      if (!rows.length) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <p>Aucun assessment enregistré.</p>
+            <button class="btn" onclick="showPage('assessment'); document.querySelectorAll('nav button')[0].classList.add('active')">Lancer une évaluation</button>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="form-header"><h2>Historique des assessments</h2></div>
+        <table class="history-table">
+          <thead><tr><th>ID</th><th>Organisation</th><th>Date</th><th>Score</th><th>Grade</th><th>Gaps</th></tr></thead>
+          <tbody>
+            ${rows.map(r => `
+              <tr>
+                <td>#${r.id}</td>
+                <td>${esc(r.org_name)}</td>
+                <td>${r.assessed_at.slice(0,10)}</td>
+                <td>${r.score}%</td>
+                <td><span class="badge badge-${r.grade}">${r.grade}</span></td>
+                <td>${r.total_gaps}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>`;
+    } catch (e) {
+      container.innerHTML = `<div class="error-msg">Impossible de charger l'historique : ${esc(e.message)}</div>`;
+    }
+  }
+
+  // ── Utilitaires ───────────────────────────────────────────────────────────
+  function esc(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function showError(msg) {
+    document.getElementById('form-error').innerHTML = `<div class="error-msg">${esc(msg)}</div>`;
+  }
+
+  function clearError() {
+    document.getElementById('form-error').innerHTML = '';
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  loadFramework();
+</script>
+</body>
+</html>
