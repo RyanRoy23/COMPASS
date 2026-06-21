@@ -31,7 +31,7 @@ BLUE = "\033[34m"
 MAGENTA = "\033[35m"
 
 
-def run_demo_mode(with_bridge=False, with_financial=False, profile=None, report_path=None):
+def run_demo_mode(with_bridge=False, with_financial=False, profile=None, report_path=None, no_save=False):
     """Mode demo avec toutes les couches."""
     from nis2_analyzer.assessment.interactive import display_banner
 
@@ -87,10 +87,11 @@ def run_demo_mode(with_bridge=False, with_financial=False, profile=None, report_
     if report_path:
         _generate_report(domains, org_name, financial_dict, bridge_result, report_path)
 
+    _save_assessment(domains, org_name, skip=no_save)
     return domains, org_name
 
 
-def run_bridge_interactive(bridge_path, profile=None, report_path=None):
+def run_bridge_interactive(bridge_path, profile=None, report_path=None, no_save=False):
     """
     Mode bridge + interactif.
     Le bridge pre-remplit les questions techniques.
@@ -181,6 +182,7 @@ def run_bridge_interactive(bridge_path, profile=None, report_path=None):
     if report_path:
         _generate_report(domains, org_name, financial_dict, bridge_result, report_path)
 
+    _save_assessment(domains, org_name, skip=no_save)
     return domains, org_name
 
 
@@ -288,6 +290,81 @@ def _generate_report(domains, org_name, financial_dict, bridge_result, report_pa
     print()
 
 
+def _save_assessment(domains, org_name, skip=False):
+    """Sauvegarde un assessment dans l'historique SQLite."""
+    if skip:
+        return None
+    try:
+        from nis2_analyzer.core.database import save_assessment
+        from nis2_analyzer.core.scoring import ScoringEngine
+        engine = ScoringEngine()
+        analysis = engine.full_analysis(domains, org_name)
+        assessment_id = save_assessment(analysis)
+        print(f"  {DIM}Assessment #{assessment_id} sauvegarde dans l'historique.{RESET}")
+        print(f"  {DIM}Consultez avec : python -m nis2_analyzer --history{RESET}")
+        print()
+        return assessment_id
+    except Exception as e:
+        print(f"  {YELLOW}Avertissement : impossible de sauvegarder l'historique ({e}){RESET}")
+        return None
+
+
+def _cmd_history(org_name=None):
+    """Affiche l'historique des assessments."""
+    from nis2_analyzer.core.database import list_assessments
+    rows = list_assessments(org_name=org_name)
+    if not rows:
+        print(f"\n  {DIM}Aucun assessment enregistre.{RESET}")
+        print(f"  {DIM}Lancez une evaluation pour commencer a construire votre historique.{RESET}\n")
+        return
+    print(f"\n  {BOLD}Historique des assessments{RESET}")
+    if org_name:
+        print(f"  {DIM}Filtre : \"{org_name}\"{RESET}")
+    print(f"  {'─' * 62}")
+    print(f"  {'ID':<5} {'Organisation':<22} {'Date':<12} {'Score':>6} {'Grade':>6} {'Gaps':>5}")
+    print(f"  {'─' * 62}")
+    for r in rows:
+        date = r["assessed_at"][:10]
+        print(f"  {r['id']:<5} {r['org_name'][:21]:<22} {date:<12} {r['score']:>5.1f}% {r['grade']:>6} {r['total_gaps']:>5}")
+    print(f"  {'─' * 62}")
+    print(f"  {DIM}Comparez deux assessments : python -m nis2_analyzer --compare ID_A ID_B{RESET}\n")
+
+
+def _cmd_compare(id_a, id_b):
+    """Compare deux assessments et affiche le delta."""
+    from nis2_analyzer.core.database import compare_assessments
+    try:
+        delta = compare_assessments(id_a, id_b)
+    except ValueError as e:
+        print(f"\n  {RED}Erreur : {e}{RESET}\n")
+        return
+
+    score_delta = delta["score_delta"]
+    gaps_delta = delta["gaps_delta"]
+    arrow_score = f"{GREEN}▲ +{score_delta}%{RESET}" if score_delta > 0 else (f"{RED}▼ {score_delta}%{RESET}" if score_delta < 0 else f"{DIM}= stable{RESET}")
+    arrow_gaps = f"{GREEN}▼ {gaps_delta}{RESET}" if gaps_delta < 0 else (f"{RED}▲ +{gaps_delta}{RESET}" if gaps_delta > 0 else f"{DIM}= stable{RESET}")
+
+    print(f"\n  {BOLD}Comparaison d'assessments — {delta['org_name']}{RESET}")
+    print(f"  {DIM}#{id_a} ({delta['date_before'][:10]}) → #{id_b} ({delta['date_after'][:10]}){RESET}")
+    print(f"  {'─' * 50}")
+    print(f"  Score global : {delta['score_before']}% → {delta['score_after']}%  {arrow_score}")
+    print(f"  Grade        : {delta['grade_before']} → {delta['grade_after']}")
+    print(f"  Gaps ouverts : {delta['gaps_before']} → {delta['gaps_after']}  {arrow_gaps}")
+    print(f"  {'─' * 50}")
+    print(f"  {BOLD}Evolution par domaine :{RESET}")
+    for d in delta["domains"]:
+        if d["delta"] is None:
+            continue
+        if d["delta"] > 0:
+            indicator = f"{GREEN}▲ +{d['delta']}%{RESET}"
+        elif d["delta"] < 0:
+            indicator = f"{RED}▼ {d['delta']}%{RESET}"
+        else:
+            indicator = f"{DIM}={RESET}"
+        print(f"    {d['domain'][:38]:<38} {indicator}")
+    print()
+
+
 def _parse_profile(args):
     """Construit le profil d'organisation a partir des arguments CLI."""
     from nis2_analyzer.core.financial import OrganizationProfile, OrgSize, Sector
@@ -347,8 +424,23 @@ Exemples :
                         help="Chiffre d'affaires annuel en euros")
     parser.add_argument("--org-name", default=None,
                         help="Nom de l'organisation")
+    parser.add_argument("--history", action="store_true",
+                        help="Affiche l'historique des assessments enregistres")
+    parser.add_argument("--compare", nargs=2, type=int, metavar=("ID_A", "ID_B"),
+                        help="Compare deux assessments par leur ID (ex: --compare 1 3)")
+    parser.add_argument("--no-save", action="store_true",
+                        help="Ne pas sauvegarder cet assessment dans l'historique")
 
     args = parser.parse_args()
+
+    # ── Commandes d'historique (pas d'assessment) ──
+    if args.history:
+        _cmd_history(org_name=args.org_name)
+        return
+
+    if args.compare:
+        _cmd_compare(args.compare[0], args.compare[1])
+        return
 
     profile = None
     if args.size or args.sector or args.revenue or args.report:
@@ -361,6 +453,7 @@ Exemples :
                 with_financial=(profile is not None),
                 profile=profile,
                 report_path=args.report,
+                no_save=args.no_save,
             )
 
         elif args.bridge:
@@ -368,6 +461,7 @@ Exemples :
                 bridge_path=args.bridge,
                 profile=profile,
                 report_path=args.report,
+                no_save=args.no_save,
             )
 
         else:
@@ -381,6 +475,8 @@ Exemples :
 
             if args.report:
                 _generate_report(domains, org_name, financial_dict, None, args.report)
+
+            _save_assessment(domains, org_name, skip=args.no_save)
 
             export_path = args.output
             if export_path is None:
