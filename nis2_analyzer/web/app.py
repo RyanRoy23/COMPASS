@@ -30,6 +30,9 @@ from nis2_analyzer.core.database import (
 from nis2_analyzer.core.entity_qualification import (
     qualify_entity, EntityProfile, ALL_SECTORS
 )
+from nis2_analyzer.core.governance import (
+    assess_governance, get_questions_schema
+)
 
 app = FastAPI(
     title="COMPASS",
@@ -54,6 +57,16 @@ class AssessmentRequest(BaseModel):
     responses: dict[str, int] = Field(
         ...,
         description="Mapping requirement_id → maturity (0-3)",
+    )
+
+
+class GovernanceRequest(BaseModel):
+    responses: dict[str, int] = Field(
+        ..., description="Mapping question_id (G01-G08) → maturity (0-3)"
+    )
+    entity_category: str = Field(
+        "importante",
+        description="'essentielle' | 'importante' | 'hors_champ'"
     )
 
 
@@ -96,6 +109,30 @@ def get_framework():
             for d in domains
         ]
     }
+
+
+@app.get("/api/governance/questions")
+def get_governance_questions():
+    """Retourne les 8 questions de gouvernance Art. 20."""
+    return {"questions": get_questions_schema()}
+
+
+@app.post("/api/governance")
+def api_governance(body: GovernanceRequest):
+    """
+    Évalue la gouvernance Art. 20 et retourne score, grade, gaps et recommandations.
+    """
+    allowed_categories = ("essentielle", "importante", "hors_champ")
+    if body.entity_category not in allowed_categories:
+        raise HTTPException(
+            status_code=422,
+            detail=f"entity_category invalide. Valeurs : {allowed_categories}"
+        )
+    try:
+        result = assess_governance(body.responses, entity_category=body.entity_category)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    return result.to_dict()
 
 
 @app.post("/api/qualify")

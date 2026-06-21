@@ -144,6 +144,39 @@ class TestHistoryEndpoint:
         assert client.get("/api/history/999999").status_code == 404
 
 
+class TestGovernanceEndpoint:
+    def test_questions_endpoint(self):
+        res = client.get("/api/governance/questions")
+        assert res.status_code == 200
+        data = res.json()
+        assert len(data["questions"]) == 8
+
+    def test_full_governance_score(self):
+        responses = {f"G0{i}" if i < 10 else f"G{i}": 3
+                     for i in range(1, 9)}
+        res = client.post("/api/governance", json={"responses": responses, "entity_category": "essentielle"})
+        assert res.status_code == 200
+        assert res.json()["grade"] == "A"
+
+    def test_empty_responses_zero_score(self):
+        res = client.post("/api/governance", json={"responses": {}})
+        assert res.status_code == 200
+        assert res.json()["overall_score"] == 0.0
+
+    def test_invalid_maturity_422(self):
+        res = client.post("/api/governance", json={"responses": {"G01": 5}})
+        assert res.status_code == 422
+
+    def test_invalid_category_422(self):
+        res = client.post("/api/governance", json={"responses": {}, "entity_category": "inconnu"})
+        assert res.status_code == 422
+
+    def test_liability_risk_present(self):
+        res = client.post("/api/governance", json={"responses": {"G01": 0, "G02": 0, "G05": 0}, "entity_category": "essentielle"})
+        assert "liability_risk" in res.json()
+        assert res.json()["liability_risk"] == "ÉLEVÉ"
+
+
 class TestQualifyEndpoint:
     def _qualify(self, **kwargs):
         defaults = {"sector": "energie", "employees": 300, "annual_revenue_eur": 60_000_000, "org_name": "TestOrg"}
