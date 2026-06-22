@@ -88,7 +88,7 @@ def run_demo_mode(with_bridge=False, with_financial=False, profile=None, report_
         _generate_report(domains, org_name, financial_dict, bridge_result, report_path)
 
     _save_assessment(domains, org_name, skip=no_save)
-    return domains, org_name
+    return domains, org_name, financial_dict
 
 
 def run_bridge_interactive(bridge_path, profile=None, report_path=None, no_save=False):
@@ -385,6 +385,138 @@ def _parse_profile(args):
     )
 
 
+def _generate_evidence_package(domains, org_name, evidence_path):
+    """Génère le dossier de preuves ZIP."""
+    from nis2_analyzer.core.scoring import ScoringEngine
+    from nis2_analyzer.reporting.evidence_package import build_evidence_package
+
+    engine = ScoringEngine()
+    analysis = engine.full_analysis(domains, org_name)
+    path = build_evidence_package(analysis, evidence_path, domains_obj=domains)
+    print(f"  {GREEN}{BOLD}Dossier de preuves genere : {path}{RESET}")
+    print(f"  {DIM}Contenu : manifest.json, assessment.json, gaps_action_plan.csv, evidence_summary.html{RESET}")
+    print()
+
+
+def _cmd_governance():
+    """Questionnaire interactif de gouvernance Art. 20."""
+    from nis2_analyzer.core.governance import GOVERNANCE_QUESTIONS, assess_governance
+
+    print()
+    print(f"  {BOLD}{CYAN}Gouvernance NIS 2 — Article 20{RESET}")
+    print(f"  {DIM}Évaluation de la responsabilité de l'organe de direction{RESET}")
+    print()
+    print(f"  {DIM}Niveaux : 0 = Absent  1 = Informel  2 = Formalisé  3 = Piloté{RESET}")
+    print()
+
+    responses: dict[str, int] = {}
+    for q in GOVERNANCE_QUESTIONS:
+        print(f"  {CYAN}{q.id}{RESET} [{q.pillar}] — {WHITE}{q.title}{RESET}")
+        print(f"  {DIM}{q.question}{RESET}")
+        while True:
+            try:
+                answer = input(f"    {WHITE}Maturité (0-3) >{RESET} ").strip()
+            except (EOFError, KeyboardInterrupt):
+                print()
+                return
+            if answer in ('0', '1', '2', '3'):
+                responses[q.id] = int(answer)
+                break
+            print(f"    {RED}Entrez 0, 1, 2 ou 3.{RESET}")
+        print()
+
+    result = assess_governance(responses)
+    d = result.to_dict()
+
+    gc = {
+        "A": GREEN, "B": BLUE, "C": YELLOW, "D": RED, "F": RED
+    }.get(result.grade, WHITE)
+
+    risk_color = {
+        "ÉLEVÉ": RED, "MODÉRÉ": YELLOW, "FAIBLE": GREEN
+    }.get(result.liability_risk, WHITE)
+
+    print(f"  {CYAN}{'═' * 56}{RESET}")
+    print(f"  {WHITE}Score gouvernance :{RESET}  {gc}{BOLD}{result.overall_score}%{RESET}  |  {WHITE}Grade :{RESET}  {gc}{BOLD}{result.grade}{RESET}")
+    print(f"  {WHITE}Gaps :{RESET} {YELLOW}{result.total_gaps}{RESET}  |  {WHITE}Critiques :{RESET} {RED}{result.critical_gaps}{RESET}")
+    print(f"  {WHITE}Risque responsabilité dirigeants :{RESET} {risk_color}{BOLD}{result.liability_risk}{RESET}")
+    print(f"  {CYAN}{'═' * 56}{RESET}")
+    print()
+
+    if d["recommendations"]:
+        print(f"  {WHITE}{BOLD}Plan d'action :{RESET}")
+        for rec in d["recommendations"]:
+            pc = RED if rec["priority"] == "CRITIQUE" else YELLOW if rec["priority"] == "ÉLEVÉE" else WHITE
+            print(f"    {pc}[{rec['priority']}]{RESET} {rec['action']}")
+        print()
+
+
+def _cmd_qualify(args):
+    """Qualification NIS 2 Art. 3 — affiche la categorie et les obligations."""
+    from nis2_analyzer.core.entity_qualification import qualify_entity, EntityProfile, EntityCategory, ALL_SECTORS
+
+    sector = getattr(args, "sector", "autre") or "autre"
+    employees = getattr(args, "employees", 0) or 0
+    revenue = getattr(args, "revenue", 0.0) or 0.0
+    org_name = getattr(args, "org_name", None) or "Organisation"
+
+    profile = EntityProfile(
+        sector=sector,
+        employees=employees,
+        annual_revenue_eur=revenue,
+        is_critical_infrastructure=getattr(args, "critical_infra", False),
+        provides_essential_digital_service=getattr(args, "essential_digital", False),
+        org_name=org_name,
+    )
+
+    result = qualify_entity(profile)
+    cat = result.category
+
+    color_map = {
+        EntityCategory.ESSENTIAL:   RED,
+        EntityCategory.IMPORTANT:   YELLOW,
+        EntityCategory.OUT_OF_SCOPE: DIM,
+    }
+    cat_color = color_map.get(cat, WHITE)
+
+    sector_label = ALL_SECTORS.get(sector, sector)
+    print()
+    print(f"  {BOLD}{CYAN}Qualification NIS 2 — Article 3{RESET}")
+    print(f"  {DIM}Organisation : {org_name}{RESET}")
+    print(f"  {DIM}Secteur      : {sector_label} (Annexe {result.sector_annex}){RESET}")
+    print(f"  {DIM}Taille       : {employees} ETP | {revenue/1e6:.1f}M€ CA{RESET}")
+    print()
+    print(f"  Categorie : {cat_color}{BOLD}{result.category.label.upper()}{RESET}")
+    print()
+
+    print(f"  {WHITE}{BOLD}Motifs de qualification :{RESET}")
+    for r in result.reasons:
+        print(f"    {DIM}•{RESET} {r}")
+    print()
+
+    print(f"  {WHITE}{BOLD}Obligations principales :{RESET}")
+    o = result.obligations
+    print(f"    Supervision           : {o['supervision']}")
+    print(f"    Early warning         : {o['notification_early_warning']}")
+    print(f"    Rapport complet       : {o['notification_full_report']}")
+    print(f"    Rapport final         : {o['notification_final_report']}")
+    print(f"    Sanction max (entite) : {cat_color}{o['sanction_max_persons_morales']}{RESET}")
+    print(f"    Audit obligatoire     : {'Oui' if o['audit_obligatoire'] else 'Non'}")
+    print()
+
+    if result.recommendations:
+        print(f"  {WHITE}{BOLD}Recommandations :{RESET}")
+        for rec in result.recommendations:
+            print(f"    {GREEN}→{RESET} {rec}")
+        print()
+
+    if result.caveats:
+        print(f"  {WHITE}{BOLD}Points d'attention :{RESET}")
+        for c in result.caveats:
+            print(f"    {YELLOW}⚠{RESET}  {c}")
+        print()
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="COMPASS — Compliance Posture Assessment System",
@@ -430,8 +562,30 @@ Exemples :
                         help="Compare deux assessments par leur ID (ex: --compare 1 3)")
     parser.add_argument("--no-save", action="store_true",
                         help="Ne pas sauvegarder cet assessment dans l'historique")
+    parser.add_argument("--qualify", action="store_true",
+                        help="Qualification NIS 2 Art. 3 : determine si l'entite est Essentielle ou Importante")
+    parser.add_argument("--governance", action="store_true",
+                        help="Questionnaire de gouvernance NIS 2 Art. 20 (organe de direction)")
+    parser.add_argument("--evidence", "-e", default=None,
+                        help="Chemin du dossier de preuves ZIP de sortie (ex: reports/preuves.zip)")
+    parser.add_argument("--employees", type=int, default=0,
+                        help="Nombre de salaries (pour --qualify)")
+    parser.add_argument("--critical-infra", action="store_true",
+                        help="Entite identifiee comme infrastructure critique nationale (pour --qualify)")
+    parser.add_argument("--essential-digital", action="store_true",
+                        help="Fournit un service numerique essentiel DNS/IXP/cloud/CDN/MSP (pour --qualify)")
 
     args = parser.parse_args()
+
+    # ── Qualification NIS 2 Art. 3 ──
+    if args.qualify:
+        _cmd_qualify(args)
+        return
+
+    # ── Gouvernance Art. 20 ──
+    if args.governance:
+        _cmd_governance()
+        return
 
     # ── Commandes d'historique (pas d'assessment) ──
     if args.history:
@@ -447,8 +601,10 @@ Exemples :
         profile = _parse_profile(args)
 
     try:
+        domains, org_name, financial_dict = None, None, None
+
         if args.demo:
-            run_demo_mode(
+            domains, org_name, financial_dict = run_demo_mode(
                 with_bridge=args.bridge,
                 with_financial=(profile is not None),
                 profile=profile,
@@ -469,7 +625,6 @@ Exemples :
 
             domains, org_name = run_assessment()
 
-            financial_dict = None
             if profile:
                 financial_dict = _run_financial(domains, profile)
 
@@ -489,6 +644,10 @@ Exemples :
             print(f"  {DIM}Merci d'avoir utilise COMPASS.{RESET}")
             print(f"  {DIM}github.com/RyanRoy23{RESET}")
             print()
+
+        # ── Dossier de preuves (commun à tous les modes) ──
+        if args.evidence and domains and org_name:
+            _generate_evidence_package(domains, org_name, args.evidence)
 
     except KeyboardInterrupt:
         print(f"\n\n  {YELLOW}Evaluation annulee.{RESET}\n")
