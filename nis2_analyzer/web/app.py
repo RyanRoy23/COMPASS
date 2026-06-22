@@ -17,7 +17,9 @@ Endpoints :
 
 import html
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
+from typing import Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -35,6 +37,11 @@ from nis2_analyzer.core.governance import (
     assess_governance, get_questions_schema
 )
 from nis2_analyzer.reporting.evidence_package import build_evidence_package
+from nis2_analyzer.core.incident_notification import (
+    classify_incident, compute_deadlines,
+    assess_notification_maturity, get_notification_questions_schema,
+    SignificanceCriteria,
+)
 
 app = FastAPI(
     title="COMPASS",
@@ -59,6 +66,30 @@ class AssessmentRequest(BaseModel):
     responses: dict[str, int] = Field(
         ...,
         description="Mapping requirement_id → maturity (0-3)",
+    )
+
+
+class NotificationMaturityRequest(BaseModel):
+    responses: dict[str, int] = Field(..., description="Mapping question_id (N01-N06) → maturity (0-3)")
+
+
+class IncidentClassifyRequest(BaseModel):
+    services_unavailable: Optional[bool] = None
+    users_affected_count: Optional[int] = Field(None, ge=0)
+    duration_hours: Optional[float] = Field(None, ge=0)
+    geographic_scope: Optional[str] = Field(None, description="'local' | 'national' | 'cross_border'")
+    financial_loss_eur: Optional[float] = Field(None, ge=0)
+    data_breach: Optional[bool] = None
+    critical_system_compromised: Optional[bool] = None
+    supply_chain_impact: Optional[bool] = None
+    third_party_impact: Optional[bool] = None
+
+
+class IncidentDeadlinesRequest(BaseModel):
+    detection_iso: str = Field(..., description="Datetime UTC de détection (ISO 8601)")
+    completed: dict[str, str] = Field(
+        default_factory=dict,
+        description="Étapes complétées : {'early_warning': '<iso_datetime>', ...}"
     )
 
 
@@ -111,6 +142,70 @@ def get_framework():
             for d in domains
         ]
     }
+
+
+@app.get("/api/incident/questions")
+def get_incident_questions():
+    """Retourne les 6 questions de maturité du processus de notification Art. 23."""
+    return {"questions": get_notification_questions_schema()}
+
+
+@app.post("/api/incident/maturity")
+def api_incident_maturity(body: NotificationMaturityRequest):
+    """Évalue la maturité du processus de notification Art. 23."""
+    try:
+        result = assess_notification_maturity(body.responses)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    return result.to_dict()
+
+
+@app.post("/api/incident/classify")
+def api_incident_classify(body: IncidentClassifyRequest):
+    """Classifie la significativité d'un incident selon NIS 2 Art. 23.3."""
+    criteria = SignificanceCriteria(
+        services_unavailable=body.services_unavailable,
+        users_affected_count=body.users_affected_count,
+        duration_hours=body.duration_hours,
+        geographic_scope=body.geographic_scope,
+        financial_loss_eur=body.financial_loss_eur,
+        data_breach=body.data_breach,
+        critical_system_compromised=body.critical_system_compromised,
+        supply_chain_impact=body.supply_chain_impact,
+        third_party_impact=body.third_party_impact,
+    )
+    significance, reasons = classify_incident(criteria)
+    return {
+        "significance": significance.value,
+        "significance_label": significance.label,
+        "significance_color": significance.color,
+        "reasons": reasons,
+        "notification_required": significance.value == "significant",
+    }
+
+
+@app.post("/api/incident/deadlines")
+def api_incident_deadlines(body: IncidentDeadlinesRequest):
+    """Calcule les deadlines NIS 2 Art. 23 à partir de la détection."""
+    try:
+        detection_dt = datetime.fromisoformat(body.detection_iso)
+        if detection_dt.tzinfo is None:
+            detection_dt = detection_dt.replace(tzinfo=timezone.utc)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Format datetime invalide. Utilisez ISO 8601 (ex: 2026-06-22T10:00:00Z).")
+
+    completed_parsed: dict[str, datetime] = {}
+    for name, iso in body.completed.items():
+        try:
+            dt = datetime.fromisoformat(iso)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            completed_parsed[name] = dt
+        except ValueError:
+            raise HTTPException(status_code=422, detail=f"Format datetime invalide pour '{name}'.")
+
+    deadlines = compute_deadlines(detection_dt, completed=completed_parsed)
+    return {"detection_iso": detection_dt.isoformat(), "deadlines": [d.to_dict() for d in deadlines]}
 
 
 @app.get("/api/governance/questions")

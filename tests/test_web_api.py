@@ -174,6 +174,51 @@ class TestEvidencePackageEndpoint:
         assert res.status_code == 422
 
 
+class TestIncidentEndpoints:
+    def test_questions_returns_6(self):
+        res = client.get("/api/incident/questions")
+        assert res.status_code == 200
+        assert len(res.json()["questions"]) == 6
+
+    def test_maturity_all_managed(self):
+        responses = {f"N0{i}": 3 for i in range(1, 7)}
+        res = client.post("/api/incident/maturity", json={"responses": responses})
+        assert res.status_code == 200
+        assert res.json()["grade"] == "A"
+
+    def test_maturity_invalid_value_422(self):
+        res = client.post("/api/incident/maturity", json={"responses": {"N01": 9}})
+        assert res.status_code == 422
+
+    def test_classify_significant(self):
+        res = client.post("/api/incident/classify", json={"critical_system_compromised": True})
+        assert res.status_code == 200
+        assert res.json()["significance"] == "significant"
+        assert res.json()["notification_required"] is True
+
+    def test_classify_not_significant(self):
+        res = client.post("/api/incident/classify", json={})
+        assert res.status_code == 200
+        assert res.json()["significance"] == "unknown"
+
+    def test_deadlines_returns_3(self):
+        res = client.post("/api/incident/deadlines", json={"detection_iso": "2026-06-22T10:00:00Z"})
+        assert res.status_code == 200
+        assert len(res.json()["deadlines"]) == 3
+
+    def test_deadlines_invalid_datetime_422(self):
+        res = client.post("/api/incident/deadlines", json={"detection_iso": "not-a-date"})
+        assert res.status_code == 422
+
+    def test_deadlines_overdue_early_warning(self):
+        from datetime import datetime, timedelta, timezone
+        past = (datetime.now(timezone.utc) - timedelta(hours=25)).isoformat()
+        res = client.post("/api/incident/deadlines", json={"detection_iso": past})
+        deadlines = res.json()["deadlines"]
+        ew = next(d for d in deadlines if d["name"] == "early_warning")
+        assert ew["status"] == "overdue"
+
+
 class TestGovernanceEndpoint:
     def test_questions_endpoint(self):
         res = client.get("/api/governance/questions")
