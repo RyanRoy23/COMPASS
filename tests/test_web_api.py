@@ -174,6 +174,46 @@ class TestEvidencePackageEndpoint:
         assert res.status_code == 422
 
 
+class TestSupplyChainEndpoints:
+    def test_sc_questions_returns_7(self):
+        res = client.get("/api/supply-chain/questions")
+        assert res.status_code == 200
+        assert len(res.json()["questions"]) == 7
+
+    def test_sc_maturity_all_managed(self):
+        responses = {f"SC0{i}": 3 for i in range(1, 8)}
+        res = client.post("/api/supply-chain/maturity", json={"responses": responses})
+        assert res.status_code == 200
+        assert res.json()["grade"] == "A"
+
+    def test_sc_maturity_invalid_422(self):
+        res = client.post("/api/supply-chain/maturity", json={"responses": {"SC01": 9}})
+        assert res.status_code == 422
+
+    def test_assess_supplier_critical(self):
+        payload = {"name": "CloudProv", "category": "MSP", "access_level": 3, "data_sensitivity": 3}
+        res = client.post("/api/supply-chain/assess-supplier", json=payload)
+        assert res.status_code == 200
+        assert res.json()["criticality"] == "critique"
+
+    def test_assess_supplier_standard(self):
+        payload = {"name": "Caterer", "category": "Service", "access_level": 0, "data_sensitivity": 0}
+        res = client.post("/api/supply-chain/assess-supplier", json=payload)
+        assert res.status_code == 200
+        assert res.json()["criticality"] == "standard"
+
+    def test_assess_supplier_xss(self):
+        payload = {"name": "<script>xss</script>", "category": "SaaS", "access_level": 0, "data_sensitivity": 0}
+        res = client.post("/api/supply-chain/assess-supplier", json=payload)
+        assert res.status_code == 200
+        assert "<script>" not in res.json()["name"]
+
+    def test_assess_supplier_invalid_geo_422(self):
+        payload = {"name": "X", "category": "Y", "access_level": 0, "data_sensitivity": 0, "geographic_risk": "moon"}
+        res = client.post("/api/supply-chain/assess-supplier", json=payload)
+        assert res.status_code == 422
+
+
 class TestIncidentEndpoints:
     def test_questions_returns_6(self):
         res = client.get("/api/incident/questions")

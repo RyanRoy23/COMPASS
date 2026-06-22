@@ -42,6 +42,11 @@ from nis2_analyzer.core.incident_notification import (
     assess_notification_maturity, get_notification_questions_schema,
     SignificanceCriteria,
 )
+from nis2_analyzer.core.supply_chain import (
+    assess_supplier, assess_supplier_portfolio,
+    assess_supply_chain_maturity, get_supply_chain_questions_schema,
+    SupplierProfile, AccessLevel, DataSensitivity, SupplierCriticality,
+)
 
 app = FastAPI(
     title="COMPASS",
@@ -67,6 +72,26 @@ class AssessmentRequest(BaseModel):
         ...,
         description="Mapping requirement_id → maturity (0-3)",
     )
+
+
+class SupplierAssessRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200)
+    category: str = Field("Autre", max_length=100)
+    access_level: int = Field(..., ge=0, le=3, description="0=Aucun 1=Lecture 2=Opérationnel 3=Privilégié")
+    data_sensitivity: int = Field(..., ge=0, le=3, description="0=Aucune 1=Interne 2=Confidentielle 3=Critique")
+    is_single_source: bool = False
+    has_nis2_compliance: Optional[bool] = None
+    has_iso27001: Optional[bool] = None
+    has_soc2: Optional[bool] = None
+    pentest_recent: Optional[bool] = None
+    incident_history: bool = False
+    contract_has_security_clauses: bool = False
+    subcontracts_to_others: Optional[bool] = None
+    geographic_risk: str = Field("eu", description="'eu' | 'non_eu_trusted' | 'high_risk'")
+
+
+class SupplyChainMaturityRequest(BaseModel):
+    responses: dict[str, int] = Field(..., description="Mapping question_id (SC01-SC07) → maturity (0-3)")
 
 
 class NotificationMaturityRequest(BaseModel):
@@ -142,6 +167,46 @@ def get_framework():
             for d in domains
         ]
     }
+
+
+@app.get("/api/supply-chain/questions")
+def get_sc_questions():
+    """Retourne les 7 questions de maturité supply chain Art. 21(d)."""
+    return {"questions": get_supply_chain_questions_schema()}
+
+
+@app.post("/api/supply-chain/maturity")
+def api_sc_maturity(body: SupplyChainMaturityRequest):
+    """Évalue la maturité de la gouvernance supply chain Art. 21(d)."""
+    try:
+        result = assess_supply_chain_maturity(body.responses)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    return result.to_dict()
+
+
+@app.post("/api/supply-chain/assess-supplier")
+def api_assess_supplier(body: SupplierAssessRequest):
+    """Évalue le risque d'un fournisseur individuel et retourne sa criticité NIS 2."""
+    geo_allowed = ("eu", "non_eu_trusted", "high_risk")
+    if body.geographic_risk not in geo_allowed:
+        raise HTTPException(status_code=422, detail=f"geographic_risk invalide. Valeurs : {geo_allowed}")
+    profile = SupplierProfile(
+        name=html.escape(body.name.strip()),
+        category=html.escape(body.category.strip()),
+        access_level=AccessLevel(body.access_level),
+        data_sensitivity=DataSensitivity(body.data_sensitivity),
+        is_single_source=body.is_single_source,
+        has_nis2_compliance=body.has_nis2_compliance,
+        has_iso27001=body.has_iso27001,
+        has_soc2=body.has_soc2,
+        pentest_recent=body.pentest_recent,
+        incident_history=body.incident_history,
+        contract_has_security_clauses=body.contract_has_security_clauses,
+        subcontracts_to_others=body.subcontracts_to_others,
+        geographic_risk=body.geographic_risk,
+    )
+    return assess_supplier(profile).to_dict()
 
 
 @app.get("/api/incident/questions")
