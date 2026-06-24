@@ -98,18 +98,84 @@
     .empty-state p { margin-bottom: 1rem; }
 
     .error-msg { background: #3B1212; border: 1px solid var(--red); color: #FCA5A5; padding: 0.7rem 1rem; border-radius: var(--radius); font-size: 0.85rem; margin-top: 1rem; }
+
+    /* ── Monte Carlo ── */
+    .mc-banner { background: linear-gradient(135deg, #1E2A45 0%, #111827 100%); border: 1px solid #2D3F60; border-radius: var(--radius); padding: 1.2rem 1.5rem; margin-bottom: 1.5rem; }
+    .mc-banner h3 { font-size: 1rem; font-weight: 600; color: var(--accent-light); margin-bottom: 0.3rem; }
+    .mc-banner p { font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
+
+    .mc-config { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+    .mc-field label { display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 0.3rem; }
+    .mc-field select, .mc-field input[type=number] {
+      width: 100%; background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); padding: 0.5rem 0.7rem; border-radius: var(--radius);
+      font-size: 0.85rem; outline: none;
+    }
+    .mc-field select:focus, .mc-field input[type=number]:focus { border-color: var(--accent); }
+
+    .mc-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .mc-kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; text-align: center; }
+    .mc-kpi .kpi-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.4rem; }
+    .mc-kpi .kpi-value { font-size: 1.6rem; font-weight: 700; }
+    .mc-kpi .kpi-sub { font-size: 0.75rem; color: var(--muted); margin-top: 0.2rem; }
+    .kpi-p10 .kpi-value { color: var(--green); }
+    .kpi-p50 .kpi-value { color: var(--yellow); }
+    .kpi-p90 .kpi-value { color: var(--red); }
+
+    .mc-ic { background: #1A1F30; border: 1px solid #2D3F60; border-radius: var(--radius); padding: 0.8rem 1.2rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+    .mc-ic .ic-label { font-size: 0.8rem; color: var(--muted); }
+    .mc-ic .ic-range { font-size: 0.95rem; font-weight: 600; color: var(--accent-light); }
+    .mc-ic .ic-note { font-size: 0.75rem; color: var(--muted); font-style: italic; }
+
+    .mc-histogram-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.2rem; margin-bottom: 1.5rem; }
+    .mc-histogram-wrap h4 { font-size: 0.85rem; font-weight: 600; color: var(--accent-light); margin-bottom: 1rem; }
+    .histogram-chart { display: flex; align-items: flex-end; gap: 3px; height: 120px; }
+    .histo-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; position: relative; }
+    .histo-bar { width: 100%; border-radius: 3px 3px 0 0; transition: background .2s; cursor: default; }
+    .histo-bar.p50-zone { background: #F59E0B88; }
+    .histo-bar.tail-right { background: #EF444466; }
+    .histo-bar.tail-left { background: #10B98166; }
+    .histo-bar.normal { background: #3B82F666; }
+    .histo-bar:hover { filter: brightness(1.4); }
+    .histogram-labels { display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--muted); margin-top: 0.4rem; }
+
+    .mc-ale-compare { background: #0F1620; border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.2rem; margin-bottom: 1.5rem; }
+    .mc-ale-compare h4 { font-size: 0.85rem; font-weight: 600; color: var(--muted); margin-bottom: 0.8rem; }
+    .ale-row { display: flex; justify-content: space-between; align-items: center; padding: 0.3rem 0; font-size: 0.82rem; border-bottom: 1px solid var(--border); }
+    .ale-row:last-child { border-bottom: none; }
+    .ale-row .ale-name { color: var(--muted); }
+    .ale-row .ale-val { font-weight: 600; }
+    .ale-mc { color: var(--yellow); }
+    .ale-classic { color: var(--muted); font-size: 0.78rem; }
+
+    .mc-top-risks { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1.5rem; }
+    .mc-top-risks h4 { font-size: 0.85rem; font-weight: 600; color: var(--accent-light); padding: 0.8rem 1rem; background: #161D2E; }
+    .risk-row { display: flex; align-items: center; gap: 1rem; padding: 0.6rem 1rem; border-top: 1px solid var(--border); font-size: 0.82rem; }
+    .risk-row .risk-title { flex: 1; }
+    .risk-row .risk-incident { font-size: 0.72rem; color: var(--muted); }
+    .risk-row .risk-p50 { font-weight: 600; color: var(--yellow); white-space: nowrap; }
+    .risk-row .risk-p90 { font-size: 0.75rem; color: var(--muted); white-space: nowrap; }
+
+    .mc-fine-banner { background: #2D1515; border: 1px solid #7F1D1D; border-radius: var(--radius); padding: 0.8rem 1.2rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem; }
+    .mc-fine-banner .fine-icon { font-size: 1.4rem; }
+    .mc-fine-banner .fine-text { font-size: 0.82rem; color: #FCA5A5; }
+    .mc-fine-banner .fine-amount { font-weight: 700; font-size: 1rem; }
+
+    .mc-empty { text-align: center; padding: 3rem; color: var(--muted); }
+    .mc-spinner { text-align: center; padding: 2rem; color: var(--muted); }
   </style>
 </head>
 <body>
 
 <header>
   <h1>COMPASS</h1>
-  <span>Article 21</span>
+  <span>NIS 2 — Art. 3, 20, 21, 23</span>
 </header>
 
 <nav>
   <button class="active" onclick="showPage('assessment')">Évaluation</button>
   <button onclick="showPage('results')">Résultats</button>
+  <button onclick="showPage('monte-carlo')">Risque financier</button>
   <button onclick="showPage('history'); loadHistory()">Historique</button>
 </nav>
 
@@ -134,6 +200,58 @@
   <!-- ── PAGE : RÉSULTATS ── -->
   <div id="page-results" class="page">
     <div id="results-container"><p style="color:var(--muted)">Lancez une évaluation pour voir les résultats.</p></div>
+  </div>
+
+  <!-- ── PAGE : RISQUE FINANCIER (MONTE CARLO) ── -->
+  <div id="page-monte-carlo" class="page">
+    <div class="mc-banner">
+      <h3>Simulation Monte Carlo — Quantification du risque financier</h3>
+      <p>
+        Au lieu d'un chiffre unique (ALE classique), cette simulation lance <strong>10 000 scénarios</strong>
+        où probabilité et coût varient selon des distributions statistiques réelles.
+        Résultat : une fourchette honnête avec intervalles de confiance.
+        Lancez d'abord une évaluation pour alimenter la simulation.
+      </p>
+    </div>
+
+    <div class="mc-config">
+      <div class="mc-field">
+        <label>Taille de l'organisation</label>
+        <select id="mc-size">
+          <option value="pme">PME (50–250 salariés)</option>
+          <option value="eti" selected>ETI (250–5 000 salariés)</option>
+          <option value="grand">Grand groupe (5 000+ salariés)</option>
+        </select>
+      </div>
+      <div class="mc-field">
+        <label>Secteur d'activité</label>
+        <select id="mc-sector">
+          <option value="autre">Autre</option>
+          <option value="sante">Santé</option>
+          <option value="finance">Finance & Assurance</option>
+          <option value="energie">Énergie</option>
+          <option value="industrie">Industrie</option>
+          <option value="numerique">Numérique & Télécom</option>
+          <option value="transport">Transport</option>
+          <option value="administration">Administration publique</option>
+        </select>
+      </div>
+      <div class="mc-field">
+        <label>CA annuel (€, optionnel)</label>
+        <input type="number" id="mc-revenue" placeholder="ex: 50000000" min="0" step="1000000">
+      </div>
+    </div>
+
+    <div style="margin-bottom:1.5rem; display:flex; gap:1rem; align-items:center;">
+      <button class="btn" onclick="runMonteCarlo()">Lancer la simulation</button>
+      <span id="mc-status" style="font-size:0.82rem; color:var(--muted)"></span>
+    </div>
+
+    <div id="mc-results">
+      <div class="mc-empty">
+        <p>Lancez une évaluation puis cliquez sur <strong>Lancer la simulation</strong>.</p>
+      </div>
+    </div>
   </div>
 
   <!-- ── PAGE : HISTORIQUE ── -->
@@ -245,6 +363,9 @@
       }
 
       const data = await res.json();
+      // Mémorise les réponses pour Monte Carlo
+      _lastResponses = responses;
+      _lastOrgName = orgName;
       renderResults(data);
       // Switch vers résultats
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -315,6 +436,178 @@
         <div class="domain-results">${domainRows}</div>
       </section>
       ${gapItems ? `<section><h3>Principaux gaps à traiter</h3><div class="gaps-list">${gapItems}</div></section>` : ''}
+    `;
+  }
+
+  // ── Monte Carlo ───────────────────────────────────────────────────────────
+  let _lastResponses = null;
+  let _lastOrgName = null;
+
+  async function runMonteCarlo() {
+    if (!_lastResponses || Object.keys(_lastResponses).length === 0) {
+      document.getElementById('mc-results').innerHTML = `
+        <div class="error-msg">Lancez d'abord une évaluation depuis l'onglet "Évaluation".</div>`;
+      return;
+    }
+
+    const size = document.getElementById('mc-size').value;
+    const sector = document.getElementById('mc-sector').value;
+    const revenue = parseFloat(document.getElementById('mc-revenue').value) || 0;
+    const statusEl = document.getElementById('mc-status');
+
+    statusEl.textContent = 'Simulation en cours… (10 000 scénarios)';
+    document.getElementById('mc-results').innerHTML = `<div class="mc-spinner">Calcul en cours…</div>`;
+
+    try {
+      const res = await fetch('/api/monte-carlo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          org_name: _lastOrgName || 'Organisation',
+          responses: _lastResponses,
+          org_size: size,
+          sector: sector,
+          annual_revenue_eur: revenue,
+          n_simulations: 10000,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || 'Erreur serveur');
+      }
+      const data = await res.json();
+      renderMonteCarlo(data);
+      statusEl.textContent = `Simulation complète — ${data.n_simulations.toLocaleString()} scénarios`;
+    } catch (e) {
+      document.getElementById('mc-results').innerHTML = `<div class="error-msg">${esc(e.message)}</div>`;
+      statusEl.textContent = '';
+    }
+  }
+
+  function fmtEur(amount) {
+    if (!amount || amount === 0) return '0 €';
+    if (amount >= 1_000_000) return (amount / 1_000_000).toFixed(1) + ' M€';
+    if (amount >= 1_000) return Math.round(amount / 1_000) + ' K€';
+    return Math.round(amount) + ' €';
+  }
+
+  function renderMonteCarlo(data) {
+    const d = data.distribution;
+    const ic = data.confidence_interval_90;
+    const ale = data.ale_comparison;
+    const hist = data.histogram || [];
+    const scenarios = (data.scenarios || []).slice(0, 7);
+
+    // Histogramme
+    const maxFreq = Math.max(...hist.map(b => b.frequency), 0.001);
+    const p50Val = d.p50;
+    const p5Val = ic.lower;
+    const p95Val = ic.upper;
+
+    const histBars = hist.map((bin, i) => {
+      const heightPct = (bin.frequency / maxFreq * 100).toFixed(1);
+      let cls = 'normal';
+      const midBin = (bin.bin_min + bin.bin_max) / 2;
+      if (midBin < p5Val) cls = 'tail-left';
+      else if (midBin > p95Val) cls = 'tail-right';
+      else if (Math.abs(midBin - p50Val) / (p95Val - p5Val + 1) < 0.15) cls = 'p50-zone';
+      const tooltip = `${fmtEur(bin.bin_min)} — ${fmtEur(bin.bin_max)}\n${(bin.frequency * 100).toFixed(1)}% des scénarios`;
+      return `<div class="histo-bar-wrap"><div class="histo-bar ${cls}" style="height:${heightPct}%" title="${esc(tooltip)}"></div></div>`;
+    }).join('');
+
+    const histLabels = hist.length >= 2
+      ? `<div class="histogram-labels"><span>${fmtEur(hist[0].bin_min)}</span><span>Perte annuelle →</span><span>${fmtEur(hist[hist.length-1].bin_max)}</span></div>`
+      : '';
+
+    // Top risques
+    const riskRows = scenarios.map(s => `
+      <div class="risk-row">
+        <div>
+          <div class="risk-title">${esc(s.requirement_title)}</div>
+          <div class="risk-incident">${esc(s.incident_label)}</div>
+        </div>
+        <div class="risk-p50">${fmtEur(s.p50)}<br><span style="font-size:0.7rem;color:var(--muted)">médiane</span></div>
+        <div class="risk-p90">${fmtEur(s.p90)}<br><span style="font-size:0.7rem">P90</span></div>
+      </div>`).join('');
+
+    // Comparaison ALE
+    const aleDiff = d.p50 - ale.ale_mid;
+    const aleDiffLabel = aleDiff > 0
+      ? `+${fmtEur(aleDiff)} au-dessus de l'ALE classique`
+      : `${fmtEur(Math.abs(aleDiff))} en dessous de l'ALE classique`;
+
+    document.getElementById('mc-results').innerHTML = `
+      <div class="mc-kpis">
+        <div class="mc-kpi kpi-p10">
+          <div class="kpi-label">P10 — Scénario favorable</div>
+          <div class="kpi-value">${fmtEur(d.p10)}</div>
+          <div class="kpi-sub">10% des simulations sont en dessous</div>
+        </div>
+        <div class="mc-kpi kpi-p50">
+          <div class="kpi-label">P50 — Valeur médiane</div>
+          <div class="kpi-value">${fmtEur(d.p50)}</div>
+          <div class="kpi-sub">Référence de planification budgétaire</div>
+        </div>
+        <div class="mc-kpi kpi-p90">
+          <div class="kpi-label">P90 — Scénario défavorable</div>
+          <div class="kpi-value">${fmtEur(d.p90)}</div>
+          <div class="kpi-sub">10% des simulations dépassent ce seuil</div>
+        </div>
+      </div>
+
+      <div class="mc-ic">
+        <div>
+          <div class="ic-label">Intervalle de confiance à 90%</div>
+          <div class="ic-range">${fmtEur(ic.lower)} &nbsp;—&nbsp; ${fmtEur(ic.upper)}</div>
+        </div>
+        <div class="ic-note">Dans 90% des scénarios simulés, votre perte annuelle<br>se situera dans cette fourchette.</div>
+      </div>
+
+      <div class="mc-histogram-wrap">
+        <h4>Distribution des pertes annuelles simulées</h4>
+        <div class="histogram-chart">${histBars}</div>
+        ${histLabels}
+        <div style="display:flex;gap:1.5rem;margin-top:0.8rem;font-size:0.72rem;color:var(--muted);">
+          <span><span style="display:inline-block;width:10px;height:10px;background:#10B98166;border-radius:2px;margin-right:4px;"></span>Zone P5–P10</span>
+          <span><span style="display:inline-block;width:10px;height:10px;background:#3B82F666;border-radius:2px;margin-right:4px;"></span>Zone centrale</span>
+          <span><span style="display:inline-block;width:10px;height:10px;background:#F59E0B88;border-radius:2px;margin-right:4px;"></span>Zone médiane (P50)</span>
+          <span><span style="display:inline-block;width:10px;height:10px;background:#EF444466;border-radius:2px;margin-right:4px;"></span>Queue de distribution (P90+)</span>
+        </div>
+      </div>
+
+      <div class="mc-ale-compare">
+        <h4>Comparaison avec l'ALE classique</h4>
+        <div class="ale-row">
+          <span class="ale-name">Monte Carlo P50 (médiane)</span>
+          <span class="ale-val ale-mc">${fmtEur(d.p50)}</span>
+        </div>
+        <div class="ale-row">
+          <span class="ale-name">ALE classique (probabilité × coût fixe)</span>
+          <span class="ale-val ale-classic">${fmtEur(ale.ale_mid)}</span>
+        </div>
+        <div class="ale-row">
+          <span class="ale-name">Écart</span>
+          <span class="ale-val" style="color:var(--muted);font-size:0.8rem">${aleDiffLabel}</span>
+        </div>
+        <p style="font-size:0.72rem;color:var(--muted);margin-top:0.6rem;">
+          L'ALE classique suppose des valeurs fixes. Monte Carlo modélise l'incertitude réelle —
+          l'écart entre les deux mesure ce que vous ignorez sur votre risque.
+        </p>
+      </div>
+
+      <div class="mc-top-risks">
+        <h4>Top scénarios de risque par exposition médiane</h4>
+        ${riskRows || '<div style="padding:1rem;color:var(--muted);font-size:0.85rem">Aucun gap identifié.</div>'}
+      </div>
+
+      ${data.max_nis2_fine > 0 ? `
+      <div class="mc-fine-banner">
+        <div class="fine-icon">⚠</div>
+        <div class="fine-text">
+          Amende NIS 2 maximale applicable : <span class="fine-amount">${fmtEur(data.max_nis2_fine)}</span><br>
+          <span style="font-size:0.75rem">Art. 34 NIS 2 — selon votre catégorie d'entité et votre CA annuel</span>
+        </div>
+      </div>` : ''}
     `;
   }
 

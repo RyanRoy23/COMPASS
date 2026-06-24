@@ -47,6 +47,8 @@ from nis2_analyzer.core.supply_chain import (
     assess_supply_chain_maturity, get_supply_chain_questions_schema,
     SupplierProfile, AccessLevel, DataSensitivity, SupplierCriticality,
 )
+from nis2_analyzer.core.monte_carlo import MonteCarloEngine
+from nis2_analyzer.core.financial import OrganizationProfile, OrgSize, Sector
 
 app = FastAPI(
     title="COMPASS",
@@ -135,6 +137,15 @@ class QualifyRequest(BaseModel):
     annual_revenue_eur: float = Field(0.0, ge=0, description="CA annuel en euros")
     is_critical_infrastructure: bool = Field(False)
     provides_essential_digital_service: bool = Field(False)
+
+
+class MonteCarloRequest(BaseModel):
+    org_name: str = Field("Organisation", min_length=1, max_length=200)
+    responses: dict[str, int] = Field(..., description="Mapping requirement_id → maturity (0-3)")
+    org_size: str = Field("eti", description="'pme' | 'eti' | 'grand'")
+    sector: str = Field("autre", description="Secteur de l'organisation")
+    annual_revenue_eur: float = Field(0.0, ge=0)
+    n_simulations: int = Field(10_000, ge=1_000, le=50_000)
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -355,6 +366,50 @@ def run_assessment(body: AssessmentRequest):
     analysis["assessment_id"] = assessment_id
 
     return analysis
+
+
+@app.post("/api/monte-carlo", status_code=200)
+def run_monte_carlo(body: MonteCarloRequest):
+    """
+    Lance une simulation Monte Carlo (10 000 scénarios par défaut).
+    Retourne la distribution de la perte annuelle totale avec percentiles.
+    """
+    _ALLOWED_SIZES = ("pme", "eti", "grand")
+    if body.org_size not in _ALLOWED_SIZES:
+        raise HTTPException(status_code=422, detail=f"org_size invalide. Valeurs : {_ALLOWED_SIZES}")
+
+    for req_id, value in body.responses.items():
+        if value not in (0, 1, 2, 3):
+            raise HTTPException(
+                status_code=422,
+                detail=f"Maturité invalide pour {req_id} : {value}. Valeurs acceptées : 0, 1, 2, 3."
+            )
+
+    domains = load_framework()
+    answered = 0
+    for domain in domains:
+        for req in domain.sub_requirements:
+            if req.id in body.responses:
+                req.maturity = MaturityLevel(body.responses[req.id])
+                answered += 1
+
+    if answered == 0:
+        raise HTTPException(status_code=422, detail="Aucune réponse valide fournie.")
+
+    size_map = {"pme": OrgSize.PME, "eti": OrgSize.ETI, "grand": OrgSize.GRAND_GROUPE}
+    sector_map = {s.value: s for s in Sector}
+    sector = sector_map.get(body.sector, Sector.AUTRE)
+
+    profile = OrganizationProfile(
+        name=html.escape(body.org_name.strip()),
+        size=size_map[body.org_size],
+        sector=sector,
+        annual_revenue=body.annual_revenue_eur if body.annual_revenue_eur > 0 else None,
+    )
+
+    engine = MonteCarloEngine(profile=profile, n_simulations=body.n_simulations)
+    report = engine.simulate(domains)
+    return report.to_dict()
 
 
 @app.get("/api/history")
