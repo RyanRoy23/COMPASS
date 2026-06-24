@@ -255,27 +255,36 @@ class MonteCarloEngine:
 
     @staticmethod
     def _build_histogram(sorted_values: list[float], n_bins: int = 20) -> list[dict]:
-        """Construit un histogramme normalisé pour la visualisation."""
-        if not sorted_values or sorted_values[-1] == 0:
+        """
+        Construit un histogramme en échelle logarithmique pour la visualisation.
+        L'échelle log est indispensable car la distribution des pertes cyber
+        est log-normale : beaucoup de petites pertes, quelques pertes extrêmes.
+        Une échelle linéaire concentrerait 90% des données dans le premier bin.
+        """
+        nonzero = [v for v in sorted_values if v > 0]
+        if not nonzero:
             return []
-        min_val = sorted_values[0]
-        max_val = sorted_values[-1]
-        if max_val == min_val:
-            return [{"bin_min": min_val, "bin_max": max_val, "count": len(sorted_values), "frequency": 1.0}]
 
-        bin_width = (max_val - min_val) / n_bins
+        log_min = math.log10(max(nonzero[0], 1.0))
+        log_max = math.log10(nonzero[-1])
+        if log_max <= log_min:
+            return [{"bin_min": nonzero[0], "bin_max": nonzero[-1],
+                     "count": len(nonzero), "frequency": 1.0, "log_scale": True}]
+
+        bin_width = (log_max - log_min) / n_bins
         bins = [0] * n_bins
-        for v in sorted_values:
-            idx = min(int((v - min_val) / bin_width), n_bins - 1)
+        for v in nonzero:
+            idx = min(int((math.log10(v) - log_min) / bin_width), n_bins - 1)
             bins[idx] += 1
 
-        total = len(sorted_values)
+        total = len(nonzero)
         return [
             {
-                "bin_min": round(min_val + i * bin_width, 0),
-                "bin_max": round(min_val + (i + 1) * bin_width, 0),
+                "bin_min": round(10 ** (log_min + i * bin_width), 0),
+                "bin_max": round(10 ** (log_min + (i + 1) * bin_width), 0),
                 "count": bins[i],
                 "frequency": round(bins[i] / total, 4),
+                "log_scale": True,
             }
             for i in range(n_bins)
         ]
@@ -326,7 +335,12 @@ class MonteCarloEngine:
                     ale_high += adj_prob * cost_high
 
                     # Statistiques du scénario
+                    # On calcule sur les pertes non-nulles (moyenne conditionnelle)
+                    # "Si l'incident se produit, combien ça coûte en médiane ?"
                     sorted_losses = sorted(losses)
+                    nonzero_losses = sorted([v for v in losses if v > 0])
+                    cond_p50 = round(self._percentile(nonzero_losses, 50), 0) if nonzero_losses else 0.0
+                    cond_p90 = round(self._percentile(nonzero_losses, 90), 0) if nonzero_losses else 0.0
                     scenario_results.append(ScenarioMC(
                         requirement_id=req.id,
                         requirement_title=req.title,
@@ -335,8 +349,8 @@ class MonteCarloEngine:
                         incident_label=incident_type.label,
                         maturity=maturity,
                         p10=round(self._percentile(sorted_losses, 10), 0),
-                        p50=round(self._percentile(sorted_losses, 50), 0),
-                        p90=round(self._percentile(sorted_losses, 90), 0),
+                        p50=cond_p50,
+                        p90=cond_p90,
                         p5=round(self._percentile(sorted_losses, 5), 0),
                         p95=round(self._percentile(sorted_losses, 95), 0),
                         mean=round(sum(losses) / len(losses), 0),

@@ -515,19 +515,29 @@
       return `<div class="histo-bar-wrap"><div class="histo-bar ${cls}" style="height:${heightPct}%" title="${esc(tooltip)}"></div></div>`;
     }).join('');
 
+    // Labels histogramme : échelle log donc on affiche début, milieu, fin
     const histLabels = hist.length >= 2
-      ? `<div class="histogram-labels"><span>${fmtEur(hist[0].bin_min)}</span><span>Perte annuelle →</span><span>${fmtEur(hist[hist.length-1].bin_max)}</span></div>`
+      ? `<div class="histogram-labels">
+           <span>${fmtEur(hist[0].bin_min)}</span>
+           <span style="color:var(--muted);font-size:0.68rem">← Perte annuelle (échelle log) →</span>
+           <span>${fmtEur(hist[hist.length-1].bin_max)}</span>
+         </div>`
       : '';
 
-    // Top risques
-    const riskRows = scenarios.map(s => `
+    // Top risques — filtre les scénarios avec coût conditionnel > 0 et trie par P90
+    const topScenarios = scenarios
+      .filter(s => s.p90 > 0)
+      .sort((a, b) => b.p90 - a.p90)
+      .slice(0, 7);
+
+    const riskRows = topScenarios.map(s => `
       <div class="risk-row">
         <div>
           <div class="risk-title">${esc(s.requirement_title)}</div>
           <div class="risk-incident">${esc(s.incident_label)}</div>
         </div>
-        <div class="risk-p50">${fmtEur(s.p50)}<br><span style="font-size:0.7rem;color:var(--muted)">médiane</span></div>
-        <div class="risk-p90">${fmtEur(s.p90)}<br><span style="font-size:0.7rem">P90</span></div>
+        <div class="risk-p50">${fmtEur(s.p50)}<br><span style="font-size:0.7rem;color:var(--muted)">si incident</span></div>
+        <div class="risk-p90">${fmtEur(s.p90)}<br><span style="font-size:0.7rem">scén. défavorable</span></div>
       </div>`).join('');
 
     // Comparaison ALE
