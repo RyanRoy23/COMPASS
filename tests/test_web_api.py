@@ -144,6 +144,195 @@ class TestHistoryEndpoint:
         assert client.get("/api/history/999999").status_code == 404
 
 
+class TestEvidencePackageEndpoint:
+    def _payload(self, org="TestOrg"):
+        responses = {f"NIS2-D0{d}-R0{r}": 2
+                     for d in range(1, 10) for r in range(1, 4)
+                     if f"NIS2-D0{d}-R0{r}" in [
+                         "NIS2-D01-R01","NIS2-D01-R02","NIS2-D02-R01","NIS2-D02-R02",
+                     ]}
+        return {"org_name": org, "responses": {"NIS2-D01-R01": 2, "NIS2-D01-R02": 1}}
+
+    def test_returns_zip(self):
+        res = client.post("/api/evidence-package", json=self._payload())
+        assert res.status_code == 200
+        assert "zip" in res.headers["content-type"]
+
+    def test_zip_is_valid(self):
+        import io, zipfile
+        res = client.post("/api/evidence-package", json=self._payload())
+        zf = zipfile.ZipFile(io.BytesIO(res.content))
+        assert "manifest.json" in zf.namelist()
+        assert "assessment.json" in zf.namelist()
+
+    def test_empty_responses_422(self):
+        res = client.post("/api/evidence-package", json={"org_name": "Test", "responses": {}})
+        assert res.status_code == 422
+
+    def test_invalid_maturity_422(self):
+        res = client.post("/api/evidence-package", json={"org_name": "Test", "responses": {"NIS2-D01-R01": 9}})
+        assert res.status_code == 422
+
+
+class TestSupplyChainEndpoints:
+    def test_sc_questions_returns_7(self):
+        res = client.get("/api/supply-chain/questions")
+        assert res.status_code == 200
+        assert len(res.json()["questions"]) == 7
+
+    def test_sc_maturity_all_managed(self):
+        responses = {f"SC0{i}": 3 for i in range(1, 8)}
+        res = client.post("/api/supply-chain/maturity", json={"responses": responses})
+        assert res.status_code == 200
+        assert res.json()["grade"] == "A"
+
+    def test_sc_maturity_invalid_422(self):
+        res = client.post("/api/supply-chain/maturity", json={"responses": {"SC01": 9}})
+        assert res.status_code == 422
+
+    def test_assess_supplier_critical(self):
+        payload = {"name": "CloudProv", "category": "MSP", "access_level": 3, "data_sensitivity": 3}
+        res = client.post("/api/supply-chain/assess-supplier", json=payload)
+        assert res.status_code == 200
+        assert res.json()["criticality"] == "critique"
+
+    def test_assess_supplier_standard(self):
+        payload = {"name": "Caterer", "category": "Service", "access_level": 0, "data_sensitivity": 0}
+        res = client.post("/api/supply-chain/assess-supplier", json=payload)
+        assert res.status_code == 200
+        assert res.json()["criticality"] == "standard"
+
+    def test_assess_supplier_xss(self):
+        payload = {"name": "<script>xss</script>", "category": "SaaS", "access_level": 0, "data_sensitivity": 0}
+        res = client.post("/api/supply-chain/assess-supplier", json=payload)
+        assert res.status_code == 200
+        assert "<script>" not in res.json()["name"]
+
+    def test_assess_supplier_invalid_geo_422(self):
+        payload = {"name": "X", "category": "Y", "access_level": 0, "data_sensitivity": 0, "geographic_risk": "moon"}
+        res = client.post("/api/supply-chain/assess-supplier", json=payload)
+        assert res.status_code == 422
+
+
+class TestIncidentEndpoints:
+    def test_questions_returns_6(self):
+        res = client.get("/api/incident/questions")
+        assert res.status_code == 200
+        assert len(res.json()["questions"]) == 6
+
+    def test_maturity_all_managed(self):
+        responses = {f"N0{i}": 3 for i in range(1, 7)}
+        res = client.post("/api/incident/maturity", json={"responses": responses})
+        assert res.status_code == 200
+        assert res.json()["grade"] == "A"
+
+    def test_maturity_invalid_value_422(self):
+        res = client.post("/api/incident/maturity", json={"responses": {"N01": 9}})
+        assert res.status_code == 422
+
+    def test_classify_significant(self):
+        res = client.post("/api/incident/classify", json={"critical_system_compromised": True})
+        assert res.status_code == 200
+        assert res.json()["significance"] == "significant"
+        assert res.json()["notification_required"] is True
+
+    def test_classify_not_significant(self):
+        res = client.post("/api/incident/classify", json={})
+        assert res.status_code == 200
+        assert res.json()["significance"] == "unknown"
+
+    def test_deadlines_returns_3(self):
+        res = client.post("/api/incident/deadlines", json={"detection_iso": "2026-06-22T10:00:00Z"})
+        assert res.status_code == 200
+        assert len(res.json()["deadlines"]) == 3
+
+    def test_deadlines_invalid_datetime_422(self):
+        res = client.post("/api/incident/deadlines", json={"detection_iso": "not-a-date"})
+        assert res.status_code == 422
+
+    def test_deadlines_overdue_early_warning(self):
+        from datetime import datetime, timedelta, timezone
+        past = (datetime.now(timezone.utc) - timedelta(hours=25)).isoformat()
+        res = client.post("/api/incident/deadlines", json={"detection_iso": past})
+        deadlines = res.json()["deadlines"]
+        ew = next(d for d in deadlines if d["name"] == "early_warning")
+        assert ew["status"] == "overdue"
+
+
+class TestGovernanceEndpoint:
+    def test_questions_endpoint(self):
+        res = client.get("/api/governance/questions")
+        assert res.status_code == 200
+        data = res.json()
+        assert len(data["questions"]) == 8
+
+    def test_full_governance_score(self):
+        responses = {f"G0{i}" if i < 10 else f"G{i}": 3
+                     for i in range(1, 9)}
+        res = client.post("/api/governance", json={"responses": responses, "entity_category": "essentielle"})
+        assert res.status_code == 200
+        assert res.json()["grade"] == "A"
+
+    def test_empty_responses_zero_score(self):
+        res = client.post("/api/governance", json={"responses": {}})
+        assert res.status_code == 200
+        assert res.json()["overall_score"] == 0.0
+
+    def test_invalid_maturity_422(self):
+        res = client.post("/api/governance", json={"responses": {"G01": 5}})
+        assert res.status_code == 422
+
+    def test_invalid_category_422(self):
+        res = client.post("/api/governance", json={"responses": {}, "entity_category": "inconnu"})
+        assert res.status_code == 422
+
+    def test_liability_risk_present(self):
+        res = client.post("/api/governance", json={"responses": {"G01": 0, "G02": 0, "G05": 0}, "entity_category": "essentielle"})
+        assert "liability_risk" in res.json()
+        assert res.json()["liability_risk"] == "ÉLEVÉ"
+
+
+class TestQualifyEndpoint:
+    def _qualify(self, **kwargs):
+        defaults = {"sector": "energie", "employees": 300, "annual_revenue_eur": 60_000_000, "org_name": "TestOrg"}
+        defaults.update(kwargs)
+        return client.post("/api/qualify", json=defaults)
+
+    def test_essential_entity(self):
+        res = self._qualify(sector="energie", employees=300, annual_revenue_eur=60_000_000)
+        assert res.status_code == 200
+        assert res.json()["category"] == "essentielle"
+
+    def test_important_entity_annex_ii(self):
+        res = self._qualify(sector="industrie", employees=200, annual_revenue_eur=40_000_000)
+        assert res.status_code == 200
+        assert res.json()["category"] == "importante"
+
+    def test_out_of_scope(self):
+        res = self._qualify(sector="autre", employees=20, annual_revenue_eur=1_000_000)
+        assert res.status_code == 200
+        assert res.json()["category"] == "hors_champ"
+
+    def test_response_has_obligations(self):
+        res = self._qualify(sector="sante", employees=500, annual_revenue_eur=100_000_000)
+        data = res.json()
+        assert "obligations" in data
+        assert "sanction_max_persons_morales" in data["obligations"]
+
+    def test_invalid_sector_returns_422(self):
+        res = self._qualify(sector="secteur_inexistant")
+        assert res.status_code == 422
+
+    def test_xss_in_org_name(self):
+        res = self._qualify(org_name="<script>alert(1)</script>")
+        assert res.status_code == 200
+        assert "<script>" not in res.json().get("category_label", "")
+
+    def test_administration_always_essential(self):
+        res = self._qualify(sector="administration", employees=5, annual_revenue_eur=0)
+        assert res.json()["category"] == "essentielle"
+
+
 class TestCompareEndpoint:
     def test_unknown_ids_return_404(self):
         assert client.get("/api/compare/999998/999999").status_code == 404
