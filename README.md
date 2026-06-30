@@ -1,4 +1,4 @@
-# NIS 2 Risk Analyzer
+# COMPASS  (NIS 2 Risk Analyzer)
 
 Évaluation de conformité NIS 2 Article 21 avec audit technique Azure, quantification du risque financier, interface web et suivi de progression dans le temps.
 
