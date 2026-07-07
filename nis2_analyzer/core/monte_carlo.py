@@ -334,13 +334,10 @@ class MonteCarloEngine:
                     ale_mid += adj_prob * cost_mid
                     ale_high += adj_prob * cost_high
 
-                    # Statistiques du scénario
-                    # On calcule sur les pertes non-nulles (moyenne conditionnelle)
-                    # "Si l'incident se produit, combien ça coûte en médiane ?"
+                    # Statistiques du scénario — tous les percentiles sont inconditionnels
+                    # (calculés sur l'ensemble des N simulations, y compris les zéros).
+                    # Cela garantit la cohérence : P10 < P50 < P90 sont comparables entre eux.
                     sorted_losses = sorted(losses)
-                    nonzero_losses = sorted([v for v in losses if v > 0])
-                    cond_p50 = round(self._percentile(nonzero_losses, 50), 0) if nonzero_losses else 0.0
-                    cond_p90 = round(self._percentile(nonzero_losses, 90), 0) if nonzero_losses else 0.0
                     scenario_results.append(ScenarioMC(
                         requirement_id=req.id,
                         requirement_title=req.title,
@@ -349,8 +346,8 @@ class MonteCarloEngine:
                         incident_label=incident_type.label,
                         maturity=maturity,
                         p10=round(self._percentile(sorted_losses, 10), 0),
-                        p50=cond_p50,
-                        p90=cond_p90,
+                        p50=round(self._percentile(sorted_losses, 50), 0),
+                        p90=round(self._percentile(sorted_losses, 90), 0),
                         p5=round(self._percentile(sorted_losses, 5), 0),
                         p95=round(self._percentile(sorted_losses, 95), 0),
                         mean=round(sum(losses) / len(losses), 0),
