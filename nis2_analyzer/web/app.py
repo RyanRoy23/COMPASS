@@ -58,6 +58,7 @@ from nis2_analyzer.core.sector_profiles import (
 from nis2_analyzer.core.sme_mode import (
     get_sme_schema, compute_sme_score, sme_responses_to_nis2, SME_QUESTIONS
 )
+from nis2_analyzer.reporting.pdf_report import generate_pdf_report
 
 app = FastAPI(
     title="COMPASS",
@@ -617,3 +618,57 @@ def compare(id_a: int, id_b: int):
         return compare_assessments(id_a, id_b)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.post("/api/pdf-report")
+def api_pdf_report(body: AssessmentRequest, background_tasks: BackgroundTasks):
+    """
+    Génère un rapport PDF professionnel à partir des réponses au questionnaire.
+    Retourne le fichier PDF en téléchargement direct.
+    """
+    org_name = html.escape(body.org_name.strip())
+
+    for req_id, value in body.responses.items():
+        if value not in (0, 1, 2, 3):
+            raise HTTPException(
+                status_code=422,
+                detail=f"Maturité invalide pour {req_id} : {value}."
+            )
+
+    domains = load_framework()
+    if body.sector:
+        apply_sector_weights(domains, body.sector)
+
+    answered = 0
+    for domain in domains:
+        for req in domain.sub_requirements:
+            if req.id in body.responses:
+                req.maturity = MaturityLevel(body.responses[req.id])
+                answered += 1
+
+    if answered == 0:
+        raise HTTPException(status_code=422, detail="Aucune réponse valide fournie.")
+
+    engine = ScoringEngine()
+    result = engine.full_analysis(domains, org_name)
+
+    # Label lisible du secteur
+    sector_label = "Non précisé"
+    if body.sector:
+        from nis2_analyzer.core.sector_profiles import get_sector_profile
+        sector_label = get_sector_profile(body.sector).sector_label
+
+    pdf_buffer = generate_pdf_report(result, sector=sector_label)
+
+    tmp = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
+    tmp.write(pdf_buffer.read())
+    tmp.close()
+    background_tasks.add_task(os.unlink, tmp.name)
+
+    safe_name = org_name.replace(" ", "_").replace("/", "_")[:40]
+    return FileResponse(
+        tmp.name,
+        media_type="application/pdf",
+        filename=f"compass_rapport_{safe_name}.pdf",
+        headers={"Content-Disposition": f'attachment; filename="compass_rapport_{safe_name}.pdf"'},
+    )

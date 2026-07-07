@@ -532,6 +532,10 @@
       </section>
       ${gapItems ? `<section><h3>Principaux gaps à traiter</h3><div class="gaps-list">${gapItems}</div></section>` : ''}
       ${renderSectorReport(data.sector_report)}
+      <div style="margin-top:2rem;padding-top:1.2rem;border-top:1px solid var(--border);display:flex;gap:1rem;align-items:center;">
+        <button class="btn" id="pdf-btn" onclick="downloadPDF()">⬇ Télécharger le rapport PDF</button>
+        <span id="pdf-status" style="font-size:0.82rem;color:var(--muted);"></span>
+      </div>
     `;
   }
 
@@ -586,6 +590,51 @@
         </div>
       </section>
     `;
+  }
+
+  // ── PDF Report ────────────────────────────────────────────────────────────
+  async function downloadPDF() {
+    if (!_lastResponses || Object.keys(_lastResponses).length === 0) {
+      document.getElementById('pdf-status').textContent = 'Lancez d\'abord une évaluation.';
+      return;
+    }
+    const btn = document.getElementById('pdf-btn');
+    const status = document.getElementById('pdf-status');
+    btn.disabled = true;
+    btn.textContent = '⏳ Génération en cours…';
+    status.textContent = '';
+    try {
+      const res = await fetch('/api/pdf-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          org_name: _lastOrgName || 'Organisation',
+          responses: _lastResponses,
+          sector: document.getElementById('sector-select').value,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: res.statusText }));
+        status.textContent = 'Erreur : ' + (err.detail || res.statusText);
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const orgSlug = (_lastOrgName || 'rapport').replace(/[^a-zA-Z0-9]/g, '_').substring(0, 40);
+      a.href = url;
+      a.download = `COMPASS_${orgSlug}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      status.textContent = 'Rapport généré avec succès.';
+    } catch (e) {
+      status.textContent = 'Erreur réseau : ' + e.message;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '⬇ Télécharger le rapport PDF';
+    }
   }
 
   // ── Monte Carlo ───────────────────────────────────────────────────────────
