@@ -16,11 +16,13 @@ Endpoints :
 """
 
 import html
+import os
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 from fastapi import FastAPI, HTTPException
+from fastapi.background import BackgroundTasks
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -567,7 +569,7 @@ def get_assessment_detail(assessment_id: int):
 
 
 @app.post("/api/evidence-package")
-def api_evidence_package(body: AssessmentRequest):
+def api_evidence_package(body: AssessmentRequest, background_tasks: BackgroundTasks):
     """
     Génère un dossier de preuves ZIP à partir des réponses au questionnaire.
     Retourne le fichier ZIP en téléchargement direct.
@@ -598,6 +600,7 @@ def api_evidence_package(body: AssessmentRequest):
     tmp = tempfile.NamedTemporaryFile(suffix=".zip", delete=False)
     tmp.close()
     build_evidence_package(analysis, tmp.name, domains_obj=domains)
+    background_tasks.add_task(os.unlink, tmp.name)
 
     safe_name = org_name.replace(" ", "_").replace("/", "_")[:40]
     return FileResponse(

@@ -150,12 +150,26 @@ class Domain:
         return sum(1 for r in self.sub_requirements if r.is_critical_gap)
 
     @property
-    def score(self) -> float:
-        """Weighted domain score (0-100)."""
-        assessed = [r for r in self.sub_requirements if r.is_assessed]
-        if not assessed:
+    def coverage_pct(self) -> float:
+        """Proportion of sub-requirements that have been answered (0-100)."""
+        if not self.sub_requirements:
             return 0.0
-        return sum(r.maturity.score_pct for r in assessed) / len(assessed)
+        return self.assessed_count / len(self.sub_requirements) * 100
+
+    @property
+    def score(self) -> float:
+        """Weighted domain score (0-100), penalized for unanswered sub-requirements.
+
+        Unanswered sub-requirements are treated as maturity 0 so that partial
+        submissions don't artificially inflate the domain score.
+        """
+        if not self.sub_requirements:
+            return 0.0
+        total = sum(
+            r.maturity.score_pct if r.is_assessed else 0.0
+            for r in self.sub_requirements
+        )
+        return total / len(self.sub_requirements)
 
     @property
     def maturity_distribution(self) -> dict[int, int]:
@@ -181,6 +195,14 @@ class AssessmentResult:
     @property
     def total_assessed(self) -> int:
         return sum(d.assessed_count for d in self.domains)
+
+    @property
+    def coverage_pct(self) -> float:
+        """Percentage of all sub-requirements that have been answered."""
+        total = sum(d.total_requirements for d in self.domains)
+        if total == 0:
+            return 0.0
+        return round(self.total_assessed / total * 100, 1)
 
     @property
     def total_gaps(self) -> int:
