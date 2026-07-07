@@ -341,6 +341,14 @@ GAP_TO_RISK_SCENARIOS = {
              "rationale": "NIS 2 Art. 20 exige que la direction supervise — absence = non-conformité"},
         ]
     },
+    "NIS2-D01-R05": {
+        "scenarios": [
+            {"type": IncidentType.COMPLIANCE_FINE, "probability_base": 0.12,
+             "rationale": "Sans engagement budgétaire formalisé, les mesures NIS 2 restent non financées = non-conformité structurelle"},
+            {"type": IncidentType.RANSOMWARE, "probability_base": 0.07,
+             "rationale": "Sous-investissement chronique en sécurité augmente la probabilité d'incident grave"},
+        ]
+    },
 
     # D02 — Gestion des incidents
     "NIS2-D02-R01": {
@@ -391,6 +399,14 @@ GAP_TO_RISK_SCENARIOS = {
         "scenarios": [
             {"type": IncidentType.UNAVAILABILITY, "probability_base": 0.10,
              "rationale": "Sans gestion de crise, la coordination est chaotique en situation réelle"},
+        ]
+    },
+    "NIS2-D03-R04": {
+        "scenarios": [
+            {"type": IncidentType.UNAVAILABILITY, "probability_base": 0.18,
+             "rationale": "Un PCA non testé est un PCA non fiable — les exercices révèlent les lacunes avant la crise réelle"},
+            {"type": IncidentType.COMPLIANCE_FINE, "probability_base": 0.08,
+             "rationale": "NIS 2 exige la validation effective des plans de continuité, pas seulement leur existence"},
         ]
     },
 
@@ -469,6 +485,22 @@ GAP_TO_RISK_SCENARIOS = {
         "scenarios": [
             {"type": IncidentType.IDENTITY_COMPROMISE, "probability_base": 0.12,
              "rationale": "Mots de passe faibles, sessions non verrouillées = compromission facilitée"},
+        ]
+    },
+    "NIS2-D07-R04": {
+        "scenarios": [
+            {"type": IncidentType.DATA_BREACH, "probability_base": 0.08,
+             "rationale": "Sans mesure d'efficacité de la sensibilisation, les lacunes persistent invisiblement"},
+            {"type": IncidentType.COMPLIANCE_FINE, "probability_base": 0.06,
+             "rationale": "NIS 2 Art. 21(2)(g) exige des mesures de cyberhygiène mesurables"},
+        ]
+    },
+    "NIS2-D07-R05": {
+        "scenarios": [
+            {"type": IncidentType.DATA_BREACH, "probability_base": 0.10,
+             "rationale": "Sans filtrage Internet et contrôle des périphériques, les vecteurs d'entrée restent ouverts"},
+            {"type": IncidentType.RANSOMWARE, "probability_base": 0.08,
+             "rationale": "Périphériques non contrôlés = vecteur de propagation latérale du ransomware"},
         ]
     },
 
