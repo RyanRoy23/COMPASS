@@ -660,7 +660,22 @@
         <div class="gap-action">${esc(g.remediation_summary || '')}</div>
       </div>`).join('');
 
+    const totalReqs = s.total_requirements || 0;
+    const totalAssessed = s.total_assessed || 0;
+    const coveragePct = totalReqs > 0 ? Math.round(totalAssessed / totalReqs * 100) : 0;
+    const coverageBanner = coveragePct < 70 ? `
+      <div style="background:#78350F;border:1px solid #92400E;border-radius:var(--radius);padding:0.8rem 1rem;margin-bottom:1.2rem;display:flex;gap:0.7rem;align-items:flex-start;">
+        <span style="font-size:1.1rem;">⚠️</span>
+        <div>
+          <strong style="color:#FCD34D;">Couverture insuffisante (${coveragePct}%)</strong>
+          <div style="font-size:0.83rem;color:#FDE68A;margin-top:2px;">
+            Seulement ${totalAssessed} sur ${totalReqs} questions ont été répondues. Le score affiché (${s.overall_score}%) est sous-estimé et ne reflète pas fidèlement votre posture réelle. Répondez à davantage de questions pour un résultat fiable.
+          </div>
+        </div>
+      </div>` : '';
+
     document.getElementById('results-container').innerHTML = `
+      ${coverageBanner}
       <div class="form-header">
         <h2>${esc(data.metadata?.organization || 'Résultats')}</h2>
         <p>Assessment #${data.assessment_id} — ${data.metadata?.timestamp?.slice(0,10) || ''}</p>
