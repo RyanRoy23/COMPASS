@@ -178,6 +178,9 @@
   <button data-page="monte-carlo" onclick="showPage('monte-carlo')">Risque financier</button>
   <button data-page="aws-audit" onclick="showPage('aws-audit')">Audit AWS</button>
   <button data-page="sme" onclick="showPage('sme'); loadSMEQuestions()">Mode PME</button>
+  <button data-page="governance" onclick="showPage('governance'); loadGovernance()">Gouvernance</button>
+  <button data-page="incident" onclick="showPage('incident')">Incidents</button>
+  <button data-page="supply-chain" onclick="showPage('supply-chain')">Supply Chain</button>
   <button data-page="history" onclick="showPage('history'); loadHistory()">Historique</button>
 </nav>
 
@@ -351,6 +354,164 @@
   <!-- ── PAGE : HISTORIQUE ── -->
   <div id="page-history" class="page">
     <div id="history-container"><p style="color:var(--muted)">Chargement…</p></div>
+  </div>
+
+  <!-- ── Gouvernance Art. 20 ── -->
+  <div id="page-governance" class="page">
+    <div class="form-header">
+      <h2>Gouvernance — Art. 20 NIS 2</h2>
+      <p style="color:var(--muted);font-size:0.9rem;">Évaluez la maturité de la gouvernance cybersécurité de votre direction. Les organes de direction sont personnellement responsables.</p>
+    </div>
+    <div style="margin-bottom:1rem;display:flex;gap:0.8rem;align-items:center;">
+      <label style="font-size:0.85rem;color:var(--muted);">Catégorie d'entité :</label>
+      <select id="gov-category" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:0.5rem 0.8rem;border-radius:var(--radius);font-size:0.85rem;">
+        <option value="essentielle">Entité Essentielle</option>
+        <option value="importante">Entité Importante</option>
+        <option value="hors_champ">Hors champ NIS 2</option>
+      </select>
+    </div>
+    <div id="gov-questions-container"><p style="color:var(--muted)">Chargement des questions…</p></div>
+    <button class="btn" style="margin-top:1.2rem;" onclick="submitGovernance()">Évaluer la gouvernance</button>
+    <div id="gov-results" style="margin-top:1.5rem;"></div>
+  </div>
+
+  <!-- ── Incidents Art. 23 ── -->
+  <div id="page-incident" class="page">
+    <div class="form-header">
+      <h2>Notification d'incidents — Art. 23 NIS 2</h2>
+      <p style="color:var(--muted);font-size:0.9rem;">Classifiez un incident et calculez vos obligations de notification. NIS 2 impose des délais stricts : alerte initiale 24h, rapport 72h, rapport final 1 mois.</p>
+    </div>
+
+    <div class="domain-card" style="margin-bottom:1.2rem;">
+      <div class="domain-header">Classifier un incident</div>
+      <div style="padding:1rem;display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;">
+        <label style="font-size:0.83rem;color:var(--muted);display:flex;flex-direction:column;gap:4px;">
+          Services indisponibles ?
+          <select id="inc-unavailable" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:0.4rem;border-radius:var(--radius);margin-top:4px;">
+            <option value="false">Non</option><option value="true">Oui</option>
+          </select>
+        </label>
+        <label style="font-size:0.83rem;color:var(--muted);display:flex;flex-direction:column;gap:4px;">
+          Utilisateurs affectés
+          <input type="number" id="inc-users" value="0" min="0" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:0.4rem;border-radius:var(--radius);margin-top:4px;">
+        </label>
+        <label style="font-size:0.83rem;color:var(--muted);display:flex;flex-direction:column;gap:4px;">
+          Durée (heures)
+          <input type="number" id="inc-duration" value="0" min="0" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:0.4rem;border-radius:var(--radius);margin-top:4px;">
+        </label>
+        <label style="font-size:0.83rem;color:var(--muted);display:flex;flex-direction:column;gap:4px;">
+          Perte financière (€)
+          <input type="number" id="inc-loss" value="0" min="0" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:0.4rem;border-radius:var(--radius);margin-top:4px;">
+        </label>
+        <label style="font-size:0.83rem;color:var(--muted);display:flex;flex-direction:column;gap:4px;">
+          Portée géographique
+          <select id="inc-geo" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:0.4rem;border-radius:var(--radius);margin-top:4px;">
+            <option value="local">Locale</option>
+            <option value="national">Nationale</option>
+            <option value="european">Européenne</option>
+          </select>
+        </label>
+        <label style="font-size:0.83rem;color:var(--muted);display:flex;flex-direction:column;gap:4px;">
+          Violation de données ?
+          <select id="inc-breach" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:0.4rem;border-radius:var(--radius);margin-top:4px;">
+            <option value="false">Non</option><option value="true">Oui</option>
+          </select>
+        </label>
+        <label style="font-size:0.83rem;color:var(--muted);display:flex;flex-direction:column;gap:4px;">
+          Système critique compromis ?
+          <select id="inc-critical" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:0.4rem;border-radius:var(--radius);margin-top:4px;">
+            <option value="false">Non</option><option value="true">Oui</option>
+          </select>
+        </label>
+        <label style="font-size:0.83rem;color:var(--muted);display:flex;flex-direction:column;gap:4px;">
+          Impact supply chain ?
+          <select id="inc-supply" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:0.4rem;border-radius:var(--radius);margin-top:4px;">
+            <option value="false">Non</option><option value="true">Oui</option>
+          </select>
+        </label>
+      </div>
+      <div style="padding:0 1rem 1rem;">
+        <button class="btn" onclick="classifyIncident()">Classifier l'incident</button>
+      </div>
+    </div>
+
+    <div id="inc-classify-result" style="margin-bottom:1.5rem;"></div>
+
+    <div class="domain-card" id="inc-deadlines-section" style="display:none;">
+      <div class="domain-header">Calculer les deadlines de notification</div>
+      <div style="padding:1rem;">
+        <label style="font-size:0.83rem;color:var(--muted);display:block;margin-bottom:0.5rem;">Date/heure de détection de l'incident :</label>
+        <input type="datetime-local" id="inc-detection" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:0.5rem;border-radius:var(--radius);font-size:0.85rem;margin-bottom:0.8rem;">
+        <button class="btn" onclick="computeDeadlines()">Calculer les deadlines</button>
+      </div>
+      <div id="inc-deadlines-result" style="padding:0 1rem 1rem;"></div>
+    </div>
+  </div>
+
+  <!-- ── Supply Chain ── -->
+  <div id="page-supply-chain" class="page">
+    <div class="form-header">
+      <h2>Supply Chain — Art. 21(d) NIS 2</h2>
+      <p style="color:var(--muted);font-size:0.9rem;">Évaluez le risque d'un fournisseur tiers selon les critères NIS 2. Renseignez les informations du fournisseur ci-dessous.</p>
+    </div>
+    <div class="domain-card">
+      <div class="domain-header">Informations fournisseur</div>
+      <div style="padding:1rem;display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;">
+        <label style="font-size:0.83rem;color:var(--muted);display:flex;flex-direction:column;gap:4px;grid-column:span 2;">
+          Nom du fournisseur
+          <input type="text" id="sc-name" placeholder="Ex: AWS, Salesforce, prestataire X" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:0.4rem 0.8rem;border-radius:var(--radius);margin-top:4px;font-size:0.9rem;">
+        </label>
+        <label style="font-size:0.83rem;color:var(--muted);display:flex;flex-direction:column;gap:4px;grid-column:span 2;">
+          Catégorie / type de service
+          <input type="text" id="sc-category" placeholder="Ex: Cloud IaaS, Éditeur logiciel, Prestataire RH" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:0.4rem 0.8rem;border-radius:var(--radius);margin-top:4px;font-size:0.9rem;">
+        </label>
+        <label style="font-size:0.83rem;color:var(--muted);display:flex;flex-direction:column;gap:4px;">
+          Niveau d'accès
+          <select id="sc-access" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:0.4rem;border-radius:var(--radius);margin-top:4px;">
+            <option value="none">Aucun accès SI</option>
+            <option value="limited">Accès limité</option>
+            <option value="full">Accès complet</option>
+            <option value="privileged">Accès privilégié (admin)</option>
+          </select>
+        </label>
+        <label style="font-size:0.83rem;color:var(--muted);display:flex;flex-direction:column;gap:4px;">
+          Sensibilité des données
+          <select id="sc-data" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:0.4rem;border-radius:var(--radius);margin-top:4px;">
+            <option value="public">Publiques</option>
+            <option value="internal">Internes</option>
+            <option value="confidential">Confidentielles</option>
+            <option value="critical">Critiques / personnelles</option>
+          </select>
+        </label>
+        <label style="font-size:0.83rem;color:var(--muted);display:flex;flex-direction:column;gap:4px;">
+          Localisation géographique
+          <select id="sc-geo" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:0.4rem;border-radius:var(--radius);margin-top:4px;">
+            <option value="eu">Union Européenne</option>
+            <option value="non_eu_trusted">Pays tiers de confiance</option>
+            <option value="high_risk">Pays à risque élevé</option>
+          </select>
+        </label>
+        <label style="font-size:0.83rem;color:var(--muted);display:flex;flex-direction:column;gap:4px;">
+          Fournisseur unique (pas d'alternative) ?
+          <select id="sc-single" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:0.4rem;border-radius:var(--radius);margin-top:4px;">
+            <option value="false">Non</option><option value="true">Oui</option>
+          </select>
+        </label>
+      </div>
+      <div style="padding:0 1rem 0.5rem;display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;">
+        <label style="font-size:0.83rem;color:var(--muted);display:flex;align-items:center;gap:0.5rem;"><input type="checkbox" id="sc-nis2"> Conformité NIS 2 déclarée</label>
+        <label style="font-size:0.83rem;color:var(--muted);display:flex;align-items:center;gap:0.5rem;"><input type="checkbox" id="sc-iso"> Certifié ISO 27001</label>
+        <label style="font-size:0.83rem;color:var(--muted);display:flex;align-items:center;gap:0.5rem;"><input type="checkbox" id="sc-soc2"> Certifié SOC 2</label>
+        <label style="font-size:0.83rem;color:var(--muted);display:flex;align-items:center;gap:0.5rem;"><input type="checkbox" id="sc-pentest"> Pentest récent (< 1 an)</label>
+        <label style="font-size:0.83rem;color:var(--muted);display:flex;align-items:center;gap:0.5rem;"><input type="checkbox" id="sc-incident"> Historique d'incidents</label>
+        <label style="font-size:0.83rem;color:var(--muted);display:flex;align-items:center;gap:0.5rem;"><input type="checkbox" id="sc-contract"> Clauses sécurité dans le contrat</label>
+        <label style="font-size:0.83rem;color:var(--muted);display:flex;align-items:center;gap:0.5rem;"><input type="checkbox" id="sc-subcontract"> Sous-traitance à d'autres tiers</label>
+      </div>
+      <div style="padding:1rem;">
+        <button class="btn" onclick="assessSupplier()">Évaluer le fournisseur</button>
+      </div>
+    </div>
+    <div id="sc-result" style="margin-top:1.5rem;"></div>
   </div>
 
 </main>
@@ -1235,6 +1396,178 @@
   // ── Init ──────────────────────────────────────────────────────────────────
   loadFramework();
   loadSectorProfiles();
+
+  // ── Gouvernance Art. 20 ───────────────────────────────────────────────────
+  let _govQuestions = [];
+
+  async function loadGovernance() {
+    if (_govQuestions.length > 0) { renderGovQuestions(); return; }
+    const res = await fetch('/api/governance/questions');
+    const data = await res.json();
+    _govQuestions = data.questions;
+    renderGovQuestions();
+  }
+
+  function renderGovQuestions() {
+    const container = document.getElementById('gov-questions-container');
+    if (!_govQuestions.length) { container.innerHTML = '<p style="color:var(--muted)">Aucune question disponible.</p>'; return; }
+    container.innerHTML = _govQuestions.map(q => `
+      <div class="domain-card" style="margin-bottom:0.7rem;">
+        <div style="padding:0.8rem 1rem;">
+          <div style="font-size:0.85rem;margin-bottom:0.6rem;">${q.question}</div>
+          <div style="display:flex;gap:6px;">
+            ${[0,1,2,3].map(v => `
+              <label style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--muted);cursor:pointer;">
+                <input type="radio" name="gov-${q.id}" value="${v}"> ${v === 0 ? 'Non' : v === 1 ? 'Partiel' : v === 2 ? 'Implémenté' : 'Optimisé'}
+              </label>`).join('')}
+          </div>
+        </div>
+      </div>`).join('');
+  }
+
+  async function submitGovernance() {
+    const responses = {};
+    _govQuestions.forEach(q => {
+      const checked = document.querySelector(`input[name="gov-${q.id}"]:checked`);
+      if (checked) responses[q.id] = parseInt(checked.value);
+    });
+    if (!Object.keys(responses).length) {
+      document.getElementById('gov-results').innerHTML = '<p style="color:var(--red)">Répondez à au moins une question.</p>';
+      return;
+    }
+    const category = document.getElementById('gov-category').value;
+    const res = await fetch('/api/governance', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ responses, entity_category: category }),
+    });
+    const data = await res.json();
+    if (!res.ok) { document.getElementById('gov-results').innerHTML = `<p style="color:var(--red)">Erreur : ${data.detail}</p>`; return; }
+    const gradeColor = { A: 'var(--green)', B: '#3B82F6', C: 'var(--yellow)', D: 'var(--red)', F: 'var(--red)' };
+    const gaps = (data.gaps || []).map(g => `
+      <div style="padding:0.6rem 1rem;border-top:1px solid var(--border);font-size:0.83rem;">
+        <span style="color:var(--yellow);font-weight:600;">${g.id}</span> — ${g.question}
+        ${g.recommendation ? `<div style="color:var(--muted);margin-top:3px;">${g.recommendation}</div>` : ''}
+      </div>`).join('');
+    document.getElementById('gov-results').innerHTML = `
+      <div class="domain-card">
+        <div class="domain-header" style="justify-content:flex-start;gap:1rem;">
+          <span style="font-size:1.4rem;font-weight:700;color:${gradeColor[data.grade] || 'var(--accent)'};">${data.grade}</span>
+          <span>Score : ${Math.round(data.score)}%</span>
+          <span style="color:var(--muted);font-size:0.8rem;">${data.gaps?.length || 0} gap(s) identifié(s)</span>
+        </div>
+        ${gaps ? `<div>${gaps}</div>` : '<div style="padding:0.8rem 1rem;color:var(--green);font-size:0.85rem;">Aucun gap critique détecté.</div>'}
+      </div>`;
+  }
+
+  // ── Incidents Art. 23 ────────────────────────────────────────────────────
+  async function classifyIncident() {
+    const body = {
+      services_unavailable: document.getElementById('inc-unavailable').value === 'true',
+      users_affected_count: parseInt(document.getElementById('inc-users').value) || 0,
+      duration_hours: parseFloat(document.getElementById('inc-duration').value) || 0,
+      financial_loss_eur: parseFloat(document.getElementById('inc-loss').value) || 0,
+      geographic_scope: document.getElementById('inc-geo').value,
+      data_breach: document.getElementById('inc-breach').value === 'true',
+      critical_system_compromised: document.getElementById('inc-critical').value === 'true',
+      supply_chain_impact: document.getElementById('inc-supply').value === 'true',
+      third_party_impact: false,
+    };
+    const res = await fetch('/api/incident/classify', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) { document.getElementById('inc-classify-result').innerHTML = `<p style="color:var(--red)">Erreur : ${data.detail}</p>`; return; }
+    const color = data.significance_color || 'var(--muted)';
+    const reasons = (data.reasons || []).map(r => `<li style="margin-left:1.2rem;font-size:0.83rem;color:var(--muted);">${r}</li>`).join('');
+    document.getElementById('inc-classify-result').innerHTML = `
+      <div class="domain-card">
+        <div class="domain-header">
+          Résultat : <span style="color:${color};margin-left:0.5rem;">${data.significance_label}</span>
+          ${data.notification_required ? '<span style="margin-left:auto;background:var(--red);color:#fff;font-size:0.72rem;padding:2px 8px;border-radius:99px;">NOTIFICATION OBLIGATOIRE</span>' : ''}
+        </div>
+        <div style="padding:0.8rem 1rem;">
+          ${reasons ? `<ul>${reasons}</ul>` : '<p style="font-size:0.83rem;color:var(--muted)">Aucun critère de significativité atteint.</p>'}
+        </div>
+      </div>`;
+    if (data.notification_required) {
+      document.getElementById('inc-deadlines-section').style.display = '';
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      document.getElementById('inc-detection').value = now.toISOString().slice(0, 16);
+    }
+  }
+
+  async function computeDeadlines() {
+    const detectionLocal = document.getElementById('inc-detection').value;
+    if (!detectionLocal) { return; }
+    const detectionISO = new Date(detectionLocal).toISOString();
+    const res = await fetch('/api/incident/deadlines', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ detection_iso: detectionISO, completed: {} }),
+    });
+    const data = await res.json();
+    if (!res.ok) { document.getElementById('inc-deadlines-result').innerHTML = `<p style="color:var(--red)">Erreur : ${data.detail}</p>`; return; }
+    const rows = (data.deadlines || []).map(d => {
+      const deadline = new Date(d.deadline_iso);
+      const overdue = d.is_overdue;
+      const color = overdue ? 'var(--red)' : d.hours_remaining < 12 ? 'var(--yellow)' : 'var(--green)';
+      return `
+        <div style="padding:0.7rem 1rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:0.85rem;font-weight:600;">${d.name}</div>
+            <div style="font-size:0.78rem;color:var(--muted);">${d.description || ''}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:0.85rem;color:${color};">${deadline.toLocaleString('fr-FR')}</div>
+            <div style="font-size:0.75rem;color:${color};">${overdue ? 'Dépassé' : `${Math.round(d.hours_remaining)}h restantes`}</div>
+          </div>
+        </div>`;
+    }).join('');
+    document.getElementById('inc-deadlines-result').innerHTML = rows || '<p style="font-size:0.83rem;color:var(--muted)">Aucune deadline calculée.</p>';
+  }
+
+  // ── Supply Chain ──────────────────────────────────────────────────────────
+  async function assessSupplier() {
+    const name = document.getElementById('sc-name').value.trim();
+    if (!name) { document.getElementById('sc-result').innerHTML = '<p style="color:var(--red)">Renseignez le nom du fournisseur.</p>'; return; }
+    const body = {
+      name,
+      category: document.getElementById('sc-category').value.trim() || 'Non précisé',
+      access_level: document.getElementById('sc-access').value,
+      data_sensitivity: document.getElementById('sc-data').value,
+      geographic_risk: document.getElementById('sc-geo').value,
+      is_single_source: document.getElementById('sc-single').value === 'true',
+      has_nis2_compliance: document.getElementById('sc-nis2').checked,
+      has_iso27001: document.getElementById('sc-iso').checked,
+      has_soc2: document.getElementById('sc-soc2').checked,
+      pentest_recent: document.getElementById('sc-pentest').checked,
+      incident_history: document.getElementById('sc-incident').checked,
+      contract_has_security_clauses: document.getElementById('sc-contract').checked,
+      subcontracts_to_others: document.getElementById('sc-subcontract').checked,
+    };
+    const res = await fetch('/api/supply-chain/assess-supplier', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) { document.getElementById('sc-result').innerHTML = `<p style="color:var(--red)">Erreur : ${data.detail}</p>`; return; }
+    const riskColor = { critical: 'var(--red)', high: '#EF4444', medium: 'var(--yellow)', low: 'var(--green)' };
+    const color = riskColor[data.risk_level] || 'var(--muted)';
+    const actions = (data.required_actions || []).map(a => `<li style="margin-left:1.2rem;font-size:0.83rem;color:var(--muted);margin-bottom:3px;">${a}</li>`).join('');
+    document.getElementById('sc-result').innerHTML = `
+      <div class="domain-card">
+        <div class="domain-header" style="justify-content:flex-start;gap:1rem;">
+          <span style="color:${color};font-weight:700;font-size:1rem;">${(data.risk_level || '').toUpperCase()}</span>
+          <span style="font-size:0.85rem;">${data.supplier_name || name}</span>
+          <span style="color:var(--muted);font-size:0.78rem;margin-left:auto;">Score risque : ${data.risk_score ?? '—'}</span>
+        </div>
+        <div style="padding:0.8rem 1rem;">
+          <div style="font-size:0.85rem;margin-bottom:0.5rem;color:var(--muted);">${data.risk_label || ''}</div>
+          ${actions ? `<ul style="margin-top:0.5rem;">${actions}</ul>` : ''}
+        </div>
+      </div>`;
+  }
 </script>
 </body>
 </html>
