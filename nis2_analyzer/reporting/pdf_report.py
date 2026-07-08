@@ -25,6 +25,7 @@ from reportlab.platypus import (
 from reportlab.platypus.flowables import Flowable
 
 from nis2_analyzer.core.models import AssessmentResult, Domain
+from nis2_analyzer.core.scoring import ScoringEngine
 
 # ── Palette COMPASS ───────────────────────────────────────────────────────────
 
@@ -447,6 +448,91 @@ def _quickwins_content(result: AssessmentResult, styles: dict) -> list:
     return story
 
 
+# ── Section : plan SMART ─────────────────────────────────────────────────────
+
+def _smart_plan_content(result: AssessmentResult, styles: dict) -> list:
+    story = []
+    story.append(Spacer(1, 6 * mm))
+    story.append(Paragraph("Plan d'action SMART", styles["section"]))
+    story.append(HRFlowable(width="100%", thickness=0.5, color=C_BORDER, spaceAfter=3 * mm))
+    story.append(Paragraph(
+        "Priorisé par délai recommandé — effort, coût estimé et responsable par gap.",
+        styles["small"]))
+    story.append(Spacer(1, 3 * mm))
+
+    engine = ScoringEngine()
+    gaps = engine.generate_gap_analysis(result)
+    if not gaps:
+        story.append(Paragraph("Aucun gap identifié — posture conforme.", styles["small"]))
+        return story
+
+    PHASE_COLORS = {0: C_RED, 1: colors.HexColor("#F97316"), 2: C_YELLOW, 3: C_MUTED}
+    PHASE_LABELS = {0: "Immédiat", 1: "Court terme", 2: "Moyen terme", 3: "Long terme"}
+
+    def _phase(g) -> int:
+        w = g.deadline_weeks
+        return 0 if w <= 4 else 1 if w <= 12 else 2 if w <= 24 else 3
+
+    def _fmt_cost(v: int) -> str:
+        return f"{v // 1000}k€" if v >= 1000 else f"{v}€"
+
+    col_w = PAGE_W - 2 * MARGIN
+    header = [
+        Paragraph("<b>Phase</b>", styles["body_bold"]),
+        Paragraph("<b>Gap / Domaine</b>", styles["body_bold"]),
+        Paragraph("<b>Effort</b>", styles["body_bold"]),
+        Paragraph("<b>Coût estimé</b>", styles["body_bold"]),
+        Paragraph("<b>Responsable</b>", styles["body_bold"]),
+    ]
+    rows = [header]
+    phase_row_indices = {}
+
+    sorted_gaps = sorted(gaps, key=_phase)
+    for i, g in enumerate(sorted_gaps[:15], start=1):
+        phase = _phase(g)
+        pc = PHASE_COLORS[phase]
+        label = PHASE_LABELS[phase]
+        effort_str = f"{g.effort_days[0]}–{g.effort_days[1]} j"
+        cost_str = f"{_fmt_cost(g.cost_range[0])} – {_fmt_cost(g.cost_range[1])}"
+        rows.append([
+            Paragraph(f"<font color='{pc.hexval()}'><b>{label}</b></font>", styles["small"]),
+            Paragraph(f"<b>{g.requirement_id}</b><br/>"
+                      f"<font size='7.5'>{g.requirement_title}</font><br/>"
+                      f"<font color='#6B7280' size='7'>{g.domain_title}</font>", styles["small"]),
+            Paragraph(effort_str, styles["small"]),
+            Paragraph(cost_str, styles["small"]),
+            Paragraph(g.responsible, styles["small"]),
+        ])
+        phase_row_indices[i] = phase
+
+    col_widths = [22 * mm, col_w - 22 * mm - 18 * mm - 28 * mm - 35 * mm, 18 * mm, 28 * mm, 35 * mm]
+    t = Table(rows, colWidths=col_widths, repeatRows=1)
+    t.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#EFF6FF")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), C_ACCENT),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+        ("LINEBELOW", (0, 0), (-1, -1), 0.3, C_BORDER),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [C_WHITE, C_LIGHT_BG]),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+    ]))
+
+    for row_i, phase in phase_row_indices.items():
+        pc = PHASE_COLORS[phase]
+        t.setStyle(TableStyle([("LINEBEFORE", (0, row_i), (0, row_i), 3, pc)]))
+
+    story.append(t)
+
+    if len(gaps) > 15:
+        story.append(Spacer(1, 3 * mm))
+        story.append(Paragraph(
+            f"… et {len(gaps) - 15} autres gaps. Consultez l'interface COMPASS pour le plan complet.",
+            styles["small"]))
+    return story
+
+
 # ── Point d'entrée principal ──────────────────────────────────────────────────
 
 def generate_pdf_report(
@@ -499,6 +585,9 @@ def generate_pdf_report(
 
     # ── Quick wins ──
     story += _quickwins_content(result, styles)
+
+    # ── Plan SMART ──
+    story += _smart_plan_content(result, styles)
 
     # ── Note de bas de rapport ──
     story.append(Spacer(1, 8 * mm))

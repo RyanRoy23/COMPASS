@@ -11,6 +11,39 @@ from nis2_analyzer.core.models import (
 from datetime import datetime, timezone
 
 
+# SMART plan constants
+_EFFORT_DAYS = {
+    EffortLevel.LOW:    (3, 15),
+    EffortLevel.MEDIUM: (15, 60),
+    EffortLevel.HIGH:   (60, 180),
+}
+_EFFORT_COST = {
+    EffortLevel.LOW:    (500,    8_000),
+    EffortLevel.MEDIUM: (8_000,  50_000),
+    EffortLevel.HIGH:   (50_000, 300_000),
+}
+_DEADLINE_WEEKS = {
+    (0, EffortLevel.LOW):    4,
+    (0, EffortLevel.MEDIUM): 12,
+    (0, EffortLevel.HIGH):   24,
+    (1, EffortLevel.LOW):    8,
+    (1, EffortLevel.MEDIUM): 20,
+    (1, EffortLevel.HIGH):   52,
+}
+_DOMAIN_OWNER = {
+    "D01": "RSSI / Direction Générale",
+    "D02": "RSSI / SOC",
+    "D03": "RSSI / DSI",
+    "D04": "RSSI / Achats",
+    "D05": "DSI / RSSI",
+    "D06": "Direction Générale / RSSI",
+    "D07": "RH / RSSI",
+    "D08": "DSI",
+    "D09": "DSI / RSSI",
+    "D10": "DSI",
+}
+
+
 @dataclass
 class GapItem:
     """A single identified compliance gap with context."""
@@ -25,6 +58,27 @@ class GapItem:
     effort: EffortLevel
     iso27001_refs: list[str]
     priority_score: float  # Higher = more urgent
+
+    @property
+    def effort_days(self) -> tuple[int, int]:
+        return _EFFORT_DAYS.get(self.effort, (5, 30))
+
+    @property
+    def cost_range(self) -> tuple[int, int]:
+        return _EFFORT_COST.get(self.effort, (1_000, 20_000))
+
+    @property
+    def deadline_weeks(self) -> int:
+        key = (self.current_maturity.value, self.effort)
+        return _DEADLINE_WEEKS.get(key, 26)
+
+    @property
+    def responsible(self) -> str:
+        return _DOMAIN_OWNER.get(self.domain_id, "RSSI")
+
+    @property
+    def is_critical(self) -> bool:
+        return self.current_maturity == MaturityLevel.NOT_IMPLEMENTED
 
 
 @dataclass
@@ -187,6 +241,15 @@ class ScoringEngine:
                     "effort_label": g.effort.label,
                     "iso27001_refs": g.iso27001_refs,
                     "priority_score": round(g.priority_score, 2),
+                    "is_critical": g.is_critical,
+                    "smart": {
+                        "effort_days_low": g.effort_days[0],
+                        "effort_days_high": g.effort_days[1],
+                        "cost_low": g.cost_range[0],
+                        "cost_high": g.cost_range[1],
+                        "deadline_weeks": g.deadline_weeks,
+                        "responsible": g.responsible,
+                    },
                 }
                 for g in gaps
             ],
