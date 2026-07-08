@@ -650,7 +650,7 @@ def api_pdf_report(body: AssessmentRequest, background_tasks: BackgroundTasks):
         raise HTTPException(status_code=422, detail="Aucune réponse valide fournie.")
 
     engine = ScoringEngine()
-    result = engine.full_analysis(domains, org_name)
+    assessment = engine.calculate(domains, org_name)
 
     # Label lisible du secteur
     sector_label = "Non précisé"
@@ -658,7 +658,7 @@ def api_pdf_report(body: AssessmentRequest, background_tasks: BackgroundTasks):
         from nis2_analyzer.core.sector_profiles import get_sector_profile
         sector_label = get_sector_profile(body.sector).sector_label
 
-    pdf_buffer = generate_pdf_report(result, sector=sector_label)
+    pdf_buffer = generate_pdf_report(assessment, sector=sector_label)
 
     tmp = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
     tmp.write(pdf_buffer.read())

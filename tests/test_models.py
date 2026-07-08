@@ -315,30 +315,30 @@ class TestDORAMapping:
         pytest.fail("NIS2-D01-R01 introuvable dans le référentiel")
 
     def test_unmapped_questions_have_empty_dora_fields(self):
-        """Les questions sans mapping DORA (ex: D05, D08) doivent avoir des champs vides."""
+        """Toutes les questions doivent désormais avoir un mapping DORA complet."""
         domains = load_framework()
-        
+
         for domain in domains:
             for req in domain.sub_requirements:
                 if req.id == "NIS2-D05-R01":
-                    # D05 n'est pas mappé DORA dans notre matrice
-                    assert req.dora_refs == []
-                    assert req.dora_pillar == ""
+                    # D05-R01 est mappé ICT Risk Management depuis Axe 4
+                    assert "DORA Art. 9" in req.dora_refs
+                    assert req.dora_pillar == "ICT Risk Management"
                     return
-        
+
         pytest.fail("NIS2-D05-R01 introuvable dans le référentiel")
 
     def test_total_questions_with_dora_mapping(self):
-        """16 questions doivent avoir un mapping DORA (selon la matrice validée)."""
+        """Les 35 questions doivent toutes avoir un mapping DORA complet (Axe 4)."""
         domains = load_framework()
-        
+
         mapped_count = sum(
-            1 for domain in domains 
-            for req in domain.sub_requirements 
+            1 for domain in domains
+            for req in domain.sub_requirements
             if req.dora_pillar
         )
-        
-        assert mapped_count == 16, f"Attendu 16 questions mappées DORA, trouvé {mapped_count}"
+
+        assert mapped_count == 35, f"Attendu 35 questions mappées DORA, trouvé {mapped_count}"
 
     def test_dora_coverage_returns_all_pillars(self, sample_remediation):
         """La propriété dora_coverage doit retourner tous les piliers présents."""
@@ -401,10 +401,10 @@ class TestDORAMapping:
         result = AssessmentResult(domains=domains)
         coverage = result.dora_coverage
         
-        # 4 piliers doivent être présents (Information Sharing n'est pas dans les questions)
-        assert len(coverage) == 4
-        
-        # ICT Risk Management : 3 questions à niveau ≥ 2 sur 5 = 60%
-        assert coverage["ICT Risk Management"]["coverage_pct"] == 60.0
+        # 5 piliers présents après complétion Axe 4 (ICT Incident Management ajouté)
+        assert len(coverage) == 5
+
+        # ICT Risk Management couvre maintenant 22 questions au total
+        assert coverage["ICT Risk Management"]["total_questions"] == 22
+        # Questions à maturité ≥ 2 dans les demo_answers : D01-R01, D01-R02, D01-R04 = 3
         assert coverage["ICT Risk Management"]["covered_questions"] == 3
-        assert coverage["ICT Risk Management"]["total_questions"] == 5

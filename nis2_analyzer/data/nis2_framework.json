@@ -9,10 +9,26 @@
     "last_updated": "2026-03-25"
   },
   "maturity_levels": {
-    "0": {"label": "Non implémenté", "description": "Aucune mesure en place ou non documentée.", "color": "#DC2626"},
-    "1": {"label": "Initial / Partiel", "description": "Mesure ad hoc, non formalisée, appliquée de manière incohérente.", "color": "#EA580C"},
-    "2": {"label": "Défini / Implémenté", "description": "Mesure formalisée, documentée et appliquée de manière cohérente.", "color": "#CA8A04"},
-    "3": {"label": "Géré / Mesuré", "description": "Mesure surveillée via KPI, revue régulièrement, améliorée continuellement.", "color": "#10B981"}
+    "0": {
+      "label": "Non implémenté",
+      "description": "Aucune mesure en place ou non documentée.",
+      "color": "#DC2626"
+    },
+    "1": {
+      "label": "Initial / Partiel",
+      "description": "Mesure ad hoc, non formalisée, appliquée de manière incohérente.",
+      "color": "#EA580C"
+    },
+    "2": {
+      "label": "Défini / Implémenté",
+      "description": "Mesure formalisée, documentée et appliquée de manière cohérente.",
+      "color": "#CA8A04"
+    },
+    "3": {
+      "label": "Géré / Mesuré",
+      "description": "Mesure surveillée via KPI, revue régulièrement, améliorée continuellement.",
+      "color": "#10B981"
+    }
   },
   "domains": [
     {
@@ -27,11 +43,23 @@
           "title": "Politique de sécurité des systèmes d'information (PSSI)",
           "description": "L'entité dispose d'une PSSI formalisée, approuvée par la direction, communiquée et revue périodiquement.",
           "question": "Disposez-vous d'une Politique de Sécurité des Systèmes d'Information (PSSI) formalisée, approuvée par la direction et communiquée à l'ensemble des collaborateurs ?",
-          "iso27001_refs": ["A.5.1", "A.5.2"],
-          "iso27001_controls": ["Politiques de sécurité de l'information", "Rôles et responsabilités liés à la sécurité de l'information"],
-          "dora_refs": ["DORA Art. 9"],
+          "iso27001_refs": [
+            "A.5.1",
+            "A.5.2"
+          ],
+          "iso27001_controls": [
+            "Politiques de sécurité de l'information",
+            "Rôles et responsabilités liés à la sécurité de l'information"
+          ],
+          "dora_refs": [
+            "DORA Art. 9"
+          ],
           "dora_pillar": "ICT Risk Management",
-          "evidence_examples": ["PSSI signée et datée", "Preuve de communication aux collaborateurs", "CR de revue annuelle"],
+          "evidence_examples": [
+            "PSSI signée et datée",
+            "Preuve de communication aux collaborateurs",
+            "CR de revue annuelle"
+          ],
           "remediation": {
             "quick_win": "Rédiger une PSSI cadre basée sur le template ANSSI et la faire valider par la direction.",
             "full_implementation": "Décliner la PSSI en politiques thématiques (accès, cryptographie, incidents, etc.), mettre en place un cycle de revue annuel.",
@@ -43,11 +71,23 @@
           "title": "Méthodologie d'analyse des risques",
           "description": "L'entité applique une méthodologie formalisée d'analyse des risques cyber (EBIOS RM, ISO 27005, FAIR, etc.).",
           "question": "Appliquez-vous une méthodologie formalisée d'analyse des risques cybersécurité (ex : EBIOS RM, ISO 27005, FAIR) ?",
-          "iso27001_refs": ["A.5.1", "A.8.8"],
-          "iso27001_controls": ["Politiques de sécurité de l'information", "Gestion des vulnérabilités techniques"],
-          "dora_refs": ["DORA Art. 6"],
+          "iso27001_refs": [
+            "A.5.1",
+            "A.8.8"
+          ],
+          "iso27001_controls": [
+            "Politiques de sécurité de l'information",
+            "Gestion des vulnérabilités techniques"
+          ],
+          "dora_refs": [
+            "DORA Art. 6"
+          ],
           "dora_pillar": "ICT Risk Management",
-          "evidence_examples": ["Document de méthodologie", "Analyses de risques réalisées", "Registre des risques"],
+          "evidence_examples": [
+            "Document de méthodologie",
+            "Analyses de risques réalisées",
+            "Registre des risques"
+          ],
           "remediation": {
             "quick_win": "Adopter EBIOS RM et réaliser une première analyse sur le périmètre le plus critique.",
             "full_implementation": "Intégrer l'analyse de risques dans le cycle de vie des projets, mettre à jour le registre des risques trimestriellement.",
@@ -59,11 +99,23 @@
           "title": "Cartographie des actifs et des risques",
           "description": "L'entité maintient un inventaire des actifs critiques et une cartographie des risques associés, régulièrement mise à jour.",
           "question": "Maintenez-vous un inventaire des actifs critiques (SI, données, services) et une cartographie des risques cyber régulièrement mise à jour ?",
-          "iso27001_refs": ["A.5.9", "A.5.10"],
-          "iso27001_controls": ["Inventaire des informations et autres actifs associés", "Utilisation acceptable des informations et des actifs"],
-          "dora_refs": ["DORA Art. 8"],
+          "iso27001_refs": [
+            "A.5.9",
+            "A.5.10"
+          ],
+          "iso27001_controls": [
+            "Inventaire des informations et autres actifs associés",
+            "Utilisation acceptable des informations et des actifs"
+          ],
+          "dora_refs": [
+            "DORA Art. 8"
+          ],
           "dora_pillar": "ICT Risk Management",
-          "evidence_examples": ["Inventaire des actifs", "Cartographie des risques", "Date de dernière mise à jour"],
+          "evidence_examples": [
+            "Inventaire des actifs",
+            "Cartographie des risques",
+            "Date de dernière mise à jour"
+          ],
           "remediation": {
             "quick_win": "Recenser les 20 actifs les plus critiques et leurs propriétaires.",
             "full_implementation": "Déployer un outil CMDB, automatiser la découverte d'actifs, relier chaque actif à son analyse de risques.",
@@ -75,11 +127,25 @@
           "title": "Gouvernance et responsabilités sécurité",
           "description": "Les rôles, responsabilités et l'organe de gouvernance de la sécurité sont clairement définis (RSSI, comité sécurité, etc.).",
           "question": "Les rôles et responsabilités en matière de cybersécurité sont-ils clairement définis (RSSI nommé, comité sécurité, reporting direction) ?",
-          "iso27001_refs": ["A.5.2", "A.5.3", "A.5.4"],
-          "iso27001_controls": ["Rôles et responsabilités", "Séparation des tâches", "Responsabilités de la direction"],
-          "dora_refs": ["DORA Art. 5"],
+          "iso27001_refs": [
+            "A.5.2",
+            "A.5.3",
+            "A.5.4"
+          ],
+          "iso27001_controls": [
+            "Rôles et responsabilités",
+            "Séparation des tâches",
+            "Responsabilités de la direction"
+          ],
+          "dora_refs": [
+            "DORA Art. 5"
+          ],
           "dora_pillar": "ICT Risk Management",
-          "evidence_examples": ["Organigramme sécurité", "Fiche de poste RSSI", "CR comité sécurité"],
+          "evidence_examples": [
+            "Organigramme sécurité",
+            "Fiche de poste RSSI",
+            "CR comité sécurité"
+          ],
           "remediation": {
             "quick_win": "Nommer un RSSI et définir ses responsabilités par écrit.",
             "full_implementation": "Créer un comité de sécurité avec gouvernance formalisée, reporting trimestriel à la direction générale.",
@@ -91,11 +157,23 @@
           "title": "Engagement budgétaire et reporting de la direction",
           "description": "La direction alloue un budget cybersécurité explicite, reçoit un reporting régulier sur la posture cyber, et assume la responsabilité personnelle introduite par NIS 2 article 20.",
           "question": "La direction alloue-t-elle un budget cybersécurité explicite révisé annuellement et reçoit-elle un reporting cyber régulier (au moins trimestriel) ?",
-          "iso27001_refs": ["A.5.1", "A.5.4"],
-          "iso27001_controls": ["Politiques de sécurité de l'information", "Responsabilités de la direction"],
-          "dora_refs": ["DORA Art. 5"],
+          "iso27001_refs": [
+            "A.5.1",
+            "A.5.4"
+          ],
+          "iso27001_controls": [
+            "Politiques de sécurité de l'information",
+            "Responsabilités de la direction"
+          ],
+          "dora_refs": [
+            "DORA Art. 5"
+          ],
           "dora_pillar": "ICT Risk Management",
-          "evidence_examples": ["Budget cyber documenté", "CR de revues direction trimestrielles", "Slides reporting COMEX/CODIR"],
+          "evidence_examples": [
+            "Budget cyber documenté",
+            "CR de revues direction trimestrielles",
+            "Slides reporting COMEX/CODIR"
+          ],
           "remediation": {
             "quick_win": "Mettre en place un reporting cyber trimestriel à la direction avec 5 indicateurs clés.",
             "full_implementation": "Budget cyber explicite, reporting mensuel au comité sécurité et trimestriel au COMEX, formalisation de la responsabilité personnelle des dirigeants conformément à l'article 20 de NIS 2.",
@@ -116,11 +194,25 @@
           "title": "Procédure de gestion des incidents",
           "description": "L'entité dispose d'une procédure formalisée de détection, classification, réponse et clôture des incidents de sécurité.",
           "question": "Disposez-vous d'une procédure formalisée de gestion des incidents de sécurité couvrant la détection, la classification, la réponse et la clôture ?",
-          "iso27001_refs": ["A.5.24", "A.5.25", "A.5.26"],
-          "iso27001_controls": ["Planification et préparation de la gestion des incidents", "Appréciation et décision", "Réponse aux incidents"],
-          "dora_refs": ["DORA Art. 17"],
+          "iso27001_refs": [
+            "A.5.24",
+            "A.5.25",
+            "A.5.26"
+          ],
+          "iso27001_controls": [
+            "Planification et préparation de la gestion des incidents",
+            "Appréciation et décision",
+            "Réponse aux incidents"
+          ],
+          "dora_refs": [
+            "DORA Art. 17"
+          ],
           "dora_pillar": "ICT-Related Incident Management",
-          "evidence_examples": ["Procédure de gestion d'incidents", "Playbooks de réponse", "Historique des incidents traités"],
+          "evidence_examples": [
+            "Procédure de gestion d'incidents",
+            "Playbooks de réponse",
+            "Historique des incidents traités"
+          ],
           "remediation": {
             "quick_win": "Rédiger une procédure de gestion d'incidents avec une matrice de classification (critique/majeur/mineur).",
             "full_implementation": "Déployer un outil de ticketing sécurité, créer des playbooks par type d'incident, réaliser des exercices de simulation.",
@@ -132,11 +224,24 @@
           "title": "Capacités de détection",
           "description": "L'entité dispose de moyens techniques de détection des incidents (SIEM, EDR, NDR, SOC interne ou externalisé).",
           "question": "Disposez-vous de moyens techniques de détection des incidents de sécurité (SIEM, EDR, NDR, SOC) ?",
-          "iso27001_refs": ["A.8.15", "A.8.16"],
-          "iso27001_controls": ["Journalisation", "Surveillance des activités"],
-          "dora_refs": ["DORA Art. 17"],
+          "iso27001_refs": [
+            "A.8.15",
+            "A.8.16"
+          ],
+          "iso27001_controls": [
+            "Journalisation",
+            "Surveillance des activités"
+          ],
+          "dora_refs": [
+            "DORA Art. 17"
+          ],
           "dora_pillar": "ICT-Related Incident Management",
-          "evidence_examples": ["Architecture SOC", "Contrat SOC externalisé", "Dashboards de détection", "Règles de corrélation"],
+          "evidence_examples": [
+            "Architecture SOC",
+            "Contrat SOC externalisé",
+            "Dashboards de détection",
+            "Règles de corrélation"
+          ],
           "remediation": {
             "quick_win": "Activer la journalisation centralisée sur les actifs critiques et mettre en place des alertes basiques.",
             "full_implementation": "Déployer un SIEM avec règles de corrélation, intégrer un EDR sur les endpoints, contractualiser un SOC 24/7.",
@@ -148,11 +253,23 @@
           "title": "Notification des incidents",
           "description": "L'entité est capable de notifier les incidents significatifs aux autorités compétentes dans les délais NIS 2 (alerte précoce 24h, notification 72h, rapport final 1 mois).",
           "question": "Avez-vous un processus de notification des incidents aux autorités compétentes (ANSSI/CSIRT) respectant les délais NIS 2 (24h/72h/1 mois) ?",
-          "iso27001_refs": ["A.5.24", "A.5.5"],
-          "iso27001_controls": ["Planification et préparation de la gestion des incidents", "Contact avec les autorités"],
-          "dora_refs": ["DORA Art. 19"],
+          "iso27001_refs": [
+            "A.5.24",
+            "A.5.5"
+          ],
+          "iso27001_controls": [
+            "Planification et préparation de la gestion des incidents",
+            "Contact avec les autorités"
+          ],
+          "dora_refs": [
+            "DORA Art. 19"
+          ],
           "dora_pillar": "ICT-Related Incident Management",
-          "evidence_examples": ["Procédure de notification", "Template de rapport", "Liste de contacts autorités"],
+          "evidence_examples": [
+            "Procédure de notification",
+            "Template de rapport",
+            "Liste de contacts autorités"
+          ],
           "remediation": {
             "quick_win": "Identifier les points de contact ANSSI/CSIRT, créer un template de notification avec les champs obligatoires NIS 2.",
             "full_implementation": "Automatiser la chaîne de notification, former les équipes aux délais réglementaires, tester via exercices.",
@@ -164,11 +281,21 @@
           "title": "Retour d'expérience et amélioration",
           "description": "Un processus de retour d'expérience (post-mortem) est appliqué après chaque incident significatif.",
           "question": "Réalisez-vous systématiquement un retour d'expérience (post-mortem) après chaque incident significatif avec des actions d'amélioration ?",
-          "iso27001_refs": ["A.5.27"],
-          "iso27001_controls": ["Retour d'expérience des incidents de sécurité de l'information"],
-          "dora_refs": ["DORA Art. 18"],
+          "iso27001_refs": [
+            "A.5.27"
+          ],
+          "iso27001_controls": [
+            "Retour d'expérience des incidents de sécurité de l'information"
+          ],
+          "dora_refs": [
+            "DORA Art. 18"
+          ],
           "dora_pillar": "ICT-Related Incident Management",
-          "evidence_examples": ["Rapports post-mortem", "Actions correctives issues des REX", "Suivi de mise en œuvre"],
+          "evidence_examples": [
+            "Rapports post-mortem",
+            "Actions correctives issues des REX",
+            "Suivi de mise en œuvre"
+          ],
           "remediation": {
             "quick_win": "Créer un template de post-mortem et l'appliquer au prochain incident.",
             "full_implementation": "Intégrer le REX dans le processus d'amélioration continue du SMSI, alimenter le registre des risques avec les enseignements.",
@@ -189,11 +316,23 @@
           "title": "Plan de continuité d'activité (PCA)",
           "description": "L'entité dispose d'un PCA formalisé couvrant les scénarios de perturbation des systèmes d'information.",
           "question": "Disposez-vous d'un Plan de Continuité d'Activité (PCA) formalisé couvrant les scénarios de perturbation majeure des systèmes d'information ?",
-          "iso27001_refs": ["A.5.29", "A.5.30"],
-          "iso27001_controls": ["Sécurité de l'information durant une perturbation", "Préparation des TIC pour la continuité d'activité"],
-          "dora_refs": ["DORA Art. 25"],
+          "iso27001_refs": [
+            "A.5.29",
+            "A.5.30"
+          ],
+          "iso27001_controls": [
+            "Sécurité de l'information durant une perturbation",
+            "Préparation des TIC pour la continuité d'activité"
+          ],
+          "dora_refs": [
+            "DORA Art. 25"
+          ],
           "dora_pillar": "Digital Operational Resilience Testing",
-          "evidence_examples": ["PCA documenté", "Scénarios de continuité", "RPO/RTO définis par application critique"],
+          "evidence_examples": [
+            "PCA documenté",
+            "Scénarios de continuité",
+            "RPO/RTO définis par application critique"
+          ],
           "remediation": {
             "quick_win": "Identifier les 10 processus métier les plus critiques et définir leurs RPO/RTO.",
             "full_implementation": "Rédiger un PCA complet, mettre en place des solutions de basculement, tester annuellement.",
@@ -205,11 +344,21 @@
           "title": "Stratégie de sauvegarde et restauration",
           "description": "Une stratégie de sauvegarde est définie, testée régulièrement, et les délais de restauration sont vérifiés.",
           "question": "Votre stratégie de sauvegarde est-elle formalisée, les sauvegardes régulièrement testées, et les délais de restauration vérifiés ?",
-          "iso27001_refs": ["A.8.13"],
-          "iso27001_controls": ["Sauvegarde des informations"],
-          "dora_refs": ["DORA Art. 25"],
+          "iso27001_refs": [
+            "A.8.13"
+          ],
+          "iso27001_controls": [
+            "Sauvegarde des informations"
+          ],
+          "dora_refs": [
+            "DORA Art. 25"
+          ],
           "dora_pillar": "Digital Operational Resilience Testing",
-          "evidence_examples": ["Politique de sauvegarde", "Résultats de tests de restauration", "Logs de sauvegarde"],
+          "evidence_examples": [
+            "Politique de sauvegarde",
+            "Résultats de tests de restauration",
+            "Logs de sauvegarde"
+          ],
           "remediation": {
             "quick_win": "Vérifier que tous les actifs critiques sont sauvegardés et réaliser un test de restauration.",
             "full_implementation": "Appliquer la règle 3-2-1, tester mensuellement, stocker hors site avec chiffrement.",
@@ -221,25 +370,52 @@
           "title": "Gestion de crise cyber",
           "description": "Un dispositif de gestion de crise cyber est défini avec des rôles clairs, des procédures d'escalade et des exercices réguliers.",
           "question": "Disposez-vous d'un dispositif de gestion de crise cyber avec cellule de crise, procédures d'escalade et exercices réguliers ?",
-          "iso27001_refs": ["A.5.24", "A.5.29"],
-          "iso27001_controls": ["Planification et préparation", "Sécurité de l'information durant une perturbation"],
-          "evidence_examples": ["Plan de gestion de crise", "Composition cellule de crise", "CR d'exercices de crise"],
+          "iso27001_refs": [
+            "A.5.24",
+            "A.5.29"
+          ],
+          "iso27001_controls": [
+            "Planification et préparation",
+            "Sécurité de l'information durant une perturbation"
+          ],
+          "evidence_examples": [
+            "Plan de gestion de crise",
+            "Composition cellule de crise",
+            "CR d'exercices de crise"
+          ],
           "remediation": {
             "quick_win": "Définir la composition de la cellule de crise et les procédures d'escalade.",
             "full_implementation": "Réaliser des exercices de crise semestriels (tabletop + technique), intégrer les leçons apprises.",
             "effort": "medium"
-          }
+          },
+          "dora_refs": [
+            "DORA Art. 17",
+            "DORA Art. 18"
+          ],
+          "dora_pillar": "ICT Incident Management"
         },
         {
           "id": "NIS2-D03-R04",
           "title": "Tests effectifs du PCA et exercices de crise",
           "description": "Le PCA et le dispositif de gestion de crise sont testés régulièrement par des exercices techniques (pas seulement tabletop) couvrant des scénarios cyber réalistes : ransomware, indisponibilité prolongée, compromission supply chain.",
           "question": "Le PCA et le dispositif de gestion de crise sont-ils testés au moins une fois par an avec des exercices techniques (pas seulement tabletop) sur des scénarios cyber réalistes ?",
-          "iso27001_refs": ["A.5.30", "A.8.13"],
-          "iso27001_controls": ["Préparation des TIC pour la continuité d'activité", "Sauvegarde des informations"],
-          "dora_refs": ["DORA Art. 25"],
+          "iso27001_refs": [
+            "A.5.30",
+            "A.8.13"
+          ],
+          "iso27001_controls": [
+            "Préparation des TIC pour la continuité d'activité",
+            "Sauvegarde des informations"
+          ],
+          "dora_refs": [
+            "DORA Art. 25"
+          ],
           "dora_pillar": "Digital Operational Resilience Testing",
-          "evidence_examples": ["CR d'exercices techniques annuels", "Scénarios joués (ransomware, SI indisponible)", "Indicateurs de performance des exercices (RTO réel mesuré)"],
+          "evidence_examples": [
+            "CR d'exercices techniques annuels",
+            "Scénarios joués (ransomware, SI indisponible)",
+            "Indicateurs de performance des exercices (RTO réel mesuré)"
+          ],
           "remediation": {
             "quick_win": "Organiser un exercice tabletop semestriel sur un scénario ransomware avec la cellule de crise.",
             "full_implementation": "Programme annuel : 1 exercice technique complet (bascule effective sur site de secours), 2 exercices tabletop par an, mesure des écarts entre RTO théorique et RTO observé, REX systématique.",
@@ -260,11 +436,26 @@
           "title": "Évaluation des risques fournisseurs",
           "description": "L'entité évalue les risques cybersécurité de ses fournisseurs critiques (Third Party Risk Assessment).",
           "question": "Évaluez-vous systématiquement les risques cybersécurité de vos fournisseurs et prestataires critiques avant et pendant la relation contractuelle ?",
-          "iso27001_refs": ["A.5.19", "A.5.20", "A.5.21"],
-          "iso27001_controls": ["Sécurité de l'information dans les relations avec les fournisseurs", "Prise en compte de la sécurité dans les accords avec les fournisseurs", "Gestion de la sécurité dans la chaîne d'approvisionnement TIC"],
-          "dora_refs": ["DORA Art. 28", "DORA Art. 29"],
+          "iso27001_refs": [
+            "A.5.19",
+            "A.5.20",
+            "A.5.21"
+          ],
+          "iso27001_controls": [
+            "Sécurité de l'information dans les relations avec les fournisseurs",
+            "Prise en compte de la sécurité dans les accords avec les fournisseurs",
+            "Gestion de la sécurité dans la chaîne d'approvisionnement TIC"
+          ],
+          "dora_refs": [
+            "DORA Art. 28",
+            "DORA Art. 29"
+          ],
           "dora_pillar": "ICT Third-Party Risk",
-          "evidence_examples": ["Questionnaire d'évaluation fournisseurs", "Résultats d'évaluation", "Registre des fournisseurs critiques"],
+          "evidence_examples": [
+            "Questionnaire d'évaluation fournisseurs",
+            "Résultats d'évaluation",
+            "Registre des fournisseurs critiques"
+          ],
           "remediation": {
             "quick_win": "Identifier les 10 fournisseurs IT les plus critiques et leur envoyer un questionnaire de sécurité.",
             "full_implementation": "Mettre en place un processus TPRM (Third Party Risk Management) avec scoring, revue annuelle et clauses contractuelles.",
@@ -276,11 +467,21 @@
           "title": "Clauses contractuelles de sécurité",
           "description": "Les contrats avec les fournisseurs incluent des exigences de cybersécurité, des SLA et des droits d'audit.",
           "question": "Vos contrats avec les fournisseurs critiques incluent-ils des clauses de cybersécurité (exigences, SLA, notification d'incidents, droit d'audit) ?",
-          "iso27001_refs": ["A.5.20"],
-          "iso27001_controls": ["Prise en compte de la sécurité de l'information dans les accords avec les fournisseurs"],
-          "dora_refs": ["DORA Art. 30"],
+          "iso27001_refs": [
+            "A.5.20"
+          ],
+          "iso27001_controls": [
+            "Prise en compte de la sécurité de l'information dans les accords avec les fournisseurs"
+          ],
+          "dora_refs": [
+            "DORA Art. 30"
+          ],
           "dora_pillar": "ICT Third-Party Risk",
-          "evidence_examples": ["Clauses types de sécurité", "Contrats avec annexes sécurité", "SLA documentés"],
+          "evidence_examples": [
+            "Clauses types de sécurité",
+            "Contrats avec annexes sécurité",
+            "SLA documentés"
+          ],
           "remediation": {
             "quick_win": "Rédiger un annexe sécurité type à intégrer dans les nouveaux contrats.",
             "full_implementation": "Réviser l'ensemble des contrats fournisseurs critiques, intégrer notification d'incidents et droit d'audit.",
@@ -292,11 +493,21 @@
           "title": "Surveillance continue des fournisseurs",
           "description": "Un dispositif de surveillance continue des fournisseurs est en place (revues périodiques, suivi des incidents, indicateurs).",
           "question": "Disposez-vous d'un dispositif de surveillance continue de vos fournisseurs critiques (revues périodiques, suivi des incidents, KPI) ?",
-          "iso27001_refs": ["A.5.22"],
-          "iso27001_controls": ["Surveillance, révision et gestion des changements des services fournis"],
-          "dora_refs": ["DORA Art. 28"],
+          "iso27001_refs": [
+            "A.5.22"
+          ],
+          "iso27001_controls": [
+            "Surveillance, révision et gestion des changements des services fournis"
+          ],
+          "dora_refs": [
+            "DORA Art. 28"
+          ],
           "dora_pillar": "ICT Third-Party Risk",
-          "evidence_examples": ["Planning de revues fournisseurs", "KPI fournisseurs", "CR de revues"],
+          "evidence_examples": [
+            "Planning de revues fournisseurs",
+            "KPI fournisseurs",
+            "CR de revues"
+          ],
           "remediation": {
             "quick_win": "Planifier une revue annuelle avec chaque fournisseur critique.",
             "full_implementation": "Déployer un outil de TPRM avec scoring dynamique et alertes en cas de dégradation.",
@@ -317,42 +528,82 @@
           "title": "Sécurité dans le cycle de développement (SDLC)",
           "description": "Des pratiques de développement sécurisé sont intégrées dans le cycle de vie des applications (DevSecOps, revue de code, tests).",
           "question": "Intégrez-vous la sécurité dans votre cycle de développement logiciel (revue de code, tests de sécurité, DevSecOps) ?",
-          "iso27001_refs": ["A.8.25", "A.8.26", "A.8.27"],
-          "iso27001_controls": ["Cycle de vie de développement sécurisé", "Exigences de sécurité des applications", "Principes d'architecture et d'ingénierie sécurisées"],
-          "evidence_examples": ["Politique de développement sécurisé", "Résultats SAST/DAST", "Pipeline CI/CD avec gates sécurité"],
+          "iso27001_refs": [
+            "A.8.25",
+            "A.8.26",
+            "A.8.27"
+          ],
+          "iso27001_controls": [
+            "Cycle de vie de développement sécurisé",
+            "Exigences de sécurité des applications",
+            "Principes d'architecture et d'ingénierie sécurisées"
+          ],
+          "evidence_examples": [
+            "Politique de développement sécurisé",
+            "Résultats SAST/DAST",
+            "Pipeline CI/CD avec gates sécurité"
+          ],
           "remediation": {
             "quick_win": "Intégrer un scan SAST dans le pipeline CI/CD existant.",
             "full_implementation": "Adopter une démarche DevSecOps complète : threat modeling, SAST, DAST, SCA, revue de code, gates de sécurité.",
             "effort": "high"
-          }
+          },
+          "dora_refs": [
+            "DORA Art. 9"
+          ],
+          "dora_pillar": "ICT Risk Management"
         },
         {
           "id": "NIS2-D05-R02",
           "title": "Gestion des vulnérabilités",
           "description": "Un processus de gestion des vulnérabilités est en place : identification, qualification, priorisation et remédiation dans des délais définis.",
           "question": "Disposez-vous d'un processus formalisé de gestion des vulnérabilités avec identification, priorisation (CVSS) et remédiation dans des délais définis ?",
-          "iso27001_refs": ["A.8.8"],
-          "iso27001_controls": ["Gestion des vulnérabilités techniques"],
-          "evidence_examples": ["Politique de gestion des vulnérabilités", "Rapports de scan", "KPI de remédiation (MTTR)"],
+          "iso27001_refs": [
+            "A.8.8"
+          ],
+          "iso27001_controls": [
+            "Gestion des vulnérabilités techniques"
+          ],
+          "evidence_examples": [
+            "Politique de gestion des vulnérabilités",
+            "Rapports de scan",
+            "KPI de remédiation (MTTR)"
+          ],
           "remediation": {
             "quick_win": "Déployer un scanner de vulnérabilités sur le périmètre exposé et définir des SLA de remédiation par criticité.",
             "full_implementation": "Processus complet : scan régulier, corrélation avec le CMDB, priorisation contextuelle, reporting direction.",
             "effort": "medium"
-          }
+          },
+          "dora_refs": [
+            "DORA Art. 9"
+          ],
+          "dora_pillar": "ICT Risk Management"
         },
         {
           "id": "NIS2-D05-R03",
           "title": "Gestion des changements et des mises à jour",
           "description": "Les changements sur les SI sont contrôlés via un processus formalisé incluant une évaluation de l'impact sécurité.",
           "question": "Disposez-vous d'un processus de gestion des changements incluant une évaluation systématique de l'impact sécurité ?",
-          "iso27001_refs": ["A.8.32"],
-          "iso27001_controls": ["Gestion des changements"],
-          "evidence_examples": ["Procédure de gestion des changements", "CAB (Change Advisory Board)", "Évaluations d'impact sécurité"],
+          "iso27001_refs": [
+            "A.8.32"
+          ],
+          "iso27001_controls": [
+            "Gestion des changements"
+          ],
+          "evidence_examples": [
+            "Procédure de gestion des changements",
+            "CAB (Change Advisory Board)",
+            "Évaluations d'impact sécurité"
+          ],
           "remediation": {
             "quick_win": "Exiger une validation sécurité pour tout changement sur les actifs critiques.",
             "full_implementation": "Intégrer l'évaluation sécurité dans le processus CAB, automatiser les checks pré-déploiement.",
             "effort": "medium"
-          }
+          },
+          "dora_refs": [
+            "DORA Art. 9"
+          ],
+          "dora_pillar": "ICT Risk Management"
         }
       ]
     },
@@ -368,11 +619,23 @@
           "title": "Programme d'audit de sécurité",
           "description": "Un programme d'audit de sécurité est défini et exécuté régulièrement (audits internes, tests d'intrusion, revues de configuration).",
           "question": "Disposez-vous d'un programme d'audit de sécurité régulier incluant audits internes, tests d'intrusion et revues de configuration ?",
-          "iso27001_refs": ["A.5.35", "A.5.36"],
-          "iso27001_controls": ["Revue indépendante de la sécurité de l'information", "Conformité aux politiques et normes"],
-          "dora_refs": ["DORA Art. 24"],
+          "iso27001_refs": [
+            "A.5.35",
+            "A.5.36"
+          ],
+          "iso27001_controls": [
+            "Revue indépendante de la sécurité de l'information",
+            "Conformité aux politiques et normes"
+          ],
+          "dora_refs": [
+            "DORA Art. 24"
+          ],
           "dora_pillar": "Digital Operational Resilience Testing",
-          "evidence_examples": ["Programme d'audit annuel", "Rapports de pentest", "Plan de remédiation issu des audits"],
+          "evidence_examples": [
+            "Programme d'audit annuel",
+            "Rapports de pentest",
+            "Plan de remédiation issu des audits"
+          ],
           "remediation": {
             "quick_win": "Planifier un test d'intrusion externe annuel sur le périmètre exposé.",
             "full_implementation": "Programme complet : audit interne semestriel, pentest annuel, revues de configuration trimestrielles, suivi des remédiations.",
@@ -384,14 +647,27 @@
           "title": "Indicateurs de performance sécurité (KPI/KRI)",
           "description": "Des indicateurs de performance et de risque sécurité sont définis, mesurés et reportés à la direction.",
           "question": "Avez-vous défini des indicateurs de performance sécurité (KPI/KRI) mesurés régulièrement et reportés à la direction ?",
-          "iso27001_refs": ["A.5.1"],
-          "iso27001_controls": ["Politiques de sécurité de l'information"],
-          "evidence_examples": ["Tableau de bord sécurité", "KPI définis", "Reporting direction"],
+          "iso27001_refs": [
+            "A.5.1"
+          ],
+          "iso27001_controls": [
+            "Politiques de sécurité de l'information"
+          ],
+          "evidence_examples": [
+            "Tableau de bord sécurité",
+            "KPI définis",
+            "Reporting direction"
+          ],
           "remediation": {
             "quick_win": "Définir 5 KPI essentiels (taux de patching, MTTR, couverture MFA, incidents ouverts, conformité password).",
             "full_implementation": "Dashboard automatisé avec KPI/KRI, reporting mensuel au comité sécurité, trimestriel à la direction.",
             "effort": "medium"
-          }
+          },
+          "dora_refs": [
+            "DORA Art. 5",
+            "DORA Art. 6"
+          ],
+          "dora_pillar": "ICT Risk Management"
         }
       ]
     },
@@ -407,70 +683,143 @@
           "title": "Programme de sensibilisation cybersécurité",
           "description": "Un programme de sensibilisation est déployé pour l'ensemble des collaborateurs, incluant des sessions régulières et du contenu adapté.",
           "question": "Disposez-vous d'un programme de sensibilisation cybersécurité déployé auprès de l'ensemble des collaborateurs avec des sessions régulières ?",
-          "iso27001_refs": ["A.6.3"],
-          "iso27001_controls": ["Sensibilisation, apprentissage et formation en sécurité de l'information"],
-          "evidence_examples": ["Plan de sensibilisation annuel", "Taux de participation", "Résultats des campagnes de phishing"],
+          "iso27001_refs": [
+            "A.6.3"
+          ],
+          "iso27001_controls": [
+            "Sensibilisation, apprentissage et formation en sécurité de l'information"
+          ],
+          "evidence_examples": [
+            "Plan de sensibilisation annuel",
+            "Taux de participation",
+            "Résultats des campagnes de phishing"
+          ],
           "remediation": {
             "quick_win": "Lancer une campagne de phishing simulé et une session de sensibilisation.",
             "full_implementation": "Programme annuel avec modules e-learning, campagnes phishing trimestrielles, formation renforcée pour les profils à risque.",
             "effort": "medium"
-          }
+          },
+          "dora_refs": [
+            "DORA Art. 13"
+          ],
+          "dora_pillar": "ICT Risk Management"
         },
         {
           "id": "NIS2-D07-R02",
           "title": "Formation cybersécurité ciblée",
           "description": "Des formations spécifiques sont dispensées aux profils à risque (dirigeants, administrateurs, développeurs).",
           "question": "Des formations cybersécurité spécifiques sont-elles dispensées aux profils à risque (dirigeants, administrateurs IT, développeurs) ?",
-          "iso27001_refs": ["A.6.3"],
-          "iso27001_controls": ["Sensibilisation, apprentissage et formation en sécurité de l'information"],
-          "evidence_examples": ["Plan de formation par profil", "Attestations de formation", "Budget formation sécurité"],
+          "iso27001_refs": [
+            "A.6.3"
+          ],
+          "iso27001_controls": [
+            "Sensibilisation, apprentissage et formation en sécurité de l'information"
+          ],
+          "evidence_examples": [
+            "Plan de formation par profil",
+            "Attestations de formation",
+            "Budget formation sécurité"
+          ],
           "remediation": {
             "quick_win": "Organiser une session de sensibilisation dédiée pour le comité de direction.",
             "full_implementation": "Parcours de formation par rôle : dirigeants (risques stratégiques), admins (durcissement), devs (OWASP Top 10).",
             "effort": "low"
-          }
+          },
+          "dora_refs": [
+            "DORA Art. 13"
+          ],
+          "dora_pillar": "ICT Risk Management"
         },
         {
           "id": "NIS2-D07-R03",
           "title": "Pratiques d'hygiène numérique",
           "description": "Des règles d'hygiène numérique de base sont définies et appliquées (mots de passe, mises à jour, verrouillage de session, etc.).",
           "question": "Des règles d'hygiène numérique de base sont-elles formalisées et appliquées (politique de mots de passe, mises à jour, verrouillage, clean desk) ?",
-          "iso27001_refs": ["A.5.10", "A.8.1", "A.8.9"],
-          "iso27001_controls": ["Utilisation acceptable des actifs", "Terminaux utilisateurs", "Gestion de la configuration"],
-          "evidence_examples": ["Charte informatique signée", "GPO de sécurité", "Politique de mots de passe"],
+          "iso27001_refs": [
+            "A.5.10",
+            "A.8.1",
+            "A.8.9"
+          ],
+          "iso27001_controls": [
+            "Utilisation acceptable des actifs",
+            "Terminaux utilisateurs",
+            "Gestion de la configuration"
+          ],
+          "evidence_examples": [
+            "Charte informatique signée",
+            "GPO de sécurité",
+            "Politique de mots de passe"
+          ],
           "remediation": {
             "quick_win": "Rédiger et faire signer une charte informatique à tous les collaborateurs.",
             "full_implementation": "Déployer des GPO de sécurité (verrouillage, complexité MDP, mises à jour automatiques), contrôler la conformité.",
             "effort": "low"
-          }
+          },
+          "dora_refs": [
+            "DORA Art. 13"
+          ],
+          "dora_pillar": "ICT Risk Management"
         },
         {
           "id": "NIS2-D07-R04",
           "title": "Mesure d'efficacité de la sensibilisation",
           "description": "L'efficacité du programme de sensibilisation est mesurée par des indicateurs concrets : taux de clic sur phishing simulé, taux de signalement des emails suspects, évolution dans le temps, formation ciblée pour les profils à risque détectés.",
           "question": "Mesurez-vous l'efficacité réelle de votre programme de sensibilisation par des indicateurs concrets (taux de clic phishing, taux de signalement, évolution dans le temps) ?",
-          "iso27001_refs": ["A.6.3", "A.5.1"],
-          "iso27001_controls": ["Sensibilisation, apprentissage et formation en sécurité de l'information", "Politiques de sécurité de l'information"],
-          "evidence_examples": ["Tableau de bord des campagnes phishing", "Évolution du taux de clic mois par mois", "Suivi des collaborateurs en formation renforcée", "KPI de signalement des emails suspects"],
+          "iso27001_refs": [
+            "A.6.3",
+            "A.5.1"
+          ],
+          "iso27001_controls": [
+            "Sensibilisation, apprentissage et formation en sécurité de l'information",
+            "Politiques de sécurité de l'information"
+          ],
+          "evidence_examples": [
+            "Tableau de bord des campagnes phishing",
+            "Évolution du taux de clic mois par mois",
+            "Suivi des collaborateurs en formation renforcée",
+            "KPI de signalement des emails suspects"
+          ],
           "remediation": {
             "quick_win": "Lancer une campagne de phishing simulé avec mesure du taux de clic et du taux de signalement.",
             "full_implementation": "Programme structuré : campagnes mensuelles, tableau de bord d'efficacité, formation ciblée automatique pour les collaborateurs ayant échoué, KPI consolidés et reportés à la direction.",
             "effort": "medium"
-          }
+          },
+          "dora_refs": [
+            "DORA Art. 13"
+          ],
+          "dora_pillar": "ICT Risk Management"
         },
         {
           "id": "NIS2-D07-R05",
           "title": "Filtrage Internet et contrôle des périphériques",
           "description": "Des dispositifs techniques contrôlent l'accès Internet (proxy, DNS filtering), l'usage des périphériques externes (USB, disques amovibles) et la prolifération du shadow IT (services SaaS non approuvés).",
           "question": "Disposez-vous de dispositifs techniques de filtrage Internet (proxy, DNS), de contrôle des périphériques USB et de détection du shadow IT ?",
-          "iso27001_refs": ["A.8.1", "A.8.7", "A.8.22"],
-          "iso27001_controls": ["Terminaux utilisateurs", "Protection contre les logiciels malveillants", "Séparation des réseaux"],
-          "evidence_examples": ["Configuration du proxy/DNS filtering", "Politique de contrôle USB (chiffrement obligatoire ou blocage)", "Outil CASB ou DLP pour shadow IT", "Liste des sites/services bloqués"],
+          "iso27001_refs": [
+            "A.8.1",
+            "A.8.7",
+            "A.8.22"
+          ],
+          "iso27001_controls": [
+            "Terminaux utilisateurs",
+            "Protection contre les logiciels malveillants",
+            "Séparation des réseaux"
+          ],
+          "evidence_examples": [
+            "Configuration du proxy/DNS filtering",
+            "Politique de contrôle USB (chiffrement obligatoire ou blocage)",
+            "Outil CASB ou DLP pour shadow IT",
+            "Liste des sites/services bloqués"
+          ],
           "remediation": {
             "quick_win": "Activer un filtrage DNS de base (ex : Cisco Umbrella, NextDNS) et bloquer les ports USB sur les postes critiques.",
             "full_implementation": "Solution complète : proxy avec catégorisation, contrôle USB granulaire (chiffrement obligatoire), CASB pour détecter le shadow IT, politique d'usage Internet documentée et appliquée.",
             "effort": "medium"
-          }
+          },
+          "dora_refs": [
+            "DORA Art. 9",
+            "DORA Art. 13"
+          ],
+          "dora_pillar": "ICT Risk Management"
         }
       ]
     },
@@ -486,28 +835,54 @@
           "title": "Politique de cryptographie",
           "description": "L'entité dispose d'une politique de cryptographie définissant les algorithmes autorisés, la gestion des clés et les cas d'usage.",
           "question": "Disposez-vous d'une politique de cryptographie définissant les algorithmes autorisés, la gestion des clés et les cas d'usage du chiffrement ?",
-          "iso27001_refs": ["A.8.24"],
-          "iso27001_controls": ["Utilisation de la cryptographie"],
-          "evidence_examples": ["Politique de cryptographie", "Inventaire des certificats", "Procédure de gestion des clés"],
+          "iso27001_refs": [
+            "A.8.24"
+          ],
+          "iso27001_controls": [
+            "Utilisation de la cryptographie"
+          ],
+          "evidence_examples": [
+            "Politique de cryptographie",
+            "Inventaire des certificats",
+            "Procédure de gestion des clés"
+          ],
           "remediation": {
             "quick_win": "Documenter les algorithmes et protocoles de chiffrement utilisés dans l'organisation.",
             "full_implementation": "Politique complète : algorithmes autorisés (AES-256, RSA-2048+, TLS 1.2+), gestion du cycle de vie des clés, PKI interne.",
             "effort": "medium"
-          }
+          },
+          "dora_refs": [
+            "DORA Art. 9"
+          ],
+          "dora_pillar": "ICT Risk Management"
         },
         {
           "id": "NIS2-D08-R02",
           "title": "Chiffrement des données sensibles",
           "description": "Les données sensibles sont chiffrées au repos et en transit selon la classification définie.",
           "question": "Les données sensibles sont-elles systématiquement chiffrées au repos et en transit selon une classification définie ?",
-          "iso27001_refs": ["A.8.24", "A.5.12"],
-          "iso27001_controls": ["Utilisation de la cryptographie", "Classification de l'information"],
-          "evidence_examples": ["Matrice de classification des données", "Configuration TLS", "Chiffrement des bases de données"],
+          "iso27001_refs": [
+            "A.8.24",
+            "A.5.12"
+          ],
+          "iso27001_controls": [
+            "Utilisation de la cryptographie",
+            "Classification de l'information"
+          ],
+          "evidence_examples": [
+            "Matrice de classification des données",
+            "Configuration TLS",
+            "Chiffrement des bases de données"
+          ],
           "remediation": {
             "quick_win": "Vérifier que TLS 1.2+ est actif sur tous les services exposés et que les BDD critiques sont chiffrées.",
             "full_implementation": "Classifier toutes les données, chiffrer systématiquement au repos et en transit, déployer un DLP.",
             "effort": "medium"
-          }
+          },
+          "dora_refs": [
+            "DORA Art. 9"
+          ],
+          "dora_pillar": "ICT Risk Management"
         }
       ]
     },
@@ -523,56 +898,120 @@
           "title": "Politique de contrôle d'accès",
           "description": "Une politique de contrôle d'accès basée sur le moindre privilège est définie et appliquée (RBAC, revue des accès).",
           "question": "Disposez-vous d'une politique de contrôle d'accès basée sur le moindre privilège avec revue régulière des droits ?",
-          "iso27001_refs": ["A.5.15", "A.5.18", "A.8.2"],
-          "iso27001_controls": ["Contrôle d'accès", "Droits d'accès", "Gestion des accès privilégiés"],
-          "evidence_examples": ["Politique de contrôle d'accès", "Matrice RBAC", "CR de revue des accès"],
+          "iso27001_refs": [
+            "A.5.15",
+            "A.5.18",
+            "A.8.2"
+          ],
+          "iso27001_controls": [
+            "Contrôle d'accès",
+            "Droits d'accès",
+            "Gestion des accès privilégiés"
+          ],
+          "evidence_examples": [
+            "Politique de contrôle d'accès",
+            "Matrice RBAC",
+            "CR de revue des accès"
+          ],
           "remediation": {
             "quick_win": "Réaliser une revue des accès privilégiés et supprimer les comptes orphelins.",
             "full_implementation": "Déployer un IAM avec RBAC, revue trimestrielle des accès, JIT pour les comptes à privilèges.",
             "effort": "high"
-          }
+          },
+          "dora_refs": [
+            "DORA Art. 9"
+          ],
+          "dora_pillar": "ICT Risk Management"
         },
         {
           "id": "NIS2-D09-R02",
           "title": "Gestion des arrivées, mouvements et départs",
           "description": "Des procédures encadrent l'attribution et la révocation des accès lors des arrivées, mutations et départs des collaborateurs.",
           "question": "Disposez-vous de procédures formalisées pour la gestion des accès lors des arrivées, mutations et départs de collaborateurs ?",
-          "iso27001_refs": ["A.6.1", "A.6.2", "A.6.5"],
-          "iso27001_controls": ["Sélection des candidats", "Conditions d'emploi", "Responsabilités après la fin ou le changement d'emploi"],
-          "evidence_examples": ["Procédure onboarding/offboarding IT", "Checklist de départ", "Délai de révocation des accès"],
+          "iso27001_refs": [
+            "A.6.1",
+            "A.6.2",
+            "A.6.5"
+          ],
+          "iso27001_controls": [
+            "Sélection des candidats",
+            "Conditions d'emploi",
+            "Responsabilités après la fin ou le changement d'emploi"
+          ],
+          "evidence_examples": [
+            "Procédure onboarding/offboarding IT",
+            "Checklist de départ",
+            "Délai de révocation des accès"
+          ],
           "remediation": {
             "quick_win": "Créer une checklist de révocation des accès au départ et vérifier qu'elle est appliquée.",
             "full_implementation": "Automatiser le provisioning/deprovisioning via l'IAM connecté au SIRH, SLA de révocation < 24h.",
             "effort": "medium"
-          }
+          },
+          "dora_refs": [
+            "DORA Art. 9"
+          ],
+          "dora_pillar": "ICT Risk Management"
         },
         {
           "id": "NIS2-D09-R03",
           "title": "Gestion des comptes à privilèges",
           "description": "Les comptes à privilèges sont inventoriés, sécurisés (MFA, PAM) et leur utilisation est tracée.",
           "question": "Les comptes à privilèges sont-ils inventoriés, protégés par MFA, gérés via un PAM et leur usage tracé ?",
-          "iso27001_refs": ["A.8.2", "A.8.5"],
-          "iso27001_controls": ["Gestion des accès privilégiés", "Authentification sécurisée"],
-          "evidence_examples": ["Inventaire des comptes privilégiés", "Solution PAM déployée", "Logs d'utilisation des comptes admin"],
+          "iso27001_refs": [
+            "A.8.2",
+            "A.8.5"
+          ],
+          "iso27001_controls": [
+            "Gestion des accès privilégiés",
+            "Authentification sécurisée"
+          ],
+          "evidence_examples": [
+            "Inventaire des comptes privilégiés",
+            "Solution PAM déployée",
+            "Logs d'utilisation des comptes admin"
+          ],
           "remediation": {
             "quick_win": "Inventorier tous les comptes admin et activer le MFA sur chacun.",
             "full_implementation": "Déployer un PAM (CyberArk, Delinea), appliquer le JIT, enregistrer les sessions privilégiées.",
             "effort": "high"
-          }
+          },
+          "dora_refs": [
+            "DORA Art. 9",
+            "DORA Art. 10"
+          ],
+          "dora_pillar": "ICT Risk Management"
         },
         {
           "id": "NIS2-D09-R04",
           "title": "Gestion des actifs informatiques",
           "description": "Un inventaire exhaustif des actifs matériels et logiciels est maintenu et associé à des responsables identifiés.",
           "question": "Maintenez-vous un inventaire exhaustif et à jour de vos actifs informatiques (matériels, logiciels) avec des propriétaires identifiés ?",
-          "iso27001_refs": ["A.5.9", "A.5.10", "A.5.11"],
-          "iso27001_controls": ["Inventaire des informations et actifs", "Utilisation acceptable", "Restitution des actifs"],
-          "evidence_examples": ["CMDB à jour", "Taux de couverture de l'inventaire", "Propriétaires assignés"],
+          "iso27001_refs": [
+            "A.5.9",
+            "A.5.10",
+            "A.5.11"
+          ],
+          "iso27001_controls": [
+            "Inventaire des informations et actifs",
+            "Utilisation acceptable",
+            "Restitution des actifs"
+          ],
+          "evidence_examples": [
+            "CMDB à jour",
+            "Taux de couverture de l'inventaire",
+            "Propriétaires assignés"
+          ],
           "remediation": {
             "quick_win": "Lancer un scan de découverte réseau et comparer avec l'inventaire existant.",
             "full_implementation": "Déployer une CMDB avec découverte automatisée, assigner un propriétaire à chaque actif, revue semestrielle.",
             "effort": "high"
-          }
+          },
+          "dora_refs": [
+            "DORA Art. 8",
+            "DORA Art. 9"
+          ],
+          "dora_pillar": "ICT Risk Management"
         }
       ]
     },
@@ -588,42 +1027,84 @@
           "title": "Authentification multifacteur (MFA)",
           "description": "Le MFA est déployé sur l'ensemble des accès critiques (VPN, mail, applications métier, administration).",
           "question": "L'authentification multifacteur (MFA) est-elle déployée sur tous les accès critiques (VPN, messagerie, applications métier, comptes d'administration) ?",
-          "iso27001_refs": ["A.8.5"],
-          "iso27001_controls": ["Authentification sécurisée"],
-          "evidence_examples": ["Taux de couverture MFA", "Liste des applications avec MFA", "Politique MFA"],
+          "iso27001_refs": [
+            "A.8.5"
+          ],
+          "iso27001_controls": [
+            "Authentification sécurisée"
+          ],
+          "evidence_examples": [
+            "Taux de couverture MFA",
+            "Liste des applications avec MFA",
+            "Politique MFA"
+          ],
           "remediation": {
             "quick_win": "Activer le MFA sur les comptes administrateurs et les accès VPN immédiatement.",
             "full_implementation": "MFA sur 100% des accès, préférer FIDO2/passkeys, bloquer l'authentification legacy.",
             "effort": "medium"
-          }
+          },
+          "dora_refs": [
+            "DORA Art. 9",
+            "DORA Art. 10"
+          ],
+          "dora_pillar": "ICT Risk Management"
         },
         {
           "id": "NIS2-D10-R02",
           "title": "Communications sécurisées",
           "description": "Les communications internes sensibles (voix, vidéo, messagerie) utilisent des canaux chiffrés et sécurisés.",
           "question": "Les communications internes sensibles (voix, vidéo, messagerie instantanée) utilisent-elles des canaux chiffrés et sécurisés ?",
-          "iso27001_refs": ["A.8.24", "A.5.14"],
-          "iso27001_controls": ["Utilisation de la cryptographie", "Transfert de l'information"],
-          "evidence_examples": ["Solution de messagerie sécurisée", "Chiffrement des visioconférences", "Politique de communication"],
+          "iso27001_refs": [
+            "A.8.24",
+            "A.5.14"
+          ],
+          "iso27001_controls": [
+            "Utilisation de la cryptographie",
+            "Transfert de l'information"
+          ],
+          "evidence_examples": [
+            "Solution de messagerie sécurisée",
+            "Chiffrement des visioconférences",
+            "Politique de communication"
+          ],
           "remediation": {
             "quick_win": "Vérifier que Teams/Zoom utilise le chiffrement en transit et interdire les outils non approuvés.",
             "full_implementation": "Déployer une solution de communication chiffrée E2E pour les échanges sensibles, politique de classification des canaux.",
             "effort": "low"
-          }
+          },
+          "dora_refs": [
+            "DORA Art. 9"
+          ],
+          "dora_pillar": "ICT Risk Management"
         },
         {
           "id": "NIS2-D10-R03",
           "title": "Communications d'urgence sécurisées",
           "description": "Un canal de communication d'urgence sécurisé est prévu en cas de crise (indépendant du SI principal).",
           "question": "Disposez-vous d'un canal de communication d'urgence sécurisé, indépendant de votre SI principal, pour les situations de crise ?",
-          "iso27001_refs": ["A.5.24", "A.5.29"],
-          "iso27001_controls": ["Planification et préparation de la gestion des incidents", "Sécurité de l'information durant une perturbation"],
-          "evidence_examples": ["Canal de crise identifié", "Test du canal d'urgence", "Annuaire de crise hors SI"],
+          "iso27001_refs": [
+            "A.5.24",
+            "A.5.29"
+          ],
+          "iso27001_controls": [
+            "Planification et préparation de la gestion des incidents",
+            "Sécurité de l'information durant une perturbation"
+          ],
+          "evidence_examples": [
+            "Canal de crise identifié",
+            "Test du canal d'urgence",
+            "Annuaire de crise hors SI"
+          ],
           "remediation": {
             "quick_win": "Identifier un canal hors-bande (Signal, téléphones de crise) et distribuer l'annuaire de crise.",
             "full_implementation": "Solution dédiée de communication de crise testée semestriellement, indépendante du SI et de l'opérateur principal.",
             "effort": "low"
-          }
+          },
+          "dora_refs": [
+            "DORA Art. 14",
+            "DORA Art. 17"
+          ],
+          "dora_pillar": "ICT Incident Management"
         }
       ]
     }
