@@ -707,12 +707,61 @@
         <div class="domain-results">${domainRows}</div>
       </section>
       ${gapItems ? `<section><h3>Principaux gaps à traiter</h3><div class="gaps-list">${gapItems}</div></section>` : ''}
+      ${renderSmartPlan(data.gaps)}
       ${renderSectorReport(data.sector_report)}
       <div style="margin-top:2rem;padding-top:1.2rem;border-top:1px solid var(--border);display:flex;gap:1rem;align-items:center;">
         <button class="btn" id="pdf-btn" onclick="downloadPDF()">⬇ Télécharger le rapport PDF</button>
         <span id="pdf-status" style="font-size:0.82rem;color:var(--muted);"></span>
       </div>
     `;
+  }
+
+  function renderSmartPlan(gaps) {
+    if (!gaps || !gaps.length) return '';
+    const fmt = n => n >= 1000 ? (n / 1000).toFixed(0) + 'k€' : n + '€';
+    const phaseLabel = { 0: '🔴 Immédiat', 1: '🟠 Court terme', 2: '🟡 Moyen terme', 3: '⚪ Long terme' };
+    const phaseOrder = g => {
+      const w = g.smart?.deadline_weeks ?? 52;
+      return w <= 4 ? 0 : w <= 12 ? 1 : w <= 24 ? 2 : 3;
+    };
+    const sorted = [...gaps].sort((a, b) => phaseOrder(a) - phaseOrder(b));
+    const rows = sorted.map(g => {
+      const s = g.smart || {};
+      const phase = phaseOrder(g);
+      const phaseColors = ['var(--red)', '#F97316', 'var(--yellow)', 'var(--muted)'];
+      return `
+        <tr style="border-top:1px solid var(--border);">
+          <td style="padding:0.55rem 0.7rem;font-size:0.8rem;color:${phaseColors[phase]};white-space:nowrap;">${phaseLabel[phase]}</td>
+          <td style="padding:0.55rem 0.7rem;">
+            <div style="font-size:0.83rem;font-weight:500;">${esc(g.title)}</div>
+            <div style="font-size:0.75rem;color:var(--muted);">${esc(g.domain)}</div>
+          </td>
+          <td style="padding:0.55rem 0.7rem;font-size:0.8rem;color:var(--muted);white-space:nowrap;">${s.effort_days_low ?? '?'}–${s.effort_days_high ?? '?'} j</td>
+          <td style="padding:0.55rem 0.7rem;font-size:0.8rem;color:var(--muted);white-space:nowrap;">${fmt(s.cost_low ?? 0)} – ${fmt(s.cost_high ?? 0)}</td>
+          <td style="padding:0.55rem 0.7rem;font-size:0.8rem;color:var(--muted);">${s.responsible ?? '—'}</td>
+          <td style="padding:0.55rem 0.7rem;font-size:0.78rem;color:#93C5FD;max-width:200px;">${esc(g.quick_win || '—')}</td>
+        </tr>`;
+    }).join('');
+    return `
+      <section style="margin-top:2rem;">
+        <h3>Plan d'action SMART</h3>
+        <p style="color:var(--muted);font-size:0.83rem;margin-bottom:1rem;">Priorisé par délai recommandé — effort, coût et responsable par gap.</p>
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+            <thead>
+              <tr style="text-align:left;color:var(--muted);font-size:0.75rem;border-bottom:1px solid var(--border);">
+                <th style="padding:0.4rem 0.7rem;">Phase</th>
+                <th style="padding:0.4rem 0.7rem;">Gap</th>
+                <th style="padding:0.4rem 0.7rem;">Effort</th>
+                <th style="padding:0.4rem 0.7rem;">Coût estimé</th>
+                <th style="padding:0.4rem 0.7rem;">Responsable</th>
+                <th style="padding:0.4rem 0.7rem;">Quick win</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </section>`;
   }
 
   function renderSectorReport(sr) {
