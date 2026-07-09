@@ -627,14 +627,14 @@ def compute_mitre_mapping(
         Si False, retourne toutes les exigences mappées.
     """
     org_name = analysis.get("metadata", {}).get("organization", "Organisation")
-    domains = analysis.get("domains", [])
 
-    # Construire un dict {requirement_id: maturity}
+    # Construire un dict {requirement_id: maturity} depuis la liste des gaps
+    # Les gaps ont maturity < 3 ; les exigences non listées sont à maturity 3 (conformes)
     maturity_map: dict[str, int] = {}
-    for domain in domains:
-        for req in domain.get("requirements", []):
-            req_id = req.get("id", "")
-            maturity_map[req_id] = req.get("maturity", 3)
+    for gap in analysis.get("gaps", []):
+        req_id = gap.get("id", "")
+        if req_id:
+            maturity_map[req_id] = gap.get("current_maturity_value", 0)
 
     links: list[NIS2MitreLink] = []
     technique_counter: dict[str, int] = {}
