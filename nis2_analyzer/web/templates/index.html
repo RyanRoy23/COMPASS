@@ -185,6 +185,7 @@
   <button data-page="results" onclick="showPage('results')">Résultats</button>
   <button data-page="monte-carlo" onclick="showPage('monte-carlo')">Risque financier</button>
   <button data-page="aws-audit" onclick="showPage('aws-audit')">Audit AWS</button>
+  <button data-page="m365-audit" onclick="showPage('m365-audit')">Audit M365</button>
   <button data-page="sme" onclick="showPage('sme'); loadSMEQuestions()">Mode PME</button>
   <button data-page="governance" onclick="showPage('governance'); loadGovernance()">Gouvernance</button>
   <button data-page="incident" onclick="showPage('incident')">Incidents</button>
@@ -320,6 +321,37 @@
 
       <!-- Tous les findings -->
       <div id="aws-all-findings"></div>
+    </div>
+  </div>
+
+
+  <!-- ── PAGE : AUDIT M365 ── -->
+  <div id="page-m365-audit" class="page">
+    <div class="form-header">
+      <h2>Audit de sécurité Microsoft 365 / Azure AD</h2>
+      <p>Vérification automatique des contrôles M365 (MFA, Accès Conditionnel, PIM, Defender, DLP…) mappés aux exigences NIS 2 Art. 21.</p>
+    </div>
+
+    <div class="mc-banner" style="background:#1a1535;border:1px solid #3d2a7a;padding:1rem 1.2rem;border-radius:8px;margin-bottom:1.5rem;">
+      <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">
+        <span style="font-size:1.1rem;">🪟</span>
+        <strong>Mode démonstration activé</strong>
+        <span style="background:#6d28d9;color:#fff;font-size:0.65rem;padding:2px 6px;border-radius:99px;margin-left:auto;">DÉMO</span>
+      </div>
+      <p style="color:var(--muted);font-size:0.83rem;">Rapport simulé sur un tenant M365 typique. Pour un audit réel, fournissez un access_token Microsoft Graph via <code style="background:#0d1424;padding:2px 5px;border-radius:3px;">POST /api/m365-audit</code>.</p>
+    </div>
+
+    <div style="display:flex;gap:1rem;margin-bottom:1.5rem;align-items:center;">
+      <input id="m365-tenant-name" class="org-input" type="text" placeholder="Nom du tenant (ex: Contoso Ltd.)" maxlength="200" style="margin-bottom:0;flex:1;">
+      <button class="btn" onclick="runM365Audit()" style="background:#6d28d9;">Lancer l'audit</button>
+      <span id="m365-loading" style="color:var(--muted);font-size:0.85rem;display:none;">Analyse en cours…</span>
+    </div>
+
+    <div id="m365-results" style="display:none;">
+      <div class="mc-kpis" id="m365-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem;"></div>
+      <div id="m365-critical" style="margin-bottom:1.5rem;"></div>
+      <div id="m365-mapping" style="margin-bottom:1.5rem;"></div>
+      <div id="m365-all-findings"></div>
     </div>
   </div>
 
@@ -1418,6 +1450,84 @@
     document.getElementById('aws-all-findings').innerHTML = allHtml;
 
     document.getElementById('aws-results').style.display = 'block';
+  }
+
+
+  // ── Audit M365 ────────────────────────────────────────────────────────────
+  async function runM365Audit() {
+    const tenantName = document.getElementById('m365-tenant-name').value.trim() || 'Mon Organisation';
+    document.getElementById('m365-loading').style.display = 'inline';
+    document.getElementById('m365-results').style.display = 'none';
+    try {
+      const res = await fetch('/api/m365-audit', {
+        method: 'POST',
+        headers: apiHeaders(),
+        body: JSON.stringify({ demo_mode: true, tenant_name: tenantName }),
+      });
+      if (!res.ok) { const err = await res.json(); alert('Erreur : ' + (err.detail || res.statusText)); return; }
+      renderM365Audit(await res.json());
+    } catch (e) { alert('Erreur réseau : ' + e.message); }
+    finally { document.getElementById('m365-loading').style.display = 'none'; }
+  }
+
+  function renderM365Audit(data) {
+    const s = data.summary;
+    const scoreColor = data.security_score >= 70 ? 'var(--green)' : data.security_score >= 40 ? 'var(--yellow)' : 'var(--red)';
+    document.getElementById('m365-kpis').innerHTML = `
+      <div class="mc-kpi"><div class="kpi-label">Contrôles vérifiés</div><div class="kpi-value" style="color:var(--accent-light)">${s.total_controls}</div></div>
+      <div class="mc-kpi"><div class="kpi-label">Réussis</div><div class="kpi-value" style="color:var(--green)">${s.passed}</div></div>
+      <div class="mc-kpi"><div class="kpi-label">Échoués</div><div class="kpi-value" style="color:var(--red)">${s.failed}</div></div>
+      <div class="mc-kpi"><div class="kpi-label">Secure Score</div><div class="kpi-value" style="color:${scoreColor}">${data.security_score}/100</div></div>
+    `;
+    const crits = data.critical_findings;
+    let critHtml = '';
+    if (crits.length > 0) {
+      critHtml = `<div style="background:#2d1535;border:1px solid #5c2060;border-radius:8px;padding:1rem 1.2rem;margin-bottom:1rem;">
+        <div style="font-weight:600;color:#c084fc;margin-bottom:0.8rem;">🚨 ${crits.length} finding(s) CRITIQUE(S) — Action immédiate requise</div>`;
+      crits.forEach(f => {
+        critHtml += `<div style="border-top:1px solid #3d1050;padding:0.6rem 0;">
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.2rem;">
+            <span style="background:#5c2080;color:#e9d5ff;font-size:0.7rem;padding:1px 6px;border-radius:99px;font-weight:600;">${f.control_id}</span>
+            <strong style="font-size:0.88rem;">${f.title}</strong>
+          </div>
+          <div style="color:#e9d5ff;font-size:0.83rem;margin-bottom:0.2rem;">${f.detail}</div>
+          ${f.recommended_action ? `<div style="color:#86efac;font-size:0.8rem;">→ ${f.recommended_action}</div>` : ''}
+        </div>`;
+      });
+      critHtml += '</div>';
+    }
+    document.getElementById('m365-critical').innerHTML = critHtml;
+    const matDots = ['🔴', '🟡', '🔵', '🟢'];
+    const matColors = ['var(--red)', 'var(--yellow)', 'var(--accent)', 'var(--green)'];
+    const matLabels = ['Non implémenté', 'Partiel', 'Implémenté', 'Géré'];
+    let mapHtml = `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem 1.2rem;">
+      <div style="font-weight:600;margin-bottom:0.8rem;">Mapping NIS 2 — Niveaux de maturité déduits</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:0.5rem;">`;
+    Object.entries(data.maturity_mapping).sort().forEach(([req, level]) => {
+      mapHtml += `<div style="display:flex;align-items:center;gap:0.5rem;padding:0.4rem 0.6rem;background:#0d1424;border-radius:5px;">
+        <span>${matDots[level]}</span>
+        <div><div style="font-size:0.78rem;font-weight:600;color:${matColors[level]}">${matLabels[level]}</div>
+        <div style="font-size:0.72rem;color:var(--muted)">${req}</div></div></div>`;
+    });
+    mapHtml += '</div></div>';
+    document.getElementById('m365-mapping').innerHTML = mapHtml;
+    const statusIcon = { PASS: '✅', FAIL: '❌', WARN: '⚠️', INFO: 'ℹ️' };
+    const sevColor = { CRITICAL: '#e9d5ff', HIGH: '#fbbf24', MEDIUM: '#93c5fd', LOW: '#6b7280' };
+    let allHtml = `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+      <div style="padding:0.8rem 1.2rem;background:#161D2E;font-weight:600;font-size:0.88rem;">Tous les contrôles (${data.findings.length})</div>`;
+    data.findings.forEach(f => {
+      allHtml += `<div style="padding:0.55rem 1.2rem;border-top:1px solid var(--border);display:flex;align-items:center;gap:0.6rem;">
+        <span style="font-size:0.9rem;flex-shrink:0;">${statusIcon[f.status] || '•'}</span>
+        <span style="font-size:0.72rem;background:#1a2035;color:${sevColor[f.severity]||'#9ca3af'};padding:1px 5px;border-radius:3px;flex-shrink:0;">${f.severity}</span>
+        <span style="font-size:0.72rem;color:#a78bfa;flex-shrink:0;">${f.category}</span>
+        <span style="font-size:0.82rem;flex:1;">${f.title}</span>
+        <span style="font-size:0.7rem;color:var(--muted);flex-shrink:0;">${f.requirement_id}</span>
+        <span style="font-size:0.7rem;color:var(--muted);flex-shrink:0;">${f.control_id}</span>
+      </div>`;
+    });
+    allHtml += '</div>';
+    document.getElementById('m365-all-findings').innerHTML = allHtml;
+    document.getElementById('m365-results').style.display = 'block';
   }
 
   // ── Mode PME ──────────────────────────────────────────────────────────────

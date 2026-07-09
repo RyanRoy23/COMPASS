@@ -52,6 +52,7 @@ from nis2_analyzer.core.supply_chain import (
 )
 from nis2_analyzer.core.monte_carlo import MonteCarloEngine
 from nis2_analyzer.core.aws_connector import AWSConnector
+from nis2_analyzer.core.m365_connector import M365Connector
 from nis2_analyzer.core.financial import OrganizationProfile, OrgSize, Sector
 from nis2_analyzer.core.sector_profiles import (
     get_sector_profile, apply_sector_weights, get_sector_report, SECTOR_PROFILES
@@ -177,6 +178,13 @@ class AWSAuditRequest(BaseModel):
     aws_access_key_id: Optional[str] = Field(None)
     aws_secret_access_key: Optional[str] = Field(None)
     aws_session_token: Optional[str] = Field(None)
+
+
+class M365AuditRequest(BaseModel):
+    tenant_name: str = Field("Mon Organisation", min_length=1, max_length=200)
+    demo_mode: bool = Field(True, description="Mode démonstration sans token Graph API")
+    access_token: Optional[str] = Field(None, description="Token OAuth2 Microsoft Graph (scope: Directory.Read.All, Policy.Read.All, AuditLog.Read.All)")
+    azure_tenant_id: Optional[str] = Field(None, description="ID du tenant Azure AD")
 
 
 class TenantCreateRequest(BaseModel):
@@ -608,6 +616,33 @@ def run_aws_audit(body: AWSAuditRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur AWS : {str(e)}")
 
+
+
+@app.post("/api/m365-audit", status_code=200)
+def run_m365_audit(body: M365AuditRequest):
+    """
+    Audite les contrôles de sécurité Microsoft 365 / Azure AD et les mappe aux exigences NIS 2.
+    En mode demo_mode=true, retourne un rapport réaliste sans credentials.
+    """
+    if body.demo_mode:
+        connector = M365Connector(demo_mode=True)
+        return connector.audit(tenant_name=html.escape(body.tenant_name.strip())).to_dict()
+    if not body.access_token:
+        raise HTTPException(
+            status_code=422,
+            detail="Un access_token Microsoft Graph est requis pour le mode réel. Utilisez demo_mode=true pour tester.",
+        )
+    try:
+        connector = M365Connector(
+            demo_mode=False,
+            access_token=body.access_token,
+            tenant_id=body.azure_tenant_id,
+        )
+        return connector.audit(tenant_name=html.escape(body.tenant_name.strip())).to_dict()
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur Microsoft Graph : {str(e)}")
 
 @app.get("/api/history")
 def get_history(org_name: str = None, limit: int = 20,
