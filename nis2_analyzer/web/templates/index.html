@@ -291,7 +291,7 @@
 
     <div class="mc-banner" style="background:#1a2035;border:1px solid #2d3a5a;padding:1rem 1.2rem;border-radius:8px;margin-bottom:1.5rem;">
       <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">
-        <span style="font-size:1.1rem;">☁️</span>
+        
         <strong>Mode démonstration activé</strong>
         <span style="background:#1d4ed8;color:#fff;font-size:0.65rem;padding:2px 6px;border-radius:99px;margin-left:auto;">DÉMO</span>
       </div>
@@ -334,7 +334,7 @@
 
     <div class="mc-banner" style="background:#1a1535;border:1px solid #3d2a7a;padding:1rem 1.2rem;border-radius:8px;margin-bottom:1.5rem;">
       <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">
-        <span style="font-size:1.1rem;">🪟</span>
+        
         <strong>Mode démonstration activé</strong>
         <span style="background:#6d28d9;color:#fff;font-size:0.65rem;padding:2px 6px;border-radius:99px;margin-left:auto;">DÉMO</span>
       </div>
@@ -363,7 +363,7 @@
     </div>
 
     <div class="mc-banner" style="background:#0f2318;border:1px solid #14532d;padding:0.8rem 1.1rem;border-radius:8px;margin-bottom:1.2rem;font-size:0.83rem;color:#86efac;">
-      💡 Ce questionnaire est conçu pour les dirigeants, DG et responsables IT sans formation en cybersécurité. Répondez en vous basant sur ce qui est réellement en place dans votre entreprise.
+      Ce questionnaire est conçu pour les dirigeants, DG et responsables IT sans formation en cybersécurité. Répondez en vous basant sur ce qui est réellement en place dans votre entreprise.
     </div>
 
     <div style="display:flex;gap:0.8rem;margin-bottom:1.2rem;align-items:center;flex-wrap:wrap;">
@@ -705,7 +705,7 @@
     const coveragePct = totalReqs > 0 ? Math.round(totalAssessed / totalReqs * 100) : 0;
     const coverageBanner = coveragePct < 70 ? `
       <div style="background:#78350F;border:1px solid #92400E;border-radius:var(--radius);padding:0.8rem 1rem;margin-bottom:1.2rem;display:flex;gap:0.7rem;align-items:flex-start;">
-        <span style="font-size:1.1rem;">⚠️</span>
+        
         <div>
           <strong style="color:#FCD34D;">Couverture insuffisante (${coveragePct}%)</strong>
           <div style="font-size:0.83rem;color:#FDE68A;margin-top:2px;">
@@ -750,10 +750,10 @@
       ${renderSmartPlan(data.gaps)}
       ${renderSectorReport(data.sector_report)}
       <div style="margin-top:2rem;padding-top:1.2rem;border-top:1px solid var(--border);display:flex;gap:1rem;align-items:center;">
-        <button class="btn" id="pdf-btn" onclick="downloadPDF()">⬇ Rapport PDF</button>
-        <button class="btn btn-secondary" id="pssi-btn" onclick="downloadTemplate('pssi','PSSI')">📄 PSSI</button>
-        <button class="btn btn-secondary" id="notif-btn" onclick="downloadTemplate('notification','Notification')">🔔 Procédure notification</button>
-        <button class="btn btn-secondary" id="assets-btn" onclick="downloadTemplate('assets','Actifs')">🗂 Registre actifs</button>
+        <button class="btn" id="pdf-btn" onclick="downloadPDF()">Rapport PDF</button>
+        <button class="btn btn-secondary" id="pssi-btn" onclick="downloadTemplate('pssi','PSSI')">PSSI</button>
+        <button class="btn btn-secondary" id="notif-btn" onclick="downloadTemplate('notification','Notification')">Procédure notification</button>
+        <button class="btn btn-secondary" id="assets-btn" onclick="downloadTemplate('assets','Actifs')">Registre actifs</button>
         <span id="pdf-status" style="font-size:0.82rem;color:var(--muted);"></span>
       </div>
     `;
@@ -762,7 +762,7 @@
   function renderSmartPlan(gaps) {
     if (!gaps || !gaps.length) return '';
     const fmt = n => n >= 1000 ? (n / 1000).toFixed(0) + 'k€' : n + '€';
-    const phaseLabel = { 0: '🔴 Immédiat', 1: '🟠 Court terme', 2: '🟡 Moyen terme', 3: '⚪ Long terme' };
+    const phaseLabel = { 0: 'Immédiat', 1: 'Court terme', 2: 'Moyen terme', 3: 'Long terme' };
     const phaseOrder = g => {
       const w = g.smart?.deadline_weeks ?? 52;
       return w <= 4 ? 0 : w <= 12 ? 1 : w <= 24 ? 2 : 3;
@@ -811,7 +811,7 @@
     if (!sr || !sr.sector) return '';
     const { sector, key_threats, priority_gaps, priority_requirements, specific_controls, sector_alert } = sr;
     const alertColor = priority_gaps.length > 0 ? 'var(--red)' : 'var(--green)';
-    const alertIcon = priority_gaps.length > 0 ? '⚠️' : '✅';
+    const alertIcon = '';
 
     const threatsHtml = key_threats.map(t => `<li style="margin-bottom:0.2rem;color:#d1d5db;font-size:0.83rem;">${esc(t)}</li>`).join('');
     const gapBadges = priority_gaps.length > 0
@@ -869,7 +869,7 @@
     const btn = document.getElementById('pdf-btn');
     const status = document.getElementById('pdf-status');
     btn.disabled = true;
-    btn.textContent = '⏳ Génération en cours…';
+    btn.textContent = 'Génération en cours…';
     status.textContent = '';
     try {
       const res = await fetch('/api/pdf-report', {
@@ -901,7 +901,7 @@
       status.textContent = 'Erreur réseau : ' + e.message;
     } finally {
       btn.disabled = false;
-      btn.textContent = '⬇ Télécharger le rapport PDF';
+      btn.textContent = 'Rapport PDF';
     }
   }
 
@@ -916,7 +916,7 @@
     const status = document.getElementById('pdf-status');
     btn.disabled = true;
     const orig = btn.textContent;
-    btn.textContent = '⏳ Génération…';
+    btn.textContent = 'Génération…';
     status.textContent = '';
     try {
       const res = await fetch(`/api/templates/${slug}`, {
@@ -983,9 +983,9 @@
       const res = await fetch('/api/tenants/me', { headers: { 'X-API-Key': key } });
       if (res.ok) {
         const t = await res.json();
-        label.textContent = `✓ ${t.name} (${t.plan})`;
+        label.textContent = `${t.name} (${t.plan})`;
       } else {
-        label.textContent = '✗ clé invalide';
+        label.textContent = 'Clé invalide';
       }
     } catch { label.textContent = ''; }
   }
@@ -1172,7 +1172,7 @@
 
       ${data.max_nis2_fine > 0 ? `
       <div class="mc-fine-banner">
-        <div class="fine-icon">⚠</div>
+        <div class="fine-icon">!</div>
         <div class="fine-text">
           Amende NIS 2 maximale applicable : <span class="fine-amount">${fmtEur(data.max_nis2_fine)}</span><br>
           <span style="font-size:0.75rem">Art. 34 NIS 2 — selon votre catégorie d'entité et votre CA annuel</span>
@@ -1396,7 +1396,7 @@
     let critHtml = '';
     if (crits.length > 0) {
       critHtml = `<div style="background:#2d1515;border:1px solid #5c2020;border-radius:8px;padding:1rem 1.2rem;margin-bottom:1rem;">
-        <div style="font-weight:600;color:var(--red);margin-bottom:0.8rem;">🚨 ${crits.length} finding(s) CRITIQUE(S) — Action immédiate requise</div>`;
+        <div style="font-weight:600;color:var(--red);margin-bottom:0.8rem;">CRITIQUE — ${crits.length} finding(s) — Action immédiate requise</div>`;
       crits.forEach(f => {
         critHtml += `<div style="border-top:1px solid #3d2020;padding:0.6rem 0;">
           <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.2rem;">
@@ -1416,7 +1416,12 @@
     const mapping = data.maturity_mapping;
     const matLabels = ['Non implémenté', 'Partiel', 'Implémenté', 'Géré'];
     const matColors = ['var(--red)', 'var(--yellow)', 'var(--accent)', 'var(--green)'];
-    const matDots = ['🔴', '🟡', '🔵', '🟢'];
+    const matDots = [
+      '<svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="#ef4444"/></svg>',
+      '<svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="#f59e0b"/></svg>',
+      '<svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="#3b82f6"/></svg>',
+      '<svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="#22c55e"/></svg>',
+    ];
     let mapHtml = `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem 1.2rem;">
       <div style="font-weight:600;margin-bottom:0.8rem;">Mapping NIS 2 — Niveaux de maturité déduits</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:0.5rem;">`;
@@ -1433,7 +1438,12 @@
     document.getElementById('aws-mapping').innerHTML = mapHtml;
 
     // Tous les findings
-    const statusIcon = { PASS: '✅', FAIL: '❌', WARN: '⚠️', INFO: 'ℹ️' };
+    const statusIcon = {
+      PASS: '<span style="font-size:0.7rem;font-weight:700;color:#22c55e;letter-spacing:0.05em;">PASS</span>',
+      FAIL: '<span style="font-size:0.7rem;font-weight:700;color:#ef4444;letter-spacing:0.05em;">FAIL</span>',
+      WARN: '<span style="font-size:0.7rem;font-weight:700;color:#f59e0b;letter-spacing:0.05em;">WARN</span>',
+      INFO: '<span style="font-size:0.7rem;font-weight:700;color:#6b7280;letter-spacing:0.05em;">INFO</span>',
+    };
     const sevColor = { CRITICAL: '#fca5a5', HIGH: '#fbbf24', MEDIUM: '#93c5fd', LOW: '#6b7280' };
     let allHtml = `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;">
       <div style="padding:0.8rem 1.2rem;background:#161D2E;font-weight:600;font-size:0.88rem;">Tous les contrôles (${data.all_findings.length})</div>`;
@@ -1483,7 +1493,7 @@
     let critHtml = '';
     if (crits.length > 0) {
       critHtml = `<div style="background:#2d1535;border:1px solid #5c2060;border-radius:8px;padding:1rem 1.2rem;margin-bottom:1rem;">
-        <div style="font-weight:600;color:#c084fc;margin-bottom:0.8rem;">🚨 ${crits.length} finding(s) CRITIQUE(S) — Action immédiate requise</div>`;
+        <div style="font-weight:600;color:#c084fc;margin-bottom:0.8rem;">CRITIQUE — ${crits.length} finding(s) — Action immédiate requise</div>`;
       crits.forEach(f => {
         critHtml += `<div style="border-top:1px solid #3d1050;padding:0.6rem 0;">
           <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.2rem;">
@@ -1497,7 +1507,12 @@
       critHtml += '</div>';
     }
     document.getElementById('m365-critical').innerHTML = critHtml;
-    const matDots = ['🔴', '🟡', '🔵', '🟢'];
+    const matDots = [
+      '<svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="#ef4444"/></svg>',
+      '<svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="#f59e0b"/></svg>',
+      '<svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="#3b82f6"/></svg>',
+      '<svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="#22c55e"/></svg>',
+    ];
     const matColors = ['var(--red)', 'var(--yellow)', 'var(--accent)', 'var(--green)'];
     const matLabels = ['Non implémenté', 'Partiel', 'Implémenté', 'Géré'];
     let mapHtml = `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem 1.2rem;">
@@ -1511,7 +1526,12 @@
     });
     mapHtml += '</div></div>';
     document.getElementById('m365-mapping').innerHTML = mapHtml;
-    const statusIcon = { PASS: '✅', FAIL: '❌', WARN: '⚠️', INFO: 'ℹ️' };
+    const statusIcon = {
+      PASS: '<span style="font-size:0.7rem;font-weight:700;color:#22c55e;letter-spacing:0.05em;">PASS</span>',
+      FAIL: '<span style="font-size:0.7rem;font-weight:700;color:#ef4444;letter-spacing:0.05em;">FAIL</span>',
+      WARN: '<span style="font-size:0.7rem;font-weight:700;color:#f59e0b;letter-spacing:0.05em;">WARN</span>',
+      INFO: '<span style="font-size:0.7rem;font-weight:700;color:#6b7280;letter-spacing:0.05em;">INFO</span>',
+    };
     const sevColor = { CRITICAL: '#e9d5ff', HIGH: '#fbbf24', MEDIUM: '#93c5fd', LOW: '#6b7280' };
     let allHtml = `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;">
       <div style="padding:0.8rem 1.2rem;background:#161D2E;font-weight:600;font-size:0.88rem;">Tous les contrôles (${data.findings.length})</div>`;
@@ -1559,7 +1579,7 @@
           <div style="padding:0.9rem 1rem;">
             <div style="font-size:0.88rem;color:#e2e8f0;margin-bottom:0.8rem;line-height:1.5;">${esc(q.question)}</div>
             <div style="font-size:0.76rem;color:#60a5fa;margin-bottom:0.8rem;background:#0d1424;padding:0.4rem 0.7rem;border-radius:4px;">
-              💡 ${esc(q.why_it_matters)}
+              ${esc(q.why_it_matters)}
             </div>
             <div style="display:flex;flex-direction:column;gap:0.3rem;">
               ${q.levels.map(l => `
@@ -1646,24 +1666,24 @@
 
     const weakHtml = (sme.weak_points || []).slice(0, 5).map(w => {
       const lvlColor = w.level === 0 ? 'var(--red)' : 'var(--yellow)';
-      const lvlLabel = w.level === 0 ? '🔴 Non fait' : '🟡 Partiel';
+      const lvlLabel = w.level === 0 ? 'Non implémenté' : 'Partiel';
       return `<div style="padding:0.6rem 0.9rem;border-top:1px solid var(--border);">
         <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.2rem;">
           <span style="font-size:0.75rem;font-weight:600;color:${lvlColor};">${lvlLabel}</span>
           <strong style="font-size:0.83rem;">${esc(w.category)}</strong>
         </div>
         <div style="font-size:0.8rem;color:#d1d5db;margin-bottom:0.2rem;">${esc(w.levels[w.level + 1 <= 3 ? w.level + 1 : 3])}</div>
-        <div style="font-size:0.76rem;color:#fca5a5;">⚠️ ${esc(w.risk)}</div>
+        <div style="font-size:0.76rem;color:#fca5a5;">${esc(w.risk)}</div>
       </div>`;
     }).join('');
 
     const strongHtml = (sme.strong_points || []).map(s =>
-      `<div style="font-size:0.8rem;color:var(--green);padding:0.2rem 0;">✅ ${esc(s.category)}</div>`
+      `<div style="font-size:0.8rem;color:var(--green);padding:0.2rem 0;">${esc(s.category)}</div>`
     ).join('') || '<div style="color:var(--muted);font-size:0.8rem;">Continuez à progresser — le niveau 3 s\'acquiert avec la régularité.</div>';
 
     const priorityHtml = sme.top_priority ? `
       <div style="background:#2d1515;border:1px solid #5c2020;border-radius:8px;padding:0.9rem 1.1rem;margin-bottom:1rem;">
-        <div style="font-weight:600;color:var(--red);margin-bottom:0.4rem;">🎯 Priorité #1 — Agir en premier</div>
+        <div style="font-weight:600;color:var(--red);margin-bottom:0.4rem;">Priorité #1 — Action prioritaire</div>
         <div style="font-size:0.85rem;color:#f1f5f9;margin-bottom:0.3rem;">${esc(sme.top_priority.category)}</div>
         <div style="font-size:0.8rem;color:#fca5a5;">${esc(sme.top_priority.risk)}</div>
         <div style="margin-top:0.5rem;font-size:0.8rem;color:#86efac;">→ Prochaine étape : ${esc(sme.top_priority.levels[Math.min(sme.top_priority.level + 1, 3)])}</div>
