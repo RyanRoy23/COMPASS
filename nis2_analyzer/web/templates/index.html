@@ -58,6 +58,7 @@
     .btn:hover { opacity: 0.85; }
     .btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .btn-outline { background: none; border: 1px solid var(--border); color: var(--text); }
+    .btn-secondary { background: var(--surface); border: 1px solid var(--border); color: var(--text); font-weight: 500; }
     #form-status { font-size: 0.85rem; color: var(--muted); }
 
     /* ── Results ── */
@@ -710,7 +711,10 @@
       ${renderSmartPlan(data.gaps)}
       ${renderSectorReport(data.sector_report)}
       <div style="margin-top:2rem;padding-top:1.2rem;border-top:1px solid var(--border);display:flex;gap:1rem;align-items:center;">
-        <button class="btn" id="pdf-btn" onclick="downloadPDF()">⬇ Télécharger le rapport PDF</button>
+        <button class="btn" id="pdf-btn" onclick="downloadPDF()">⬇ Rapport PDF</button>
+        <button class="btn btn-secondary" id="pssi-btn" onclick="downloadTemplate('pssi','PSSI')">📄 PSSI</button>
+        <button class="btn btn-secondary" id="notif-btn" onclick="downloadTemplate('notification','Notification')">🔔 Procédure notification</button>
+        <button class="btn btn-secondary" id="assets-btn" onclick="downloadTemplate('assets','Actifs')">🗂 Registre actifs</button>
         <span id="pdf-status" style="font-size:0.82rem;color:var(--muted);"></span>
       </div>
     `;
@@ -859,6 +863,53 @@
     } finally {
       btn.disabled = false;
       btn.textContent = '⬇ Télécharger le rapport PDF';
+    }
+  }
+
+  // ── Template Documents ────────────────────────────────────────────────────
+  async function downloadTemplate(slug, label) {
+    if (!_lastResponses || Object.keys(_lastResponses).length === 0) {
+      document.getElementById('pdf-status').textContent = 'Lancez d\'abord une évaluation.';
+      return;
+    }
+    const btnId = slug === 'pssi' ? 'pssi-btn' : slug === 'notification' ? 'notif-btn' : 'assets-btn';
+    const btn = document.getElementById(btnId);
+    const status = document.getElementById('pdf-status');
+    btn.disabled = true;
+    const orig = btn.textContent;
+    btn.textContent = '⏳ Génération…';
+    status.textContent = '';
+    try {
+      const res = await fetch(`/api/templates/${slug}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          org_name: _lastOrgName || 'Organisation',
+          responses: _lastResponses,
+          sector: document.getElementById('sector-select').value,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: res.statusText }));
+        status.textContent = 'Erreur : ' + (err.detail || res.statusText);
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const orgSlug = (_lastOrgName || 'org').replace(/[^a-zA-Z0-9]/g, '_').substring(0, 40);
+      a.href = url;
+      a.download = `COMPASS_${label}_${orgSlug}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      status.textContent = `${label} généré avec succès.`;
+    } catch (e) {
+      status.textContent = 'Erreur réseau : ' + e.message;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = orig;
     }
   }
 
