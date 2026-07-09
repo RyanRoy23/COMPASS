@@ -1008,18 +1008,21 @@ async def chat(
     client = _anthropic.Anthropic(api_key=api_key)
 
     if body.stream:
+        import json as _json
+
         def _generate():
-            with client.messages.stream(
-                model="claude-opus-4-8",
-                max_tokens=2048,
-                system=system_prompt,
-                messages=messages,
-                thinking={"type": "adaptive"},
-            ) as stream:
-                for text in stream.text_stream:
-                    # SSE format
-                    yield f"data: {text}\n\n"
-            yield "data: [DONE]\n\n"
+            try:
+                with client.messages.stream(
+                    model="claude-opus-4-8",
+                    max_tokens=2048,
+                    system=system_prompt,
+                    messages=messages,
+                ) as stream:
+                    for text in stream.text_stream:
+                        yield f"data: {_json.dumps(text)}\n\n"
+                yield "data: [DONE]\n\n"
+            except Exception as exc:
+                yield f"data: [ERROR] {_json.dumps(str(exc))}\n\n"
 
         return StreamingResponse(
             _generate(),
@@ -1035,7 +1038,6 @@ async def chat(
             max_tokens=2048,
             system=system_prompt,
             messages=messages,
-            thinking={"type": "adaptive"},
         )
         text_blocks = [b.text for b in response.content if hasattr(b, "text")]
         return {"content": "".join(text_blocks)}
