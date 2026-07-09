@@ -25,8 +25,8 @@
     header h1 { font-size: 1.2rem; font-weight: 600; }
     header span { background: var(--accent); color: #fff; font-size: 0.7rem; padding: 2px 8px; border-radius: 99px; font-weight: 600; }
 
-    nav { display: flex; gap: 0.5rem; padding: 1rem 2rem; border-bottom: 1px solid var(--border); }
-    nav button { background: none; border: 1px solid var(--border); color: var(--muted); padding: 0.4rem 1rem; border-radius: var(--radius); cursor: pointer; font-size: 0.85rem; transition: all .15s; }
+    nav { display: flex; gap: 0.4rem; padding: 0.6rem 1.5rem; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+    nav button { background: none; border: 1px solid var(--border); color: var(--muted); padding: 0.35rem 0.75rem; border-radius: var(--radius); cursor: pointer; font-size: 0.8rem; transition: all .15s; white-space: nowrap; }
     nav button.active, nav button:hover { border-color: var(--accent); color: var(--accent-light); }
 
     main { max-width: 900px; margin: 0 auto; padding: 2rem; }
@@ -171,6 +171,13 @@
 <header>
   <h1>COMPASS</h1>
   <span>NIS 2 — Art. 3, 20, 21, 23</span>
+  <div id="tenant-bar" style="display:flex;align-items:center;gap:0.6rem;margin-left:auto;">
+    <input id="api-key-input" type="password" placeholder="Clé API (optionnel)"
+           style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:#fff;
+                  padding:0.35rem 0.7rem;border-radius:var(--radius);font-size:0.78rem;width:210px;"
+           oninput="saveApiKey(this.value)" autocomplete="off">
+    <span id="tenant-name" style="font-size:0.78rem;opacity:0.75;white-space:nowrap;"></span>
+  </div>
 </header>
 
 <nav>
@@ -178,6 +185,7 @@
   <button data-page="results" onclick="showPage('results')">Résultats</button>
   <button data-page="monte-carlo" onclick="showPage('monte-carlo')">Risque financier</button>
   <button data-page="aws-audit" onclick="showPage('aws-audit')">Audit AWS</button>
+  <button data-page="m365-audit" onclick="showPage('m365-audit')">Audit M365</button>
   <button data-page="sme" onclick="showPage('sme'); loadSMEQuestions()">Mode PME</button>
   <button data-page="governance" onclick="showPage('governance'); loadGovernance()">Gouvernance</button>
   <button data-page="incident" onclick="showPage('incident')">Incidents</button>
@@ -283,7 +291,7 @@
 
     <div class="mc-banner" style="background:#1a2035;border:1px solid #2d3a5a;padding:1rem 1.2rem;border-radius:8px;margin-bottom:1.5rem;">
       <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">
-        <span style="font-size:1.1rem;">☁️</span>
+        
         <strong>Mode démonstration activé</strong>
         <span style="background:#1d4ed8;color:#fff;font-size:0.65rem;padding:2px 6px;border-radius:99px;margin-left:auto;">DÉMO</span>
       </div>
@@ -316,6 +324,37 @@
     </div>
   </div>
 
+
+  <!-- ── PAGE : AUDIT M365 ── -->
+  <div id="page-m365-audit" class="page">
+    <div class="form-header">
+      <h2>Audit de sécurité Microsoft 365 / Azure AD</h2>
+      <p>Vérification automatique des contrôles M365 (MFA, Accès Conditionnel, PIM, Defender, DLP…) mappés aux exigences NIS 2 Art. 21.</p>
+    </div>
+
+    <div class="mc-banner" style="background:#1a1535;border:1px solid #3d2a7a;padding:1rem 1.2rem;border-radius:8px;margin-bottom:1.5rem;">
+      <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">
+        
+        <strong>Mode démonstration activé</strong>
+        <span style="background:#6d28d9;color:#fff;font-size:0.65rem;padding:2px 6px;border-radius:99px;margin-left:auto;">DÉMO</span>
+      </div>
+      <p style="color:var(--muted);font-size:0.83rem;">Rapport simulé sur un tenant M365 typique. Pour un audit réel, fournissez un access_token Microsoft Graph via <code style="background:#0d1424;padding:2px 5px;border-radius:3px;">POST /api/m365-audit</code>.</p>
+    </div>
+
+    <div style="display:flex;gap:1rem;margin-bottom:1.5rem;align-items:center;">
+      <input id="m365-tenant-name" class="org-input" type="text" placeholder="Nom du tenant (ex: Contoso Ltd.)" maxlength="200" style="margin-bottom:0;flex:1;">
+      <button class="btn" onclick="runM365Audit()" style="background:#6d28d9;">Lancer l'audit</button>
+      <span id="m365-loading" style="color:var(--muted);font-size:0.85rem;display:none;">Analyse en cours…</span>
+    </div>
+
+    <div id="m365-results" style="display:none;">
+      <div class="mc-kpis" id="m365-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem;"></div>
+      <div id="m365-critical" style="margin-bottom:1.5rem;"></div>
+      <div id="m365-mapping" style="margin-bottom:1.5rem;"></div>
+      <div id="m365-all-findings"></div>
+    </div>
+  </div>
+
   <!-- ── PAGE : MODE PME ── -->
   <div id="page-sme" class="page">
     <div class="form-header">
@@ -324,7 +363,7 @@
     </div>
 
     <div class="mc-banner" style="background:#0f2318;border:1px solid #14532d;padding:0.8rem 1.1rem;border-radius:8px;margin-bottom:1.2rem;font-size:0.83rem;color:#86efac;">
-      💡 Ce questionnaire est conçu pour les dirigeants, DG et responsables IT sans formation en cybersécurité. Répondez en vous basant sur ce qui est réellement en place dans votre entreprise.
+      Ce questionnaire est conçu pour les dirigeants, DG et responsables IT sans formation en cybersécurité. Répondez en vous basant sur ce qui est réellement en place dans votre entreprise.
     </div>
 
     <div style="display:flex;gap:0.8rem;margin-bottom:1.2rem;align-items:center;flex-wrap:wrap;">
@@ -610,7 +649,7 @@
     try {
       const res = await fetch('/api/assess', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: apiHeaders(),
         body: JSON.stringify({ org_name: orgName, responses, sector: document.getElementById('sector-select').value }),
       });
 
@@ -666,7 +705,7 @@
     const coveragePct = totalReqs > 0 ? Math.round(totalAssessed / totalReqs * 100) : 0;
     const coverageBanner = coveragePct < 70 ? `
       <div style="background:#78350F;border:1px solid #92400E;border-radius:var(--radius);padding:0.8rem 1rem;margin-bottom:1.2rem;display:flex;gap:0.7rem;align-items:flex-start;">
-        <span style="font-size:1.1rem;">⚠️</span>
+        
         <div>
           <strong style="color:#FCD34D;">Couverture insuffisante (${coveragePct}%)</strong>
           <div style="font-size:0.83rem;color:#FDE68A;margin-top:2px;">
@@ -711,10 +750,10 @@
       ${renderSmartPlan(data.gaps)}
       ${renderSectorReport(data.sector_report)}
       <div style="margin-top:2rem;padding-top:1.2rem;border-top:1px solid var(--border);display:flex;gap:1rem;align-items:center;">
-        <button class="btn" id="pdf-btn" onclick="downloadPDF()">⬇ Rapport PDF</button>
-        <button class="btn btn-secondary" id="pssi-btn" onclick="downloadTemplate('pssi','PSSI')">📄 PSSI</button>
-        <button class="btn btn-secondary" id="notif-btn" onclick="downloadTemplate('notification','Notification')">🔔 Procédure notification</button>
-        <button class="btn btn-secondary" id="assets-btn" onclick="downloadTemplate('assets','Actifs')">🗂 Registre actifs</button>
+        <button class="btn" id="pdf-btn" onclick="downloadPDF()">Rapport PDF</button>
+        <button class="btn btn-secondary" id="pssi-btn" onclick="downloadTemplate('pssi','PSSI')">PSSI</button>
+        <button class="btn btn-secondary" id="notif-btn" onclick="downloadTemplate('notification','Notification')">Procédure notification</button>
+        <button class="btn btn-secondary" id="assets-btn" onclick="downloadTemplate('assets','Actifs')">Registre actifs</button>
         <span id="pdf-status" style="font-size:0.82rem;color:var(--muted);"></span>
       </div>
     `;
@@ -723,7 +762,7 @@
   function renderSmartPlan(gaps) {
     if (!gaps || !gaps.length) return '';
     const fmt = n => n >= 1000 ? (n / 1000).toFixed(0) + 'k€' : n + '€';
-    const phaseLabel = { 0: '🔴 Immédiat', 1: '🟠 Court terme', 2: '🟡 Moyen terme', 3: '⚪ Long terme' };
+    const phaseLabel = { 0: 'Immédiat', 1: 'Court terme', 2: 'Moyen terme', 3: 'Long terme' };
     const phaseOrder = g => {
       const w = g.smart?.deadline_weeks ?? 52;
       return w <= 4 ? 0 : w <= 12 ? 1 : w <= 24 ? 2 : 3;
@@ -772,7 +811,7 @@
     if (!sr || !sr.sector) return '';
     const { sector, key_threats, priority_gaps, priority_requirements, specific_controls, sector_alert } = sr;
     const alertColor = priority_gaps.length > 0 ? 'var(--red)' : 'var(--green)';
-    const alertIcon = priority_gaps.length > 0 ? '⚠️' : '✅';
+    const alertIcon = '';
 
     const threatsHtml = key_threats.map(t => `<li style="margin-bottom:0.2rem;color:#d1d5db;font-size:0.83rem;">${esc(t)}</li>`).join('');
     const gapBadges = priority_gaps.length > 0
@@ -830,12 +869,12 @@
     const btn = document.getElementById('pdf-btn');
     const status = document.getElementById('pdf-status');
     btn.disabled = true;
-    btn.textContent = '⏳ Génération en cours…';
+    btn.textContent = 'Génération en cours…';
     status.textContent = '';
     try {
       const res = await fetch('/api/pdf-report', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: apiHeaders(),
         body: JSON.stringify({
           org_name: _lastOrgName || 'Organisation',
           responses: _lastResponses,
@@ -862,7 +901,7 @@
       status.textContent = 'Erreur réseau : ' + e.message;
     } finally {
       btn.disabled = false;
-      btn.textContent = '⬇ Télécharger le rapport PDF';
+      btn.textContent = 'Rapport PDF';
     }
   }
 
@@ -877,12 +916,12 @@
     const status = document.getElementById('pdf-status');
     btn.disabled = true;
     const orig = btn.textContent;
-    btn.textContent = '⏳ Génération…';
+    btn.textContent = 'Génération…';
     status.textContent = '';
     try {
       const res = await fetch(`/api/templates/${slug}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: apiHeaders(),
         body: JSON.stringify({
           org_name: _lastOrgName || 'Organisation',
           responses: _lastResponses,
@@ -913,6 +952,53 @@
     }
   }
 
+  // ── Clé API multi-tenant ─────────────────────────────────────────────────
+  const _API_KEY_STORAGE = 'compass_api_key';
+
+  function getApiKey() {
+    return localStorage.getItem(_API_KEY_STORAGE) || '';
+  }
+
+  function saveApiKey(key) {
+    if (key) {
+      localStorage.setItem(_API_KEY_STORAGE, key);
+    } else {
+      localStorage.removeItem(_API_KEY_STORAGE);
+    }
+    _refreshTenantDisplay();
+  }
+
+  function apiHeaders(extra = {}) {
+    const h = { 'Content-Type': 'application/json', ...extra };
+    const key = getApiKey();
+    if (key) h['X-API-Key'] = key;
+    return h;
+  }
+
+  async function _refreshTenantDisplay() {
+    const key = getApiKey();
+    const label = document.getElementById('tenant-name');
+    if (!key) { label.textContent = ''; return; }
+    try {
+      const res = await fetch('/api/tenants/me', { headers: { 'X-API-Key': key } });
+      if (res.ok) {
+        const t = await res.json();
+        label.textContent = `${t.name} (${t.plan})`;
+      } else {
+        label.textContent = 'Clé invalide';
+      }
+    } catch { label.textContent = ''; }
+  }
+
+  // Restaurer la clé API depuis localStorage au chargement
+  window.addEventListener('DOMContentLoaded', () => {
+    const stored = getApiKey();
+    if (stored) {
+      document.getElementById('api-key-input').value = stored;
+      _refreshTenantDisplay();
+    }
+  });
+
   // ── Monte Carlo ───────────────────────────────────────────────────────────
   let _lastResponses = null;
   let _lastOrgName = null;
@@ -935,7 +1021,7 @@
     try {
       const res = await fetch('/api/monte-carlo', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: apiHeaders(),
         body: JSON.stringify({
           org_name: _lastOrgName || 'Organisation',
           responses: _lastResponses,
@@ -1086,7 +1172,7 @@
 
       ${data.max_nis2_fine > 0 ? `
       <div class="mc-fine-banner">
-        <div class="fine-icon">⚠</div>
+        <div class="fine-icon">!</div>
         <div class="fine-text">
           Amende NIS 2 maximale applicable : <span class="fine-amount">${fmtEur(data.max_nis2_fine)}</span><br>
           <span style="font-size:0.75rem">Art. 34 NIS 2 — selon votre catégorie d'entité et votre CA annuel</span>
@@ -1100,7 +1186,7 @@
     const container = document.getElementById('history-container');
     container.innerHTML = '<p style="color:var(--muted)">Chargement…</p>';
     try {
-      const res = await fetch('/api/history?limit=50');
+      const res = await fetch('/api/history?limit=50', { headers: apiHeaders() });
       const data = await res.json();
       const rows = data.assessments;
 
@@ -1263,7 +1349,7 @@
     try {
       const res = await fetch('/api/aws-audit', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: apiHeaders(),
         body: JSON.stringify({ demo_mode: true, region }),
       });
       if (!res.ok) {
@@ -1310,7 +1396,7 @@
     let critHtml = '';
     if (crits.length > 0) {
       critHtml = `<div style="background:#2d1515;border:1px solid #5c2020;border-radius:8px;padding:1rem 1.2rem;margin-bottom:1rem;">
-        <div style="font-weight:600;color:var(--red);margin-bottom:0.8rem;">🚨 ${crits.length} finding(s) CRITIQUE(S) — Action immédiate requise</div>`;
+        <div style="font-weight:600;color:var(--red);margin-bottom:0.8rem;">CRITIQUE — ${crits.length} finding(s) — Action immédiate requise</div>`;
       crits.forEach(f => {
         critHtml += `<div style="border-top:1px solid #3d2020;padding:0.6rem 0;">
           <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.2rem;">
@@ -1330,7 +1416,12 @@
     const mapping = data.maturity_mapping;
     const matLabels = ['Non implémenté', 'Partiel', 'Implémenté', 'Géré'];
     const matColors = ['var(--red)', 'var(--yellow)', 'var(--accent)', 'var(--green)'];
-    const matDots = ['🔴', '🟡', '🔵', '🟢'];
+    const matDots = [
+      '<svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="#ef4444"/></svg>',
+      '<svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="#f59e0b"/></svg>',
+      '<svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="#3b82f6"/></svg>',
+      '<svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="#22c55e"/></svg>',
+    ];
     let mapHtml = `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem 1.2rem;">
       <div style="font-weight:600;margin-bottom:0.8rem;">Mapping NIS 2 — Niveaux de maturité déduits</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:0.5rem;">`;
@@ -1347,7 +1438,12 @@
     document.getElementById('aws-mapping').innerHTML = mapHtml;
 
     // Tous les findings
-    const statusIcon = { PASS: '✅', FAIL: '❌', WARN: '⚠️', INFO: 'ℹ️' };
+    const statusIcon = {
+      PASS: '<span style="font-size:0.7rem;font-weight:700;color:#22c55e;letter-spacing:0.05em;">PASS</span>',
+      FAIL: '<span style="font-size:0.7rem;font-weight:700;color:#ef4444;letter-spacing:0.05em;">FAIL</span>',
+      WARN: '<span style="font-size:0.7rem;font-weight:700;color:#f59e0b;letter-spacing:0.05em;">WARN</span>',
+      INFO: '<span style="font-size:0.7rem;font-weight:700;color:#6b7280;letter-spacing:0.05em;">INFO</span>',
+    };
     const sevColor = { CRITICAL: '#fca5a5', HIGH: '#fbbf24', MEDIUM: '#93c5fd', LOW: '#6b7280' };
     let allHtml = `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;">
       <div style="padding:0.8rem 1.2rem;background:#161D2E;font-weight:600;font-size:0.88rem;">Tous les contrôles (${data.all_findings.length})</div>`;
@@ -1364,6 +1460,94 @@
     document.getElementById('aws-all-findings').innerHTML = allHtml;
 
     document.getElementById('aws-results').style.display = 'block';
+  }
+
+
+  // ── Audit M365 ────────────────────────────────────────────────────────────
+  async function runM365Audit() {
+    const tenantName = document.getElementById('m365-tenant-name').value.trim() || 'Mon Organisation';
+    document.getElementById('m365-loading').style.display = 'inline';
+    document.getElementById('m365-results').style.display = 'none';
+    try {
+      const res = await fetch('/api/m365-audit', {
+        method: 'POST',
+        headers: apiHeaders(),
+        body: JSON.stringify({ demo_mode: true, tenant_name: tenantName }),
+      });
+      if (!res.ok) { const err = await res.json(); alert('Erreur : ' + (err.detail || res.statusText)); return; }
+      renderM365Audit(await res.json());
+    } catch (e) { alert('Erreur réseau : ' + e.message); }
+    finally { document.getElementById('m365-loading').style.display = 'none'; }
+  }
+
+  function renderM365Audit(data) {
+    const s = data.summary;
+    const scoreColor = data.security_score >= 70 ? 'var(--green)' : data.security_score >= 40 ? 'var(--yellow)' : 'var(--red)';
+    document.getElementById('m365-kpis').innerHTML = `
+      <div class="mc-kpi"><div class="kpi-label">Contrôles vérifiés</div><div class="kpi-value" style="color:var(--accent-light)">${s.total_controls}</div></div>
+      <div class="mc-kpi"><div class="kpi-label">Réussis</div><div class="kpi-value" style="color:var(--green)">${s.passed}</div></div>
+      <div class="mc-kpi"><div class="kpi-label">Échoués</div><div class="kpi-value" style="color:var(--red)">${s.failed}</div></div>
+      <div class="mc-kpi"><div class="kpi-label">Secure Score</div><div class="kpi-value" style="color:${scoreColor}">${data.security_score}/100</div></div>
+    `;
+    const crits = data.critical_findings;
+    let critHtml = '';
+    if (crits.length > 0) {
+      critHtml = `<div style="background:#2d1535;border:1px solid #5c2060;border-radius:8px;padding:1rem 1.2rem;margin-bottom:1rem;">
+        <div style="font-weight:600;color:#c084fc;margin-bottom:0.8rem;">CRITIQUE — ${crits.length} finding(s) — Action immédiate requise</div>`;
+      crits.forEach(f => {
+        critHtml += `<div style="border-top:1px solid #3d1050;padding:0.6rem 0;">
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.2rem;">
+            <span style="background:#5c2080;color:#e9d5ff;font-size:0.7rem;padding:1px 6px;border-radius:99px;font-weight:600;">${f.control_id}</span>
+            <strong style="font-size:0.88rem;">${f.title}</strong>
+          </div>
+          <div style="color:#e9d5ff;font-size:0.83rem;margin-bottom:0.2rem;">${f.detail}</div>
+          ${f.recommended_action ? `<div style="color:#86efac;font-size:0.8rem;">→ ${f.recommended_action}</div>` : ''}
+        </div>`;
+      });
+      critHtml += '</div>';
+    }
+    document.getElementById('m365-critical').innerHTML = critHtml;
+    const matDots = [
+      '<svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="#ef4444"/></svg>',
+      '<svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="#f59e0b"/></svg>',
+      '<svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="#3b82f6"/></svg>',
+      '<svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="#22c55e"/></svg>',
+    ];
+    const matColors = ['var(--red)', 'var(--yellow)', 'var(--accent)', 'var(--green)'];
+    const matLabels = ['Non implémenté', 'Partiel', 'Implémenté', 'Géré'];
+    let mapHtml = `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem 1.2rem;">
+      <div style="font-weight:600;margin-bottom:0.8rem;">Mapping NIS 2 — Niveaux de maturité déduits</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:0.5rem;">`;
+    Object.entries(data.maturity_mapping).sort().forEach(([req, level]) => {
+      mapHtml += `<div style="display:flex;align-items:center;gap:0.5rem;padding:0.4rem 0.6rem;background:#0d1424;border-radius:5px;">
+        <span>${matDots[level]}</span>
+        <div><div style="font-size:0.78rem;font-weight:600;color:${matColors[level]}">${matLabels[level]}</div>
+        <div style="font-size:0.72rem;color:var(--muted)">${req}</div></div></div>`;
+    });
+    mapHtml += '</div></div>';
+    document.getElementById('m365-mapping').innerHTML = mapHtml;
+    const statusIcon = {
+      PASS: '<span style="font-size:0.7rem;font-weight:700;color:#22c55e;letter-spacing:0.05em;">PASS</span>',
+      FAIL: '<span style="font-size:0.7rem;font-weight:700;color:#ef4444;letter-spacing:0.05em;">FAIL</span>',
+      WARN: '<span style="font-size:0.7rem;font-weight:700;color:#f59e0b;letter-spacing:0.05em;">WARN</span>',
+      INFO: '<span style="font-size:0.7rem;font-weight:700;color:#6b7280;letter-spacing:0.05em;">INFO</span>',
+    };
+    const sevColor = { CRITICAL: '#e9d5ff', HIGH: '#fbbf24', MEDIUM: '#93c5fd', LOW: '#6b7280' };
+    let allHtml = `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+      <div style="padding:0.8rem 1.2rem;background:#161D2E;font-weight:600;font-size:0.88rem;">Tous les contrôles (${data.findings.length})</div>`;
+    data.findings.forEach(f => {
+      allHtml += `<div style="padding:0.55rem 1.2rem;border-top:1px solid var(--border);display:flex;align-items:center;gap:0.6rem;">
+        <span style="font-size:0.9rem;flex-shrink:0;">${statusIcon[f.status] || '•'}</span>
+        <span style="font-size:0.72rem;background:#1a2035;color:${sevColor[f.severity]||'#9ca3af'};padding:1px 5px;border-radius:3px;flex-shrink:0;">${f.severity}</span>
+        <span style="font-size:0.72rem;color:#a78bfa;flex-shrink:0;">${f.category}</span>
+        <span style="font-size:0.82rem;flex:1;">${f.title}</span>
+        <span style="font-size:0.7rem;color:var(--muted);flex-shrink:0;">${f.requirement_id}</span>
+        <span style="font-size:0.7rem;color:var(--muted);flex-shrink:0;">${f.control_id}</span>
+      </div>`;
+    });
+    allHtml += '</div>';
+    document.getElementById('m365-all-findings').innerHTML = allHtml;
+    document.getElementById('m365-results').style.display = 'block';
   }
 
   // ── Mode PME ──────────────────────────────────────────────────────────────
@@ -1395,7 +1579,7 @@
           <div style="padding:0.9rem 1rem;">
             <div style="font-size:0.88rem;color:#e2e8f0;margin-bottom:0.8rem;line-height:1.5;">${esc(q.question)}</div>
             <div style="font-size:0.76rem;color:#60a5fa;margin-bottom:0.8rem;background:#0d1424;padding:0.4rem 0.7rem;border-radius:4px;">
-              💡 ${esc(q.why_it_matters)}
+              ${esc(q.why_it_matters)}
             </div>
             <div style="display:flex;flex-direction:column;gap:0.3rem;">
               ${q.levels.map(l => `
@@ -1457,7 +1641,7 @@
     try {
       const res = await fetch('/api/sme/assess', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: apiHeaders(),
         body: JSON.stringify({ org_name: orgName, responses, sector, include_nis2_detail: true }),
       });
       if (!res.ok) {
@@ -1482,24 +1666,24 @@
 
     const weakHtml = (sme.weak_points || []).slice(0, 5).map(w => {
       const lvlColor = w.level === 0 ? 'var(--red)' : 'var(--yellow)';
-      const lvlLabel = w.level === 0 ? '🔴 Non fait' : '🟡 Partiel';
+      const lvlLabel = w.level === 0 ? 'Non implémenté' : 'Partiel';
       return `<div style="padding:0.6rem 0.9rem;border-top:1px solid var(--border);">
         <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.2rem;">
           <span style="font-size:0.75rem;font-weight:600;color:${lvlColor};">${lvlLabel}</span>
           <strong style="font-size:0.83rem;">${esc(w.category)}</strong>
         </div>
         <div style="font-size:0.8rem;color:#d1d5db;margin-bottom:0.2rem;">${esc(w.levels[w.level + 1 <= 3 ? w.level + 1 : 3])}</div>
-        <div style="font-size:0.76rem;color:#fca5a5;">⚠️ ${esc(w.risk)}</div>
+        <div style="font-size:0.76rem;color:#fca5a5;">${esc(w.risk)}</div>
       </div>`;
     }).join('');
 
     const strongHtml = (sme.strong_points || []).map(s =>
-      `<div style="font-size:0.8rem;color:var(--green);padding:0.2rem 0;">✅ ${esc(s.category)}</div>`
+      `<div style="font-size:0.8rem;color:var(--green);padding:0.2rem 0;">${esc(s.category)}</div>`
     ).join('') || '<div style="color:var(--muted);font-size:0.8rem;">Continuez à progresser — le niveau 3 s\'acquiert avec la régularité.</div>';
 
     const priorityHtml = sme.top_priority ? `
       <div style="background:#2d1515;border:1px solid #5c2020;border-radius:8px;padding:0.9rem 1.1rem;margin-bottom:1rem;">
-        <div style="font-weight:600;color:var(--red);margin-bottom:0.4rem;">🎯 Priorité #1 — Agir en premier</div>
+        <div style="font-weight:600;color:var(--red);margin-bottom:0.4rem;">Priorité #1 — Action prioritaire</div>
         <div style="font-size:0.85rem;color:#f1f5f9;margin-bottom:0.3rem;">${esc(sme.top_priority.category)}</div>
         <div style="font-size:0.8rem;color:#fca5a5;">${esc(sme.top_priority.risk)}</div>
         <div style="margin-top:0.5rem;font-size:0.8rem;color:#86efac;">→ Prochaine étape : ${esc(sme.top_priority.levels[Math.min(sme.top_priority.level + 1, 3)])}</div>
@@ -1658,7 +1842,7 @@
     }
     const category = document.getElementById('gov-category').value;
     const res = await fetch('/api/governance', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: apiHeaders(),
       body: JSON.stringify({ responses, entity_category: category }),
     });
     const data = await res.json();
@@ -1694,7 +1878,7 @@
       third_party_impact: false,
     };
     const res = await fetch('/api/incident/classify', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: apiHeaders(),
       body: JSON.stringify(body),
     });
     const data = await res.json();
@@ -1724,7 +1908,7 @@
     if (!detectionLocal) { return; }
     const detectionISO = new Date(detectionLocal).toISOString();
     const res = await fetch('/api/incident/deadlines', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: apiHeaders(),
       body: JSON.stringify({ detection_iso: detectionISO, completed: {} }),
     });
     const data = await res.json();
@@ -1768,7 +1952,7 @@
       subcontracts_to_others: document.getElementById('sc-subcontract').checked,
     };
     const res = await fetch('/api/supply-chain/assess-supplier', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: apiHeaders(),
       body: JSON.stringify(body),
     });
     const data = await res.json();

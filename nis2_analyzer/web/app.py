@@ -21,7 +21,7 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.background import BackgroundTasks
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,7 +30,8 @@ from pydantic import BaseModel, Field
 from nis2_analyzer.core.models import load_framework, MaturityLevel
 from nis2_analyzer.core.scoring import ScoringEngine
 from nis2_analyzer.core.database import (
-    save_assessment, list_assessments, get_assessment, compare_assessments
+    save_assessment, list_assessments, get_assessment, compare_assessments,
+    create_tenant, get_tenant_by_key, list_tenants, get_default_tenant_id,
 )
 from nis2_analyzer.core.entity_qualification import (
     qualify_entity, EntityProfile, ALL_SECTORS
@@ -51,6 +52,7 @@ from nis2_analyzer.core.supply_chain import (
 )
 from nis2_analyzer.core.monte_carlo import MonteCarloEngine
 from nis2_analyzer.core.aws_connector import AWSConnector
+from nis2_analyzer.core.m365_connector import M365Connector
 from nis2_analyzer.core.financial import OrganizationProfile, OrgSize, Sector
 from nis2_analyzer.core.sector_profiles import (
     get_sector_profile, apply_sector_weights, get_sector_report, SECTOR_PROFILES
@@ -176,6 +178,35 @@ class AWSAuditRequest(BaseModel):
     aws_access_key_id: Optional[str] = Field(None)
     aws_secret_access_key: Optional[str] = Field(None)
     aws_session_token: Optional[str] = Field(None)
+
+
+class M365AuditRequest(BaseModel):
+    tenant_name: str = Field("Mon Organisation", min_length=1, max_length=200)
+    demo_mode: bool = Field(True, description="Mode démonstration sans token Graph API")
+    access_token: Optional[str] = Field(None, description="Token OAuth2 Microsoft Graph (scope: Directory.Read.All, Policy.Read.All, AuditLog.Read.All)")
+    azure_tenant_id: Optional[str] = Field(None, description="ID du tenant Azure AD")
+
+
+class TenantCreateRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200, description="Nom de l'organisation")
+    slug: str = Field(..., min_length=2, max_length=60, pattern=r"^[a-z0-9\-]+$",
+                      description="Identifiant unique (lettres minuscules, chiffres, tirets)")
+    plan: str = Field("free", description="'free' | 'pro'")
+
+
+# ── Authentification multi-tenant ─────────────────────────────────────────────
+
+def _resolve_tenant(x_api_key: Optional[str] = Header(None, alias="X-API-Key")) -> dict:
+    """
+    Dépendance FastAPI : résout la clé API → tenant.
+    Sans clé = tenant 'default' (compatibilité mono-tenant).
+    """
+    if not x_api_key:
+        return {"id": get_default_tenant_id(), "slug": "default", "name": "Default", "plan": "free"}
+    tenant = get_tenant_by_key(x_api_key)
+    if tenant is None:
+        raise HTTPException(status_code=401, detail="Clé API invalide.")
+    return tenant
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -433,11 +464,42 @@ def api_qualify(body: QualifyRequest):
     return result.to_dict()
 
 
+@app.post("/api/tenants", status_code=201)
+def api_create_tenant(body: TenantCreateRequest):
+    """
+    Crée un nouveau tenant et retourne sa clé API.
+    La clé est affichée UNE SEULE FOIS — conservez-la précieusement.
+    """
+    if body.plan not in ("free", "pro"):
+        raise HTTPException(status_code=422, detail="plan invalide. Valeurs : 'free', 'pro'.")
+    try:
+        result = create_tenant(
+            name=html.escape(body.name.strip()),
+            slug=body.slug.strip().lower(),
+            plan=body.plan,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    return result
+
+
+@app.get("/api/tenants")
+def api_list_tenants():
+    """Liste tous les tenants (sans clés API)."""
+    return {"tenants": list_tenants()}
+
+
+@app.get("/api/tenants/me")
+def api_tenant_me(tenant: dict = Depends(_resolve_tenant)):
+    """Retourne les informations du tenant authentifié."""
+    return tenant
+
+
 @app.post("/api/assess", status_code=201)
-def run_assessment(body: AssessmentRequest):
+def run_assessment(body: AssessmentRequest, tenant: dict = Depends(_resolve_tenant)):
     """
     Soumet les réponses au questionnaire et retourne le scoring complet.
-    Sauvegarde automatiquement dans l'historique.
+    Sauvegarde automatiquement dans l'historique du tenant.
     """
     org_name = html.escape(body.org_name.strip())
 
@@ -469,7 +531,7 @@ def run_assessment(body: AssessmentRequest):
 
     engine = ScoringEngine()
     analysis = engine.full_analysis(domains, org_name)
-    assessment_id = save_assessment(analysis)
+    assessment_id = save_assessment(analysis, tenant_id=tenant["id"])
     analysis["assessment_id"] = assessment_id
 
     # Ajouter le rapport sectoriel
@@ -555,18 +617,47 @@ def run_aws_audit(body: AWSAuditRequest):
         raise HTTPException(status_code=500, detail=f"Erreur AWS : {str(e)}")
 
 
+
+@app.post("/api/m365-audit", status_code=200)
+def run_m365_audit(body: M365AuditRequest):
+    """
+    Audite les contrôles de sécurité Microsoft 365 / Azure AD et les mappe aux exigences NIS 2.
+    En mode demo_mode=true, retourne un rapport réaliste sans credentials.
+    """
+    if body.demo_mode:
+        connector = M365Connector(demo_mode=True)
+        return connector.audit(tenant_name=html.escape(body.tenant_name.strip())).to_dict()
+    if not body.access_token:
+        raise HTTPException(
+            status_code=422,
+            detail="Un access_token Microsoft Graph est requis pour le mode réel. Utilisez demo_mode=true pour tester.",
+        )
+    try:
+        connector = M365Connector(
+            demo_mode=False,
+            access_token=body.access_token,
+            tenant_id=body.azure_tenant_id,
+        )
+        return connector.audit(tenant_name=html.escape(body.tenant_name.strip())).to_dict()
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur Microsoft Graph : {str(e)}")
+
 @app.get("/api/history")
-def get_history(org_name: str = None, limit: int = 20):
-    """Liste les assessments sauvegardés."""
+def get_history(org_name: str = None, limit: int = 20,
+                tenant: dict = Depends(_resolve_tenant)):
+    """Liste les assessments du tenant authentifié."""
     if limit < 1 or limit > 100:
         raise HTTPException(status_code=422, detail="limit doit être entre 1 et 100.")
-    return {"assessments": list_assessments(org_name=org_name, limit=limit)}
+    return {"assessments": list_assessments(org_name=org_name, limit=limit,
+                                            tenant_id=tenant["id"])}
 
 
 @app.get("/api/history/{assessment_id}")
-def get_assessment_detail(assessment_id: int):
-    """Retourne le détail complet d'un assessment."""
-    result = get_assessment(assessment_id)
+def get_assessment_detail(assessment_id: int, tenant: dict = Depends(_resolve_tenant)):
+    """Retourne le détail complet d'un assessment (vérifié par tenant)."""
+    result = get_assessment(assessment_id, tenant_id=tenant["id"])
     if result is None:
         raise HTTPException(status_code=404, detail=f"Assessment #{assessment_id} introuvable.")
     return result
@@ -673,10 +764,10 @@ def api_template_assets(body: AssessmentRequest, background_tasks: BackgroundTas
 
 
 @app.get("/api/compare/{id_a}/{id_b}")
-def compare(id_a: int, id_b: int):
-    """Compare deux assessments et retourne le delta."""
+def compare(id_a: int, id_b: int, tenant: dict = Depends(_resolve_tenant)):
+    """Compare deux assessments du tenant et retourne le delta."""
     try:
-        return compare_assessments(id_a, id_b)
+        return compare_assessments(id_a, id_b, tenant_id=tenant["id"])
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
