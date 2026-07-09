@@ -164,6 +164,36 @@
 
     .mc-empty { text-align: center; padding: 3rem; color: var(--muted); }
     .mc-spinner { text-align: center; padding: 2rem; color: var(--muted); }
+
+    /* ── MITRE ATT&CK ── */
+    .mitre-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .mitre-kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; text-align: center; }
+    .mitre-kpi .kpi-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.3rem; }
+    .mitre-kpi .kpi-value { font-size: 1.8rem; font-weight: 700; }
+    .mitre-kpi.sev-critical .kpi-value { color: var(--red); }
+    .mitre-kpi.sev-high .kpi-value { color: #F97316; }
+    .mitre-kpi.sev-medium .kpi-value { color: var(--yellow); }
+    .mitre-kpi.sev-total .kpi-value { color: var(--accent-light); }
+    .mitre-link { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 0.75rem; overflow: hidden; }
+    .mitre-link-header { padding: 0.75rem 1rem; background: #161D2E; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+    .mitre-link-header .req-id { font-family: monospace; font-size: 0.8rem; color: var(--muted); background: #0d1424; padding: 2px 6px; border-radius: 3px; }
+    .mitre-link-header .req-title { flex: 1; font-size: 0.88rem; font-weight: 600; }
+    .sev-badge { font-size: 0.7rem; font-weight: 700; padding: 2px 7px; border-radius: 99px; letter-spacing: 0.05em; }
+    .sev-badge.CRITICAL { background: rgba(239,68,68,0.15); color: #EF4444; border: 1px solid rgba(239,68,68,0.3); }
+    .sev-badge.HIGH { background: rgba(249,115,22,0.15); color: #F97316; border: 1px solid rgba(249,115,22,0.3); }
+    .sev-badge.MEDIUM { background: rgba(245,158,11,0.15); color: #F59E0B; border: 1px solid rgba(245,158,11,0.3); }
+    .mitre-link-body { padding: 0.75rem 1rem; }
+    .mitre-scenario { font-size: 0.82rem; color: #D1D5DB; margin-bottom: 0.6rem; line-height: 1.5; }
+    .mitre-impact { font-size: 0.8rem; color: var(--muted); font-style: italic; margin-bottom: 0.75rem; }
+    .mitre-techniques { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .technique-chip { display: inline-flex; align-items: center; gap: 0.3rem; background: #0d1424; border: 1px solid var(--border); border-radius: 4px; padding: 3px 8px; font-size: 0.75rem; }
+    .technique-chip .tid { font-family: monospace; color: #818CF8; }
+    .technique-chip .tname { color: #D1D5DB; }
+    .technique-chip .ttactic { color: var(--muted); font-size: 0.7rem; }
+    .mitre-tactic-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.5rem; margin-bottom: 1.5rem; }
+    .tactic-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.6rem 0.8rem; display: flex; justify-content: space-between; align-items: center; }
+    .tactic-card .tname { font-size: 0.82rem; }
+    .tactic-card .tcount { font-size: 1rem; font-weight: 700; color: #818CF8; }
   </style>
 </head>
 <body>
@@ -190,6 +220,7 @@
   <button data-page="governance" onclick="showPage('governance'); loadGovernance()">Gouvernance</button>
   <button data-page="incident" onclick="showPage('incident')">Incidents</button>
   <button data-page="supply-chain" onclick="showPage('supply-chain')">Supply Chain</button>
+  <button data-page="mitre" onclick="showPage('mitre')">MITRE ATT&amp;CK</button>
   <button data-page="history" onclick="showPage('history'); loadHistory()">Historique</button>
 </nav>
 
@@ -389,6 +420,26 @@
     </div>
 
     <div id="sme-results" style="display:none;margin-top:2rem;"></div>
+  </div>
+
+  <!-- ── PAGE : MITRE ATT&CK ── -->
+  <div id="page-mitre" class="page">
+    <div class="form-header">
+      <h2>Mapping MITRE ATT&amp;CK</h2>
+      <p style="color:var(--muted);font-size:0.9rem;">Visualisez les techniques d'attaque MITRE ATT&amp;CK exposées par vos gaps de conformité NIS 2. Sélectionnez un assessment pour générer le mapping.</p>
+    </div>
+
+    <div style="display:flex;gap:1rem;align-items:flex-end;margin-bottom:1.5rem;flex-wrap:wrap;">
+      <div style="flex:1;min-width:220px;">
+        <label style="font-size:0.8rem;color:var(--muted);display:block;margin-bottom:0.3rem;">Assessment source</label>
+        <select id="mitre-assessment-id" style="width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:0.55rem 0.8rem;border-radius:var(--radius);font-size:0.85rem;">
+          <option value="">-- Sélectionner un assessment --</option>
+        </select>
+      </div>
+      <button class="btn" onclick="runMitreMapping()" style="flex-shrink:0;">Générer le mapping</button>
+    </div>
+
+    <div id="mitre-results"></div>
   </div>
 
   <!-- ── PAGE : HISTORIQUE ── -->
@@ -1973,6 +2024,121 @@
         </div>
       </div>`;
   }
+
+  // ── MITRE ATT&CK ─────────────────────────────────────────────────────────
+
+  async function loadMitreHistorySelect() {
+    const sel = document.getElementById('mitre-assessment-id');
+    try {
+      const res = await fetch('/api/history?limit=50', { headers: apiHeaders() });
+      if (!res.ok) return;
+      const data = await res.json();
+      const items = data.assessments || [];
+      sel.innerHTML = '<option value="">-- Sélectionner un assessment --</option>';
+      items.forEach(a => {
+        const date = a.assessed_at ? a.assessed_at.substring(0, 10) : '';
+        sel.innerHTML += `<option value="${a.id}">${a.org_name} — ${date} (Score: ${a.score})</option>`;
+      });
+    } catch (e) {
+      console.error('Erreur chargement historique MITRE:', e);
+    }
+  }
+
+  async function runMitreMapping() {
+    const sel = document.getElementById('mitre-assessment-id');
+    const id = sel.value;
+    if (!id) { alert('Sélectionnez un assessment.'); return; }
+    const container = document.getElementById('mitre-results');
+    container.innerHTML = '<p style="color:var(--muted)">Génération du mapping MITRE ATT&CK…</p>';
+    try {
+      const res = await fetch(`/api/mitre-mapping/${id}`, { headers: apiHeaders() });
+      if (!res.ok) {
+        const err = await res.json();
+        container.innerHTML = `<p style="color:var(--red)">${err.detail || 'Erreur serveur.'}</p>`;
+        return;
+      }
+      const data = await res.json();
+      renderMitreMapping(data, container);
+    } catch (e) {
+      container.innerHTML = `<p style="color:var(--red)">Erreur réseau : ${e.message}</p>`;
+    }
+  }
+
+  function renderMitreMapping(data, container) {
+    const links = data.links || [];
+    const tactics = data.top_tactics || [];
+
+    let html = `
+      <div class="mitre-kpis">
+        <div class="mitre-kpi sev-critical">
+          <div class="kpi-label">Critique</div>
+          <div class="kpi-value">${data.critical_links}</div>
+        </div>
+        <div class="mitre-kpi sev-high">
+          <div class="kpi-label">Eleve</div>
+          <div class="kpi-value">${data.high_links}</div>
+        </div>
+        <div class="mitre-kpi sev-medium">
+          <div class="kpi-label">Modere</div>
+          <div class="kpi-value">${data.medium_links}</div>
+        </div>
+        <div class="mitre-kpi sev-total">
+          <div class="kpi-label">Gaps totaux</div>
+          <div class="kpi-value">${data.total_gaps}</div>
+        </div>
+      </div>
+      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1.5rem;">${escHtml(data.coverage_note || '')}</p>`;
+
+    if (tactics.length) {
+      html += `<h3 style="font-size:0.95rem;font-weight:600;margin-bottom:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;">Tactiques exposees</h3>
+        <div class="mitre-tactic-grid">`;
+      tactics.forEach(t => {
+        html += `<div class="tactic-card"><span class="tname">${escHtml(t.tactic)}</span><span class="tcount">${t.count}</span></div>`;
+      });
+      html += `</div>`;
+    }
+
+    html += `<h3 style="font-size:0.95rem;font-weight:600;margin-bottom:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;">Gaps NIS 2 et techniques associees</h3>`;
+
+    links.forEach(lnk => {
+      const techniques = (lnk.techniques || []).map(t =>
+        `<a href="${escHtml(t.url)}" target="_blank" rel="noopener" class="technique-chip" title="${escHtml(t.description)}" style="text-decoration:none;">
+          <span class="tid">${escHtml(t.technique_id)}</span>
+          <span class="tname">${escHtml(t.name)}</span>
+          <span class="ttactic">· ${escHtml(t.tactic)}</span>
+        </a>`
+      ).join('');
+
+      html += `
+        <div class="mitre-link">
+          <div class="mitre-link-header">
+            <span class="req-id">${escHtml(lnk.requirement_id)}</span>
+            <span class="req-title">${escHtml(lnk.requirement_title)}</span>
+            <span class="sev-badge ${escHtml(lnk.severity)}">${escHtml(lnk.severity)}</span>
+          </div>
+          <div class="mitre-link-body">
+            <div class="mitre-scenario">${escHtml(lnk.attack_scenario)}</div>
+            <div class="mitre-impact">Impact gap : ${escHtml(lnk.gap_impact)}</div>
+            <div class="mitre-techniques">${techniques}</div>
+          </div>
+        </div>`;
+    });
+
+    container.innerHTML = html;
+  }
+
+  function escHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // Charger l'historique dans le select MITRE quand on clique sur l'onglet
+  const _origShowPage = showPage;
+  // We extend the nav button inline instead — load history on tab click
+  document.querySelector('nav button[data-page="mitre"]').addEventListener('click', () => {
+    loadMitreHistorySelect();
+  });
+
 </script>
 </body>
 </html>
