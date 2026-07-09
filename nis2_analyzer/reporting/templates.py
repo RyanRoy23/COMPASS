@@ -272,13 +272,13 @@ def generate_notification_procedure(result: AssessmentResult) -> io.BytesIO:
     story.append(Paragraph("2. Critères de significativité d'un incident", styles["section"]))
     criteria = [
         ["Critère", "Seuil NIS 2", "Applicable ?"],
-        ["Nombre d'utilisateurs affectés", "> 500 utilisateurs actifs", "☐ Oui  ☐ Non"],
-        ["Indisponibilité des services", "> 6 heures consécutives", "☐ Oui  ☐ Non"],
-        ["Perte financière", "> 500 000 €", "☐ Oui  ☐ Non"],
-        ["Violation de données personnelles", "Toute violation significative", "☐ Oui  ☐ Non"],
-        ["Systèmes critiques compromis", "Infrastructure essentielle", "☐ Oui  ☐ Non"],
-        ["Impact supply chain", "Fournisseurs tiers affectés", "☐ Oui  ☐ Non"],
-        ["Portée géographique", "Nationale ou transfrontalière", "☐ Oui  ☐ Non"],
+        ["Nombre d'utilisateurs affectés", "> 500 utilisateurs actifs", "Oui / Non"],
+        ["Indisponibilité des services", "> 6 heures consécutives", "Oui / Non"],
+        ["Perte financière", "> 500 000 €", "Oui / Non"],
+        ["Violation de données personnelles", "Toute violation significative", "Oui / Non"],
+        ["Systèmes critiques compromis", "Infrastructure essentielle", "Oui / Non"],
+        ["Impact supply chain", "Fournisseurs tiers affectés", "Oui / Non"],
+        ["Portée géographique", "Nationale ou transfrontalière", "Oui / Non"],
     ]
     crit_rows = [[Paragraph(f"<b>{c}</b>" if i == 0 else c, styles["body_bold"] if i == 0 else styles["body"])
                   for c in row] for i, row in enumerate(criteria)]
@@ -412,10 +412,10 @@ def generate_asset_register(result: AssessmentResult) -> io.BytesIO:
     story.append(Paragraph("2. Grille de classification de la criticité", styles["section"]))
     class_rows = [
         ["Niveau", "Définition", "Exemples"],
-        ["🔴 CRITIQUE", "Arrêt immédiat de l'activité si compromis", "Active Directory, ERP, SI de production"],
-        ["🟠 ÉLEVÉ", "Impact majeur sur l'activité", "Messagerie, VPN, outils métier clés"],
-        ["🟡 MODÉRÉ", "Impact limité, continuité possible", "Serveurs de développement, outils annexes"],
-        ["🟢 FAIBLE", "Impact négligeable", "Postes non connectés aux SI critiques"],
+        ["CRITIQUE", "Arrêt immédiat de l'activité si compromis", "Active Directory, ERP, SI de production"],
+        ["ÉLEVÉ", "Impact majeur sur l'activité", "Messagerie, VPN, outils métier clés"],
+        ["MODÉRÉ", "Impact limité, continuité possible", "Serveurs de développement, outils annexes"],
+        ["FAIBLE", "Impact négligeable", "Postes non connectés aux SI critiques"],
     ]
     c_rows = [[Paragraph(c, styles["body_bold"] if i == 0 else styles["body"]) for c in row]
               for i, row in enumerate(class_rows)]
