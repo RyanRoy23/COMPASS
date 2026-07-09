@@ -58,6 +58,7 @@
     .btn:hover { opacity: 0.85; }
     .btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .btn-outline { background: none; border: 1px solid var(--border); color: var(--text); }
+    .btn-secondary { background: var(--surface); border: 1px solid var(--border); color: var(--text); font-weight: 500; }
     #form-status { font-size: 0.85rem; color: var(--muted); }
 
     /* ── Results ── */
@@ -710,7 +711,10 @@
       ${renderSmartPlan(data.gaps)}
       ${renderSectorReport(data.sector_report)}
       <div style="margin-top:2rem;padding-top:1.2rem;border-top:1px solid var(--border);display:flex;gap:1rem;align-items:center;">
-        <button class="btn" id="pdf-btn" onclick="downloadPDF()">⬇ Télécharger le rapport PDF</button>
+        <button class="btn" id="pdf-btn" onclick="downloadPDF()">⬇ Rapport PDF</button>
+        <button class="btn btn-secondary" id="pssi-btn" onclick="downloadTemplate('pssi','PSSI')">📄 PSSI</button>
+        <button class="btn btn-secondary" id="notif-btn" onclick="downloadTemplate('notification','Notification')">🔔 Procédure notification</button>
+        <button class="btn btn-secondary" id="assets-btn" onclick="downloadTemplate('assets','Actifs')">🗂 Registre actifs</button>
         <span id="pdf-status" style="font-size:0.82rem;color:var(--muted);"></span>
       </div>
     `;
@@ -859,6 +863,53 @@
     } finally {
       btn.disabled = false;
       btn.textContent = '⬇ Télécharger le rapport PDF';
+    }
+  }
+
+  // ── Template Documents ────────────────────────────────────────────────────
+  async function downloadTemplate(slug, label) {
+    if (!_lastResponses || Object.keys(_lastResponses).length === 0) {
+      document.getElementById('pdf-status').textContent = 'Lancez d\'abord une évaluation.';
+      return;
+    }
+    const btnId = slug === 'pssi' ? 'pssi-btn' : slug === 'notification' ? 'notif-btn' : 'assets-btn';
+    const btn = document.getElementById(btnId);
+    const status = document.getElementById('pdf-status');
+    btn.disabled = true;
+    const orig = btn.textContent;
+    btn.textContent = '⏳ Génération…';
+    status.textContent = '';
+    try {
+      const res = await fetch(`/api/templates/${slug}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          org_name: _lastOrgName || 'Organisation',
+          responses: _lastResponses,
+          sector: document.getElementById('sector-select').value,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: res.statusText }));
+        status.textContent = 'Erreur : ' + (err.detail || res.statusText);
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const orgSlug = (_lastOrgName || 'org').replace(/[^a-zA-Z0-9]/g, '_').substring(0, 40);
+      a.href = url;
+      a.download = `COMPASS_${label}_${orgSlug}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      status.textContent = `${label} généré avec succès.`;
+    } catch (e) {
+      status.textContent = 'Erreur réseau : ' + e.message;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = orig;
     }
   }
 
@@ -1057,30 +1108,136 @@
         container.innerHTML = `
           <div class="empty-state">
             <p>Aucun assessment enregistré.</p>
-            <button class="btn" onclick="showPage('assessment'); document.querySelectorAll('nav button')[0].classList.add('active')">Lancer une évaluation</button>
+            <button class="btn" onclick="showPage('assessment')">Lancer une évaluation</button>
           </div>`;
         return;
       }
 
-      container.innerHTML = `
-        <div class="form-header"><h2>Historique des assessments</h2></div>
-        <table class="history-table">
-          <thead><tr><th>ID</th><th>Organisation</th><th>Date</th><th>Score</th><th>Grade</th><th>Gaps</th></tr></thead>
+      // Grouper par organisation
+      const byOrg = {};
+      rows.forEach(r => {
+        if (!byOrg[r.org_name]) byOrg[r.org_name] = [];
+        byOrg[r.org_name].push(r);
+      });
+
+      // Courbe SVG de progression (scores dans le temps)
+      const chartHTML = _renderProgressChart(rows);
+
+      // Stats globales
+      const latest = rows[0];
+      const oldest = rows[rows.length - 1];
+      const delta = rows.length > 1 ? (latest.score - oldest.score).toFixed(1) : null;
+      const deltaColor = delta >= 0 ? 'var(--green)' : 'var(--red)';
+      const deltaSign = delta >= 0 ? '+' : '';
+
+      const statsHTML = `
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.8rem;margin-bottom:1.5rem;">
+          <div class="domain-card" style="padding:0.8rem 1rem;text-align:center;">
+            <div style="font-size:1.5rem;font-weight:700;color:var(--accent);">${rows.length}</div>
+            <div style="font-size:0.75rem;color:var(--muted);">Assessments</div>
+          </div>
+          <div class="domain-card" style="padding:0.8rem 1rem;text-align:center;">
+            <div style="font-size:1.5rem;font-weight:700;color:var(--accent);">${Object.keys(byOrg).length}</div>
+            <div style="font-size:0.75rem;color:var(--muted);">Organisations</div>
+          </div>
+          <div class="domain-card" style="padding:0.8rem 1rem;text-align:center;">
+            <div style="font-size:1.5rem;font-weight:700;color:var(--accent);">${latest.score}%</div>
+            <div style="font-size:0.75rem;color:var(--muted);">Dernier score</div>
+          </div>
+          <div class="domain-card" style="padding:0.8rem 1rem;text-align:center;">
+            <div style="font-size:1.5rem;font-weight:700;color:${deltaColor};">${delta !== null ? deltaSign + delta + '%' : '—'}</div>
+            <div style="font-size:0.75rem;color:var(--muted);">Progression</div>
+          </div>
+        </div>`;
+
+      // Tableau
+      const tableHTML = `
+        <table class="history-table" style="margin-top:1.5rem;">
+          <thead><tr><th>ID</th><th>Organisation</th><th>Date</th><th>Score</th><th>Grade</th><th>Gaps</th><th>Évolution</th></tr></thead>
           <tbody>
-            ${rows.map(r => `
-              <tr>
+            ${rows.map((r, i) => {
+              const prev = rows[i + 1];
+              const evo = prev ? (r.score - prev.score).toFixed(1) : null;
+              const evoColor = evo > 0 ? 'var(--green)' : evo < 0 ? 'var(--red)' : 'var(--muted)';
+              const evoStr = evo !== null ? `<span style="color:${evoColor}">${evo > 0 ? '+' : ''}${evo}%</span>` : '<span style="color:var(--muted)">—</span>';
+              return `<tr>
                 <td>#${r.id}</td>
                 <td>${esc(r.org_name)}</td>
                 <td>${r.assessed_at.slice(0,10)}</td>
-                <td>${r.score}%</td>
+                <td><b>${r.score}%</b></td>
                 <td><span class="badge badge-${r.grade}">${r.grade}</span></td>
                 <td>${r.total_gaps}</td>
-              </tr>`).join('')}
+                <td>${evoStr}</td>
+              </tr>`;
+            }).join('')}
           </tbody>
         </table>`;
+
+      container.innerHTML = `
+        <div class="form-header"><h2>Dashboard de progression</h2><p style="color:var(--muted);font-size:0.85rem;">Suivi de la conformité NIS 2 dans le temps.</p></div>
+        ${statsHTML}
+        ${chartHTML}
+        ${tableHTML}`;
+
     } catch (e) {
       container.innerHTML = `<div class="error-msg">Impossible de charger l'historique : ${esc(e.message)}</div>`;
     }
+  }
+
+  function _renderProgressChart(rows) {
+    if (rows.length < 2) return '';
+    const W = 680, H = 180, PAD = { top: 16, right: 16, bottom: 32, left: 40 };
+    const chartW = W - PAD.left - PAD.right;
+    const chartH = H - PAD.top - PAD.bottom;
+
+    // Trier du plus ancien au plus récent
+    const sorted = [...rows].sort((a, b) => a.assessed_at.localeCompare(b.assessed_at));
+    const scores = sorted.map(r => r.score);
+    const minS = Math.max(0, Math.min(...scores) - 10);
+    const maxS = Math.min(100, Math.max(...scores) + 10);
+
+    const xScale = i => PAD.left + (i / (sorted.length - 1)) * chartW;
+    const yScale = v => PAD.top + chartH - ((v - minS) / (maxS - minS)) * chartH;
+
+    // Ligne de progression
+    const points = sorted.map((r, i) => `${xScale(i)},${yScale(r.score)}`).join(' ');
+    const areaPoints = `${xScale(0)},${PAD.top + chartH} ${points} ${xScale(sorted.length - 1)},${PAD.top + chartH}`;
+
+    // Grilles horizontales
+    const gridLines = [0, 30, 50, 70, 85, 100].filter(v => v >= minS && v <= maxS).map(v => {
+      const y = yScale(v);
+      const color = v >= 85 ? '#10B981' : v >= 70 ? '#3B82F6' : v >= 50 ? '#F59E0B' : '#EF4444';
+      return `<line x1="${PAD.left}" y1="${y}" x2="${W - PAD.right}" y2="${y}" stroke="${color}" stroke-width="0.5" stroke-dasharray="4,3" opacity="0.4"/>
+              <text x="${PAD.left - 4}" y="${y + 4}" text-anchor="end" font-size="9" fill="#6B7280">${v}</text>`;
+    }).join('');
+
+    // Points et labels dates
+    const dots = sorted.map((r, i) => {
+      const x = xScale(i), y = yScale(r.score);
+      const date = r.assessed_at.slice(5, 10); // MM-DD
+      const gradeColors = { A:'#10B981', B:'#3B82F6', C:'#F59E0B', D:'#F97316', F:'#EF4444' };
+      const c = gradeColors[r.grade] || '#6B7280';
+      return `<circle cx="${x}" cy="${y}" r="4" fill="${c}" stroke="#0A0E1A" stroke-width="1.5"/>
+              <text x="${x}" y="${H - 6}" text-anchor="middle" font-size="8" fill="#6B7280">${date}</text>`;
+    }).join('');
+
+    return `
+      <div class="domain-card" style="padding:1rem;margin-bottom:1rem;">
+        <div style="font-size:0.85rem;font-weight:600;margin-bottom:0.7rem;">Courbe de progression du score NIS 2</div>
+        <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;">
+          ${gridLines}
+          <polyline points="${areaPoints}" fill="#3B82F620" stroke="none"/>
+          <polyline points="${points}" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linejoin="round"/>
+          ${dots}
+        </svg>
+        <div style="display:flex;gap:1rem;margin-top:0.5rem;font-size:0.72rem;color:var(--muted);">
+          <span style="color:#10B981;">● A (≥85%)</span>
+          <span style="color:#3B82F6;">● B (≥70%)</span>
+          <span style="color:#F59E0B;">● C (≥50%)</span>
+          <span style="color:#F97316;">● D (≥30%)</span>
+          <span style="color:#EF4444;">● F (&lt;30%)</span>
+        </div>
+      </div>`;
   }
 
   // ── Utilitaires ───────────────────────────────────────────────────────────

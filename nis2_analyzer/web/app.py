@@ -59,6 +59,9 @@ from nis2_analyzer.core.sme_mode import (
     get_sme_schema, compute_sme_score, sme_responses_to_nis2, SME_QUESTIONS
 )
 from nis2_analyzer.reporting.pdf_report import generate_pdf_report
+from nis2_analyzer.reporting.templates import (
+    generate_pssi, generate_notification_procedure, generate_asset_register,
+)
 
 app = FastAPI(
     title="COMPASS",
@@ -609,6 +612,64 @@ def api_evidence_package(body: AssessmentRequest, background_tasks: BackgroundTa
         media_type="application/zip",
         filename=f"compass_evidence_{safe_name}.zip",
     )
+
+
+def _build_assessment_from_request(body: AssessmentRequest) -> tuple:
+    """Shared helper: load framework, apply responses, return (engine, assessment, org_name)."""
+    org_name = html.escape(body.org_name.strip())
+    for req_id, value in body.responses.items():
+        if value not in (0, 1, 2, 3):
+            raise HTTPException(status_code=422, detail=f"Maturité invalide pour {req_id} : {value}.")
+    domains = load_framework()
+    if body.sector:
+        apply_sector_weights(domains, body.sector)
+    answered = 0
+    for domain in domains:
+        for req in domain.sub_requirements:
+            if req.id in body.responses:
+                req.maturity = MaturityLevel(body.responses[req.id])
+                answered += 1
+    if answered == 0:
+        raise HTTPException(status_code=422, detail="Aucune réponse valide fournie.")
+    engine = ScoringEngine()
+    return engine, engine.calculate(domains, org_name), org_name
+
+
+def _template_response(
+    buf,
+    background_tasks: BackgroundTasks,
+    org_name: str,
+    slug: str,
+) -> FileResponse:
+    tmp = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
+    tmp.write(buf.read())
+    tmp.close()
+    background_tasks.add_task(os.unlink, tmp.name)
+    safe = org_name.replace(" ", "_").replace("/", "_")[:40]
+    fname = f"compass_{slug}_{safe}.pdf"
+    return FileResponse(tmp.name, media_type="application/pdf", filename=fname,
+                        headers={"Content-Disposition": f'attachment; filename="{fname}"'})
+
+
+@app.post("/api/templates/pssi")
+def api_template_pssi(body: AssessmentRequest, background_tasks: BackgroundTasks):
+    """Génère une PSSI simplifiée pré-remplie depuis l'évaluation NIS 2."""
+    _, assessment, org_name = _build_assessment_from_request(body)
+    return _template_response(generate_pssi(assessment), background_tasks, org_name, "pssi")
+
+
+@app.post("/api/templates/notification")
+def api_template_notification(body: AssessmentRequest, background_tasks: BackgroundTasks):
+    """Génère la procédure de notification NIS 2 Art. 23 pré-remplie."""
+    _, assessment, org_name = _build_assessment_from_request(body)
+    return _template_response(generate_notification_procedure(assessment), background_tasks, org_name, "notification")
+
+
+@app.post("/api/templates/assets")
+def api_template_assets(body: AssessmentRequest, background_tasks: BackgroundTasks):
+    """Génère le registre des actifs critiques pré-rempli depuis les gaps identifiés."""
+    _, assessment, org_name = _build_assessment_from_request(body)
+    return _template_response(generate_asset_register(assessment), background_tasks, org_name, "actifs")
 
 
 @app.get("/api/compare/{id_a}/{id_b}")
