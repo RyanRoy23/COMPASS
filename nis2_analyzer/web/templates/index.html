@@ -2550,7 +2550,7 @@
   async function loadChatHistorySelect() {
     const sel = document.getElementById('chat-assessment-id');
     try {
-      const resp = await fetch('/api/history', { headers: _apiHeaders() });
+      const resp = await fetch('/api/history', { headers: apiHeaders() });
       const data = await resp.json();
       const items = data.assessments || [];
       sel.innerHTML = '<option value="">-- Sélectionner un assessment --</option>' +
@@ -2627,7 +2627,7 @@
     try {
       const resp = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ..._apiHeaders() },
+        headers: { 'Content-Type': 'application/json', ...apiHeaders() },
         body: JSON.stringify({
           assessment_id: assessmentId,
           messages: _chatHistory,
