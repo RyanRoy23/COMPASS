@@ -171,6 +171,13 @@
 <header>
   <h1>COMPASS</h1>
   <span>NIS 2 — Art. 3, 20, 21, 23</span>
+  <div id="tenant-bar" style="display:flex;align-items:center;gap:0.6rem;margin-left:auto;">
+    <input id="api-key-input" type="password" placeholder="Clé API (optionnel)"
+           style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:#fff;
+                  padding:0.35rem 0.7rem;border-radius:var(--radius);font-size:0.78rem;width:210px;"
+           oninput="saveApiKey(this.value)" autocomplete="off">
+    <span id="tenant-name" style="font-size:0.78rem;opacity:0.75;white-space:nowrap;"></span>
+  </div>
 </header>
 
 <nav>
@@ -610,7 +617,7 @@
     try {
       const res = await fetch('/api/assess', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: apiHeaders(),
         body: JSON.stringify({ org_name: orgName, responses, sector: document.getElementById('sector-select').value }),
       });
 
@@ -835,7 +842,7 @@
     try {
       const res = await fetch('/api/pdf-report', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: apiHeaders(),
         body: JSON.stringify({
           org_name: _lastOrgName || 'Organisation',
           responses: _lastResponses,
@@ -882,7 +889,7 @@
     try {
       const res = await fetch(`/api/templates/${slug}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: apiHeaders(),
         body: JSON.stringify({
           org_name: _lastOrgName || 'Organisation',
           responses: _lastResponses,
@@ -913,6 +920,53 @@
     }
   }
 
+  // ── Clé API multi-tenant ─────────────────────────────────────────────────
+  const _API_KEY_STORAGE = 'compass_api_key';
+
+  function getApiKey() {
+    return localStorage.getItem(_API_KEY_STORAGE) || '';
+  }
+
+  function saveApiKey(key) {
+    if (key) {
+      localStorage.setItem(_API_KEY_STORAGE, key);
+    } else {
+      localStorage.removeItem(_API_KEY_STORAGE);
+    }
+    _refreshTenantDisplay();
+  }
+
+  function apiHeaders(extra = {}) {
+    const h = { 'Content-Type': 'application/json', ...extra };
+    const key = getApiKey();
+    if (key) h['X-API-Key'] = key;
+    return h;
+  }
+
+  async function _refreshTenantDisplay() {
+    const key = getApiKey();
+    const label = document.getElementById('tenant-name');
+    if (!key) { label.textContent = ''; return; }
+    try {
+      const res = await fetch('/api/tenants/me', { headers: { 'X-API-Key': key } });
+      if (res.ok) {
+        const t = await res.json();
+        label.textContent = `✓ ${t.name} (${t.plan})`;
+      } else {
+        label.textContent = '✗ clé invalide';
+      }
+    } catch { label.textContent = ''; }
+  }
+
+  // Restaurer la clé API depuis localStorage au chargement
+  window.addEventListener('DOMContentLoaded', () => {
+    const stored = getApiKey();
+    if (stored) {
+      document.getElementById('api-key-input').value = stored;
+      _refreshTenantDisplay();
+    }
+  });
+
   // ── Monte Carlo ───────────────────────────────────────────────────────────
   let _lastResponses = null;
   let _lastOrgName = null;
@@ -935,7 +989,7 @@
     try {
       const res = await fetch('/api/monte-carlo', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: apiHeaders(),
         body: JSON.stringify({
           org_name: _lastOrgName || 'Organisation',
           responses: _lastResponses,
@@ -1100,7 +1154,7 @@
     const container = document.getElementById('history-container');
     container.innerHTML = '<p style="color:var(--muted)">Chargement…</p>';
     try {
-      const res = await fetch('/api/history?limit=50');
+      const res = await fetch('/api/history?limit=50', { headers: apiHeaders() });
       const data = await res.json();
       const rows = data.assessments;
 
@@ -1263,7 +1317,7 @@
     try {
       const res = await fetch('/api/aws-audit', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: apiHeaders(),
         body: JSON.stringify({ demo_mode: true, region }),
       });
       if (!res.ok) {
@@ -1457,7 +1511,7 @@
     try {
       const res = await fetch('/api/sme/assess', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: apiHeaders(),
         body: JSON.stringify({ org_name: orgName, responses, sector, include_nis2_detail: true }),
       });
       if (!res.ok) {
@@ -1658,7 +1712,7 @@
     }
     const category = document.getElementById('gov-category').value;
     const res = await fetch('/api/governance', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: apiHeaders(),
       body: JSON.stringify({ responses, entity_category: category }),
     });
     const data = await res.json();
@@ -1694,7 +1748,7 @@
       third_party_impact: false,
     };
     const res = await fetch('/api/incident/classify', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: apiHeaders(),
       body: JSON.stringify(body),
     });
     const data = await res.json();
@@ -1724,7 +1778,7 @@
     if (!detectionLocal) { return; }
     const detectionISO = new Date(detectionLocal).toISOString();
     const res = await fetch('/api/incident/deadlines', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: apiHeaders(),
       body: JSON.stringify({ detection_iso: detectionISO, completed: {} }),
     });
     const data = await res.json();
@@ -1768,7 +1822,7 @@
       subcontracts_to_others: document.getElementById('sc-subcontract').checked,
     };
     const res = await fetch('/api/supply-chain/assess-supplier', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: apiHeaders(),
       body: JSON.stringify(body),
     });
     const data = await res.json();
