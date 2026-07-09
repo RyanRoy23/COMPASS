@@ -13,6 +13,7 @@ import os
 import secrets
 import sqlite3
 from datetime import datetime, timezone
+from nis2_analyzer.core.evidence import compute_payload_hash, build_receipt, _sign
 
 
 DEFAULT_DB_PATH = os.path.join(
@@ -61,10 +62,14 @@ def init_db(db_path: str = DEFAULT_DB_PATH) -> None:
                 FOREIGN KEY (tenant_id) REFERENCES tenants(id)
             )
         """)
-        # Migration : ajouter tenant_id si la table existait sans cette colonne
+        # Migrations : ajouter les colonnes manquantes si la table existait déjà
         cols = {r[1] for r in conn.execute("PRAGMA table_info(assessments)")}
         if "tenant_id" not in cols:
             conn.execute("ALTER TABLE assessments ADD COLUMN tenant_id INTEGER NOT NULL DEFAULT 1")
+        if "payload_hash" not in cols:
+            conn.execute("ALTER TABLE assessments ADD COLUMN payload_hash TEXT NOT NULL DEFAULT ''")
+        if "hmac_signature" not in cols:
+            conn.execute("ALTER TABLE assessments ADD COLUMN hmac_signature TEXT NOT NULL DEFAULT ''")
         # Créer le tenant "default" s'il n'existe pas
         existing = conn.execute(
             "SELECT id FROM tenants WHERE slug = ?", (DEFAULT_TENANT_SLUG,)
@@ -162,15 +167,24 @@ def save_assessment(analysis: dict, db_path: str = DEFAULT_DB_PATH,
     grade = scores.get("grade", "?")
     total_gaps = scores.get("total_gaps", 0)
     payload = json.dumps(analysis, ensure_ascii=False)
+    payload_hash = compute_payload_hash(analysis)
 
     with _get_connection(db_path) as conn:
         cursor = conn.execute(
             """INSERT INTO assessments
-               (tenant_id, org_name, assessed_at, score, grade, total_gaps, payload)
-               VALUES (?, ?, ?, ?, ?, ?, ?)""",
-            (tenant_id, org_name, assessed_at, score, grade, total_gaps, payload),
+               (tenant_id, org_name, assessed_at, score, grade, total_gaps, payload, payload_hash, hmac_signature)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (tenant_id, org_name, assessed_at, score, grade, total_gaps, payload,
+             payload_hash, ""),  # signature calculée après insert (besoin de l'id)
         )
-        return cursor.lastrowid
+        assessment_id = cursor.lastrowid
+        # Calcul de la signature HMAC maintenant que l'id est connu
+        signature = _sign(payload_hash, assessed_at, assessment_id)
+        conn.execute(
+            "UPDATE assessments SET hmac_signature = ? WHERE id = ?",
+            (signature, assessment_id),
+        )
+        return assessment_id
 
 
 def list_assessments(org_name: str = None, limit: int = 20,

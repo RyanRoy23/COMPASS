@@ -165,6 +165,27 @@
     .mc-empty { text-align: center; padding: 3rem; color: var(--muted); }
     .mc-spinner { text-align: center; padding: 2rem; color: var(--muted); }
 
+    /* ── Preuves cryptographiques ── */
+    .ev-status { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.25rem; border-radius: var(--radius); margin-bottom: 1.5rem; border: 1px solid; }
+    .ev-status.verified { background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.3); }
+    .ev-status.tampered { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.3); }
+    .ev-status.legacy { background: rgba(107,114,128,0.08); border-color: rgba(107,114,128,0.3); }
+    .ev-status .ev-icon { font-size: 1.5rem; font-weight: 900; }
+    .ev-status.verified .ev-icon { color: var(--green); }
+    .ev-status.tampered .ev-icon { color: var(--red); }
+    .ev-status.legacy .ev-icon { color: var(--muted); }
+    .ev-status .ev-label { font-size: 1rem; font-weight: 700; }
+    .ev-status .ev-sub { font-size: 0.82rem; color: var(--muted); margin-top: 0.2rem; }
+    .ev-field { display: flex; flex-direction: column; gap: 0.2rem; margin-bottom: 0.75rem; }
+    .ev-field .ef-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .ev-field .ef-value { font-family: monospace; font-size: 0.82rem; color: #D1D5DB; word-break: break-all; background: #0d1424; padding: 0.4rem 0.6rem; border-radius: 4px; border: 1px solid var(--border); }
+    .ev-checks { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem; }
+    .ev-check { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.75rem; text-align: center; }
+    .ev-check .ec-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; margin-bottom: 0.3rem; }
+    .ev-check .ec-value { font-size: 1rem; font-weight: 700; }
+    .ev-check .ec-value.ok { color: var(--green); }
+    .ev-check .ec-value.fail { color: var(--red); }
+
     /* ── Export réglementaire ── */
     .reg-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 1rem; overflow: hidden; }
     .reg-section-header { padding: 0.75rem 1rem; background: #161D2E; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
@@ -240,6 +261,7 @@
   <button data-page="governance" onclick="showPage('governance'); loadGovernance()">Gouvernance</button>
   <button data-page="incident" onclick="showPage('incident')">Incidents</button>
   <button data-page="supply-chain" onclick="showPage('supply-chain')">Supply Chain</button>
+  <button data-page="evidence" onclick="showPage('evidence')">Preuves</button>
   <button data-page="regulatory" onclick="showPage('regulatory')">Export réglementaire</button>
   <button data-page="mitre" onclick="showPage('mitre')">MITRE ATT&amp;CK</button>
   <button data-page="history" onclick="showPage('history'); loadHistory()">Historique</button>
@@ -441,6 +463,27 @@
     </div>
 
     <div id="sme-results" style="display:none;margin-top:2rem;"></div>
+  </div>
+
+  <!-- ── PAGE : PREUVES CRYPTOGRAPHIQUES ── -->
+  <div id="page-evidence" class="page">
+    <div class="form-header">
+      <h2>Preuves vérifiables</h2>
+      <p style="color:var(--muted);font-size:0.9rem;">Chaque assessment est horodaté cryptographiquement (SHA-256 + HMAC-SHA256). Le reçu prouve à un auditeur que le rapport n'a pas été modifié après sa génération.</p>
+    </div>
+
+    <div style="display:flex;gap:1rem;align-items:flex-end;margin-bottom:1.5rem;flex-wrap:wrap;">
+      <div style="flex:1;min-width:220px;">
+        <label style="font-size:0.8rem;color:var(--muted);display:block;margin-bottom:0.3rem;">Assessment</label>
+        <select id="ev-assessment-id" style="width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:0.55rem 0.8rem;border-radius:var(--radius);font-size:0.85rem;">
+          <option value="">-- Sélectionner un assessment --</option>
+        </select>
+      </div>
+      <button class="btn" onclick="runVerify()" style="flex-shrink:0;">Vérifier l'intégrité</button>
+      <button class="btn btn-outline" onclick="runGetReceipt()" style="flex-shrink:0;">Obtenir le reçu</button>
+    </div>
+
+    <div id="evidence-results"></div>
   </div>
 
   <!-- ── PAGE : EXPORT REGLEMENTAIRE ── -->
@@ -2066,6 +2109,142 @@
         </div>
       </div>`;
   }
+
+  // ── Preuves cryptographiques ─────────────────────────────────────────────
+
+  async function loadEvidenceHistorySelect() {
+    const sel = document.getElementById('ev-assessment-id');
+    try {
+      const res = await fetch('/api/history?limit=50', { headers: apiHeaders() });
+      if (!res.ok) return;
+      const data = await res.json();
+      sel.innerHTML = '<option value="">-- Sélectionner un assessment --</option>';
+      (data.assessments || []).forEach(a => {
+        const date = a.assessed_at ? a.assessed_at.substring(0, 10) : '';
+        sel.innerHTML += `<option value="${a.id}">${a.org_name} — ${date} (Score: ${a.score})</option>`;
+      });
+    } catch (e) { console.error(e); }
+  }
+
+  async function runVerify() {
+    const id = document.getElementById('ev-assessment-id').value;
+    if (!id) { alert('Sélectionnez un assessment.'); return; }
+    const container = document.getElementById('evidence-results');
+    container.innerHTML = '<p style="color:var(--muted)">Vérification en cours…</p>';
+    try {
+      const res = await fetch(`/api/verify/${id}`, { headers: apiHeaders() });
+      const data = await res.json();
+      renderVerifyResult(data, container);
+    } catch (e) {
+      container.innerHTML = `<p style="color:var(--red)">Erreur réseau : ${e.message}</p>`;
+    }
+  }
+
+  async function runGetReceipt() {
+    const id = document.getElementById('ev-assessment-id').value;
+    if (!id) { alert('Sélectionnez un assessment.'); return; }
+    const container = document.getElementById('evidence-results');
+    container.innerHTML = '<p style="color:var(--muted)">Génération du reçu…</p>';
+    try {
+      const res = await fetch(`/api/receipt/${id}`, { headers: apiHeaders() });
+      if (!res.ok) {
+        const err = await res.json();
+        container.innerHTML = `<p style="color:var(--red)">${err.detail}</p>`;
+        return;
+      }
+      const data = await res.json();
+      renderReceipt(data, container);
+    } catch (e) {
+      container.innerHTML = `<p style="color:var(--red)">Erreur réseau : ${e.message}</p>`;
+    }
+  }
+
+  function renderVerifyResult(data, container) {
+    const isVerified = data.status === 'VERIFIED';
+    const isLegacy = data.status === 'LEGACY';
+    const statusClass = isVerified ? 'verified' : isLegacy ? 'legacy' : 'tampered';
+    const statusIcon = isVerified ? 'VERIFIE' : isLegacy ? 'LEGACY' : 'ALTERE';
+    const statusLabel = isVerified ? 'Intégrité vérifiée' : isLegacy ? 'Assessment antérieur' : 'Intégrité compromise';
+    const statusSub = isVerified
+      ? 'Le payload correspond exactement au hash stocké lors de la génération.'
+      : isLegacy ? (data.message || '')
+      : 'Le contenu de cet assessment a été modifié après sa génération.';
+
+    let html = `
+      <div class="ev-status ${statusClass}">
+        <div class="ev-icon">${statusIcon}</div>
+        <div>
+          <div class="ev-label">${statusLabel}</div>
+          <div class="ev-sub">${escHtml(statusSub)}</div>
+        </div>
+      </div>`;
+
+    if (!isLegacy) {
+      html += `
+        <div class="ev-checks">
+          <div class="ev-check">
+            <div class="ec-label">Vérification hash</div>
+            <div class="ec-value ${data.hash_check === 'OK' ? 'ok' : 'fail'}">${data.hash_check || '--'}</div>
+          </div>
+          <div class="ev-check">
+            <div class="ec-label">Vérification signature</div>
+            <div class="ec-value ${data.signature_check === 'OK' ? 'ok' : 'fail'}">${data.signature_check || '--'}</div>
+          </div>
+        </div>
+        <div class="ev-field"><div class="ef-label">Hash stocké</div><div class="ef-value">${escHtml(data.stored_hash || '')}</div></div>
+        <div class="ev-field"><div class="ef-label">Hash recalculé</div><div class="ef-value">${escHtml(data.computed_hash || '')}</div></div>
+        <div class="ev-field"><div class="ef-label">Vérifié le</div><div class="ef-value">${escHtml(data.verified_at || '')}</div></div>`;
+
+      if (data.issues && data.issues.length > 0) {
+        html += `<div style="margin-top:0.75rem;">`;
+        data.issues.forEach(i => {
+          html += `<p style="color:var(--red);font-size:0.83rem;margin-bottom:0.3rem;">${escHtml(i)}</p>`;
+        });
+        html += `</div>`;
+      }
+    }
+
+    container.innerHTML = html;
+  }
+
+  function renderReceipt(data, container) {
+    const receiptJson = JSON.stringify(data, null, 2);
+    let html = `
+      <div class="ev-status verified">
+        <div class="ev-icon">RECU</div>
+        <div>
+          <div class="ev-label">Reçu cryptographique généré</div>
+          <div class="ev-sub">Archivez ce document comme preuve d'audit. Il prouve l'état du rapport au moment de sa génération.</div>
+        </div>
+      </div>
+      <div class="ev-field"><div class="ef-label">ID du reçu</div><div class="ef-value">${escHtml(data.receipt_id || '')}</div></div>
+      <div class="ev-field"><div class="ef-label">Organisation</div><div class="ef-value">${escHtml(data.org_name || '')}</div></div>
+      <div class="ev-field"><div class="ef-label">Date d'évaluation</div><div class="ef-value">${escHtml(data.assessed_at || '')}</div></div>
+      <div class="ev-field"><div class="ef-label">Empreinte SHA-256</div><div class="ef-value">${escHtml(data.payload_hash || '')}</div></div>
+      <div class="ev-field"><div class="ef-label">Signature HMAC-SHA256</div><div class="ef-value">${escHtml(data.signature || '')}</div></div>
+      <div class="ev-field"><div class="ef-label">Émis le</div><div class="ef-value">${escHtml(data.issued_at || '')}</div></div>
+      <div style="margin-top:1rem;display:flex;gap:0.75rem;">
+        <button class="btn btn-outline" onclick="downloadReceiptJSON()" style="font-size:0.83rem;">Télécharger le reçu JSON</button>
+      </div>`;
+    container.innerHTML = html;
+    window._lastReceipt = data;
+  }
+
+  function downloadReceiptJSON() {
+    if (!window._lastReceipt) return;
+    const blob = new Blob([JSON.stringify(window._lastReceipt, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const id = window._lastReceipt.assessment_id || 'receipt';
+    a.href = url;
+    a.download = `COMPASS_receipt_${id}_${new Date().toISOString().substring(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  document.querySelector('nav button[data-page="evidence"]').addEventListener('click', () => {
+    loadEvidenceHistorySelect();
+  });
 
   // ── Export réglementaire ─────────────────────────────────────────────────
 

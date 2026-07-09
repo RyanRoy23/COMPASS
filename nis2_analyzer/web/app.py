@@ -55,6 +55,7 @@ from nis2_analyzer.core.aws_connector import AWSConnector
 from nis2_analyzer.core.m365_connector import M365Connector
 from nis2_analyzer.core.mitre_mapping import compute_mitre_mapping
 from nis2_analyzer.core.regulatory_export import build_regulatory_report
+from nis2_analyzer.core.evidence import build_receipt, verify_receipt
 from nis2_analyzer.core.financial import OrganizationProfile, OrgSize, Sector
 from nis2_analyzer.core.sector_profiles import (
     get_sector_profile, apply_sector_weights, get_sector_report, SECTOR_PROFILES
@@ -645,6 +646,54 @@ def run_m365_audit(body: M365AuditRequest):
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur Microsoft Graph : {str(e)}")
+
+@app.get("/api/receipt/{assessment_id}")
+def get_receipt(assessment_id: int, tenant: dict = Depends(_resolve_tenant)):
+    """
+    Retourne le reçu cryptographique d'un assessment (hash SHA-256 + signature HMAC).
+    Ce reçu peut être archivé comme preuve d'audit non altérée.
+    """
+    result = get_assessment(assessment_id, tenant_id=tenant["id"])
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"Assessment #{assessment_id} introuvable.")
+    payload_hash = result.get("payload_hash", "")
+    hmac_sig = result.get("hmac_signature", "")
+    if not payload_hash:
+        raise HTTPException(status_code=409, detail="Cet assessment a été créé avant l'activation des preuves cryptographiques.")
+    return build_receipt(
+        assessment_id=assessment_id,
+        org_name=result["org_name"],
+        assessed_at=result["assessed_at"],
+        payload_hash=payload_hash,
+    )
+
+
+@app.get("/api/verify/{assessment_id}")
+def verify_assessment(assessment_id: int, tenant: dict = Depends(_resolve_tenant)):
+    """
+    Vérifie l'intégrité cryptographique d'un assessment.
+    Recalcule le hash du payload et compare à la valeur stockée.
+    """
+    result = get_assessment(assessment_id, tenant_id=tenant["id"])
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"Assessment #{assessment_id} introuvable.")
+    payload_hash = result.get("payload_hash", "")
+    hmac_sig = result.get("hmac_signature", "")
+    if not payload_hash or not hmac_sig:
+        return {
+            "status": "LEGACY",
+            "assessment_id": assessment_id,
+            "message": "Cet assessment a été créé avant l'activation des preuves cryptographiques. Aucune vérification possible.",
+        }
+    return verify_receipt(
+        assessment_id=assessment_id,
+        org_name=result["org_name"],
+        assessed_at=result["assessed_at"],
+        stored_hash=payload_hash,
+        current_payload=result["payload"],
+        stored_signature=hmac_sig,
+    )
+
 
 @app.get("/api/regulatory-export/{assessment_id}")
 def get_regulatory_export(assessment_id: int, tenant: dict = Depends(_resolve_tenant)):
