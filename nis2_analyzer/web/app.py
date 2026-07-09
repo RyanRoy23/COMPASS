@@ -22,6 +22,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi.responses import StreamingResponse
 from fastapi.background import BackgroundTasks
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -64,6 +65,7 @@ from nis2_analyzer.core.sme_mode import (
     get_sme_schema, compute_sme_score, sme_responses_to_nis2, SME_QUESTIONS
 )
 from nis2_analyzer.reporting.pdf_report import generate_pdf_report
+import anthropic as _anthropic
 from nis2_analyzer.reporting.templates import (
     generate_pssi, generate_notification_procedure, generate_asset_register,
 )
@@ -195,6 +197,17 @@ class TenantCreateRequest(BaseModel):
     slug: str = Field(..., min_length=2, max_length=60, pattern=r"^[a-z0-9\-]+$",
                       description="Identifiant unique (lettres minuscules, chiffres, tirets)")
     plan: str = Field("free", description="'free' | 'pro'")
+
+
+class ChatMessage(BaseModel):
+    role: str = Field(..., description="'user' | 'assistant'")
+    content: str = Field(..., min_length=1)
+
+
+class ChatRequest(BaseModel):
+    assessment_id: int = Field(..., description="ID de l'assessment sur lequel porte la conversation")
+    messages: list[ChatMessage] = Field(..., description="Historique de la conversation")
+    stream: bool = Field(True, description="Activer le streaming SSE")
 
 
 # ── Authentification multi-tenant ─────────────────────────────────────────────
@@ -907,3 +920,122 @@ def api_pdf_report(body: AssessmentRequest, background_tasks: BackgroundTasks):
         filename=f"compass_rapport_{safe_name}.pdf",
         headers={"Content-Disposition": f'attachment; filename="compass_rapport_{safe_name}.pdf"'},
     )
+
+
+# ── Axe 14 — Agent IA intégré ─────────────────────────────────────────────────
+
+_CHAT_SYSTEM_PROMPT = """\
+Tu es COMPASS AI, un assistant expert en conformité NIS2 (Directive 2022/2555) et cybersécurité.
+Tu accompagnes les RSSI, DSI et auditeurs dans l'interprétation de leur évaluation de conformité.
+
+Tu disposes du contexte complet de l'évaluation de l'organisation ci-dessous.
+Réponds en français, de façon précise, professionnelle et sans émojis.
+Base-toi exclusivement sur les données de l'évaluation pour les analyses spécifiques à l'organisation.
+Pour les questions générales sur NIS2 ou ISO 27001, tu peux utiliser ta connaissance propre.
+
+=== CONTEXTE DE L'EVALUATION ===
+{context}
+=== FIN DU CONTEXTE ===
+"""
+
+
+def _build_assessment_context(payload: dict) -> str:
+    """Construit un résumé structuré de l'assessment pour le prompt système."""
+    metadata = payload.get("metadata", {})
+    scores = payload.get("scores", {})
+    gaps = payload.get("gaps", [])
+    domains = payload.get("domains", [])
+
+    lines = [
+        f"Organisation : {metadata.get('organization', 'N/A')}",
+        f"Date d'évaluation : {metadata.get('timestamp', 'N/A')}",
+        f"Score global : {scores.get('overall_score', 0):.1f}/100 (grade {scores.get('grade', '?')})",
+        f"Nombre total de gaps identifiés : {scores.get('total_gaps', 0)}",
+        "",
+        "Scores par domaine :",
+    ]
+    for d in domains:
+        lines.append(f"  - {d.get('id', '')} {d.get('title', '')} : {d.get('score', 0):.1f}/100")
+
+    critical_gaps = [g for g in gaps if g.get("is_critical")]
+    if critical_gaps:
+        lines.append("")
+        lines.append(f"Gaps critiques ({len(critical_gaps)}) :")
+        for g in critical_gaps[:10]:
+            lines.append(
+                f"  - [{g.get('id')}] {g.get('title')} "
+                f"(maturité {g.get('current_maturity_value', 0)}/3, effort {g.get('effort', '?')})"
+            )
+
+    non_critical = [g for g in gaps if not g.get("is_critical")]
+    if non_critical:
+        lines.append("")
+        lines.append(f"Autres gaps ({len(non_critical)}) :")
+        for g in non_critical[:15]:
+            lines.append(
+                f"  - [{g.get('id')}] {g.get('title')} (maturité {g.get('current_maturity_value', 0)}/3)"
+            )
+
+    return "\n".join(lines)
+
+
+@app.post("/api/chat")
+async def chat(
+    body: ChatRequest,
+    tenant: dict = Depends(_resolve_tenant),
+):
+    """
+    Agent IA conversationnel : analyse de conformite NIS2 en langage naturel.
+    Retourne un stream SSE (text/event-stream) ou JSON selon body.stream.
+    """
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        raise HTTPException(
+            status_code=503,
+            detail="La variable d'environnement ANTHROPIC_API_KEY n'est pas configuree. "
+                   "Contactez l'administrateur.",
+        )
+
+    record = get_assessment(body.assessment_id, tenant_id=tenant["id"])
+    if record is None:
+        raise HTTPException(status_code=404, detail=f"Assessment #{body.assessment_id} introuvable.")
+
+    context = _build_assessment_context(record["payload"])
+    system_prompt = _CHAT_SYSTEM_PROMPT.format(context=context)
+
+    messages = [{"role": m.role, "content": m.content} for m in body.messages]
+
+    client = _anthropic.Anthropic(api_key=api_key)
+
+    if body.stream:
+        def _generate():
+            with client.messages.stream(
+                model="claude-opus-4-8",
+                max_tokens=2048,
+                system=system_prompt,
+                messages=messages,
+                thinking={"type": "adaptive"},
+            ) as stream:
+                for text in stream.text_stream:
+                    # SSE format
+                    yield f"data: {text}\n\n"
+            yield "data: [DONE]\n\n"
+
+        return StreamingResponse(
+            _generate(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+            },
+        )
+    else:
+        response = client.messages.create(
+            model="claude-opus-4-8",
+            max_tokens=2048,
+            system=system_prompt,
+            messages=messages,
+            thinking={"type": "adaptive"},
+        )
+        text_blocks = [b.text for b in response.content if hasattr(b, "text")]
+        return {"content": "".join(text_blocks)}
