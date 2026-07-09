@@ -165,6 +165,26 @@
     .mc-empty { text-align: center; padding: 3rem; color: var(--muted); }
     .mc-spinner { text-align: center; padding: 2rem; color: var(--muted); }
 
+    /* ── Export réglementaire ── */
+    .reg-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 1rem; overflow: hidden; }
+    .reg-section-header { padding: 0.75rem 1rem; background: #161D2E; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+    .reg-section-header .art-ref { font-family: monospace; font-size: 0.78rem; color: #818CF8; background: #0d1424; padding: 2px 6px; border-radius: 3px; }
+    .reg-section-header .sec-title { flex: 1; font-size: 0.88rem; font-weight: 600; }
+    .reg-compliance { font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; letter-spacing: 0.04em; }
+    .reg-compliance.conforme { background: rgba(16,185,129,0.15); color: #10B981; border: 1px solid rgba(16,185,129,0.3); }
+    .reg-compliance.partiel { background: rgba(245,158,11,0.15); color: #F59E0B; border: 1px solid rgba(245,158,11,0.3); }
+    .reg-compliance.non-conforme { background: rgba(239,68,68,0.15); color: #EF4444; border: 1px solid rgba(239,68,68,0.3); }
+    .reg-section-body { padding: 0.75rem 1rem; }
+    .reg-gap-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 0.5rem; }
+    .reg-gap-table th { text-align: left; color: var(--muted); font-weight: 500; padding: 0.3rem 0.5rem; border-bottom: 1px solid var(--border); font-size: 0.75rem; }
+    .reg-gap-table td { padding: 0.4rem 0.5rem; border-bottom: 1px solid rgba(31,41,55,0.5); vertical-align: top; }
+    .reg-gap-table tr:last-child td { border-bottom: none; }
+    .reg-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
+    .reg-kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem; text-align: center; }
+    .reg-kpi .kpi-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+    .reg-kpi .kpi-value { font-size: 1.6rem; font-weight: 700; }
+    .reg-declaration { background: #0d1424; border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; font-size: 0.78rem; color: var(--muted); line-height: 1.6; margin-top: 1.5rem; font-style: italic; }
+
     /* ── MITRE ATT&CK ── */
     .mitre-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
     .mitre-kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; text-align: center; }
@@ -220,6 +240,7 @@
   <button data-page="governance" onclick="showPage('governance'); loadGovernance()">Gouvernance</button>
   <button data-page="incident" onclick="showPage('incident')">Incidents</button>
   <button data-page="supply-chain" onclick="showPage('supply-chain')">Supply Chain</button>
+  <button data-page="regulatory" onclick="showPage('regulatory')">Export réglementaire</button>
   <button data-page="mitre" onclick="showPage('mitre')">MITRE ATT&amp;CK</button>
   <button data-page="history" onclick="showPage('history'); loadHistory()">Historique</button>
 </nav>
@@ -420,6 +441,27 @@
     </div>
 
     <div id="sme-results" style="display:none;margin-top:2rem;"></div>
+  </div>
+
+  <!-- ── PAGE : EXPORT REGLEMENTAIRE ── -->
+  <div id="page-regulatory" class="page">
+    <div class="form-header">
+      <h2>Export réglementaire NIS2</h2>
+      <p style="color:var(--muted);font-size:0.9rem;">Génère un rapport structuré conforme aux exigences de l'article 21 de la directive NIS2 — utilisable pour soumission ANSSI ou audit externe.</p>
+    </div>
+
+    <div style="display:flex;gap:1rem;align-items:flex-end;margin-bottom:1.5rem;flex-wrap:wrap;">
+      <div style="flex:1;min-width:220px;">
+        <label style="font-size:0.8rem;color:var(--muted);display:block;margin-bottom:0.3rem;">Assessment source</label>
+        <select id="reg-assessment-id" style="width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:0.55rem 0.8rem;border-radius:var(--radius);font-size:0.85rem;">
+          <option value="">-- Sélectionner un assessment --</option>
+        </select>
+      </div>
+      <button class="btn" onclick="runRegulatoryExport()" style="flex-shrink:0;">Générer le rapport</button>
+      <button class="btn btn-outline" id="reg-download-btn" style="flex-shrink:0;display:none;" onclick="downloadRegulatoryJSON()">Télécharger JSON</button>
+    </div>
+
+    <div id="regulatory-results"></div>
   </div>
 
   <!-- ── PAGE : MITRE ATT&CK ── -->
@@ -2024,6 +2066,139 @@
         </div>
       </div>`;
   }
+
+  // ── Export réglementaire ─────────────────────────────────────────────────
+
+  let _regulatoryData = null;
+
+  async function loadRegulatoryHistorySelect() {
+    const sel = document.getElementById('reg-assessment-id');
+    try {
+      const res = await fetch('/api/history?limit=50', { headers: apiHeaders() });
+      if (!res.ok) return;
+      const data = await res.json();
+      const items = data.assessments || [];
+      sel.innerHTML = '<option value="">-- Sélectionner un assessment --</option>';
+      items.forEach(a => {
+        const date = a.assessed_at ? a.assessed_at.substring(0, 10) : '';
+        sel.innerHTML += `<option value="${a.id}">${a.org_name} — ${date} (Score: ${a.score})</option>`;
+      });
+    } catch (e) { console.error(e); }
+  }
+
+  async function runRegulatoryExport() {
+    const sel = document.getElementById('reg-assessment-id');
+    const id = sel.value;
+    if (!id) { alert('Sélectionnez un assessment.'); return; }
+    const container = document.getElementById('regulatory-results');
+    container.innerHTML = '<p style="color:var(--muted)">Génération du rapport réglementaire…</p>';
+    document.getElementById('reg-download-btn').style.display = 'none';
+    try {
+      const res = await fetch(`/api/regulatory-export/${id}`, { headers: apiHeaders() });
+      if (!res.ok) {
+        const err = await res.json();
+        container.innerHTML = `<p style="color:var(--red)">${err.detail || 'Erreur serveur.'}</p>`;
+        return;
+      }
+      _regulatoryData = await res.json();
+      renderRegulatoryReport(_regulatoryData, container);
+      document.getElementById('reg-download-btn').style.display = '';
+    } catch (e) {
+      container.innerHTML = `<p style="color:var(--red)">Erreur réseau : ${e.message}</p>`;
+    }
+  }
+
+  function downloadRegulatoryJSON() {
+    if (!_regulatoryData) return;
+    const blob = new Blob([JSON.stringify(_regulatoryData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const org = (_regulatoryData.entity_identification?.organization_name || 'export').replace(/[^a-z0-9]/gi, '_');
+    a.href = url;
+    a.download = `COMPASS_NIS2_${org}_${new Date().toISOString().substring(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function renderRegulatoryReport(data, container) {
+    const summary = data.executive_summary || {};
+    const header = data.report_header || {};
+    const entity = data.entity_identification || {};
+    const sections = data.article_21_assessment || [];
+    const norm = data.normative_mapping?.iso_iec_27001_2022 || {};
+
+    let html = `
+      <div style="margin-bottom:1rem;">
+        <p style="font-size:0.78rem;color:var(--muted);font-family:monospace;">${escHtml(header.report_id || '')} · Généré le ${new Date(header.generated_at||Date.now()).toLocaleString('fr-FR')}</p>
+      </div>
+      <div class="reg-kpis">
+        <div class="reg-kpi"><div class="kpi-label">Score global</div><div class="kpi-value" style="color:var(--accent-light)">${summary.overall_score ?? '--'}</div></div>
+        <div class="reg-kpi"><div class="kpi-label">Grade</div><div class="kpi-value">${escHtml(summary.grade || '--')}</div></div>
+        <div class="reg-kpi"><div class="kpi-label">Conformes</div><div class="kpi-value" style="color:var(--green)">${summary.conformant ?? 0}</div></div>
+        <div class="reg-kpi"><div class="kpi-label">Partiels</div><div class="kpi-value" style="color:var(--yellow)">${summary.partially_conformant ?? 0}</div></div>
+        <div class="reg-kpi"><div class="kpi-label">Non conformes</div><div class="kpi-value" style="color:var(--red)">${summary.non_conformant ?? 0}</div></div>
+        <div class="reg-kpi"><div class="kpi-label">Gaps critiques</div><div class="kpi-value" style="color:var(--red)">${summary.critical_gaps ?? 0}</div></div>
+        <div class="reg-kpi"><div class="kpi-label">Couverture ISO 27001</div><div class="kpi-value" style="color:#818CF8">${summary.iso27001_coverage_pct ?? 0}%</div></div>
+      </div>
+      <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;">Évaluation par domaine — Article 21</h3>`;
+
+    sections.forEach(sec => {
+      const cl = sec.compliance_level || '';
+      const clClass = cl === 'Conforme' ? 'conforme' : cl.includes('Partiel') ? 'partiel' : 'non-conforme';
+      let gapsHtml = '';
+      if (sec.identified_gaps && sec.identified_gaps.length > 0) {
+        gapsHtml = `<table class="reg-gap-table">
+          <thead><tr>
+            <th>Exigence</th><th>Statut</th><th>Critique</th><th>Action prioritaire</th><th>Délai</th>
+          </tr></thead><tbody>`;
+        sec.identified_gaps.forEach(g => {
+          const crit = g.is_critical ? '<span style="color:var(--red);font-weight:700;">Oui</span>' : 'Non';
+          gapsHtml += `<tr>
+            <td><span style="font-family:monospace;font-size:0.75rem;color:#818CF8;">${escHtml(g.requirement_id)}</span><br><span style="color:#D1D5DB;">${escHtml(g.requirement_title)}</span></td>
+            <td><span style="color:var(--red);font-size:0.75rem;">${escHtml(g.compliance_status)}</span></td>
+            <td>${crit}</td>
+            <td style="color:var(--muted);font-size:0.78rem;">${escHtml(g.recommended_action)}</td>
+            <td style="white-space:nowrap;font-size:0.75rem;color:var(--muted);">${escHtml(g.effort)}</td>
+          </tr>`;
+        });
+        gapsHtml += '</tbody></table>';
+      } else {
+        gapsHtml = '<p style="font-size:0.82rem;color:var(--green);margin-top:0.3rem;">Aucun gap identifié dans ce domaine.</p>';
+      }
+
+      html += `
+        <div class="reg-section">
+          <div class="reg-section-header">
+            <span class="art-ref">${escHtml(sec.article_reference)}</span>
+            <span class="sec-title">${escHtml(sec.domain_title)}</span>
+            <span style="font-size:0.82rem;color:var(--muted);">${sec.score}/100</span>
+            <span class="reg-compliance ${clClass}">${escHtml(cl)}</span>
+          </div>
+          <div class="reg-section-body">
+            <p style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;">${escHtml(sec.article_label)}</p>
+            ${gapsHtml}
+          </div>
+        </div>`;
+    });
+
+    // ISO 27001
+    if (norm.controls_missing && norm.controls_missing.length > 0) {
+      html += `
+        <h3 style="font-size:0.9rem;font-weight:600;margin:1.5rem 0 0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;">Contrôles ISO/IEC 27001:2022 non couverts</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:1rem;">
+          ${norm.controls_missing.map(c => `<span style="background:#0d1424;border:1px solid var(--border);border-radius:3px;padding:2px 6px;font-family:monospace;font-size:0.75rem;color:#F59E0B;">${escHtml(c)}</span>`).join('')}
+        </div>`;
+    }
+
+    // Déclaration
+    html += `<div class="reg-declaration">${escHtml(data.declaration || '')}</div>`;
+
+    container.innerHTML = html;
+  }
+
+  document.querySelector('nav button[data-page="regulatory"]').addEventListener('click', () => {
+    loadRegulatoryHistorySelect();
+  });
 
   // ── MITRE ATT&CK ─────────────────────────────────────────────────────────
 

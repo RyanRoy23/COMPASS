@@ -54,6 +54,7 @@ from nis2_analyzer.core.monte_carlo import MonteCarloEngine
 from nis2_analyzer.core.aws_connector import AWSConnector
 from nis2_analyzer.core.m365_connector import M365Connector
 from nis2_analyzer.core.mitre_mapping import compute_mitre_mapping
+from nis2_analyzer.core.regulatory_export import build_regulatory_report
 from nis2_analyzer.core.financial import OrganizationProfile, OrgSize, Sector
 from nis2_analyzer.core.sector_profiles import (
     get_sector_profile, apply_sector_weights, get_sector_report, SECTOR_PROFILES
@@ -644,6 +645,22 @@ def run_m365_audit(body: M365AuditRequest):
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur Microsoft Graph : {str(e)}")
+
+@app.get("/api/regulatory-export/{assessment_id}")
+def get_regulatory_export(assessment_id: int, tenant: dict = Depends(_resolve_tenant)):
+    """
+    Génère le rapport réglementaire NIS2 Art. 21 structuré (JSON normalisé).
+    Utilisable pour soumission ANSSI ou audit externe.
+    """
+    result = get_assessment(assessment_id, tenant_id=tenant["id"])
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"Assessment #{assessment_id} introuvable.")
+    try:
+        report = build_regulatory_report(result["payload"], assessment_id)
+        return report.to_dict()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur export réglementaire : {str(e)}")
+
 
 @app.get("/api/mitre-mapping/{assessment_id}")
 def get_mitre_mapping(assessment_id: int, tenant: dict = Depends(_resolve_tenant)):
