@@ -18,11 +18,11 @@ Pourquoi HTML et pas PDF ?
 """
 
 import html
-import json
 import os
 from datetime import datetime, timezone
-from nis2_analyzer.core.models import Domain, ComplianceGrade, MaturityLevel
+from nis2_analyzer.core.models import Domain
 from nis2_analyzer.core.scoring import ScoringEngine
+from nis2_analyzer.core.integrity import compute_domains_hash, short_hash
 
 
 def _h(value: str) -> str:
@@ -82,7 +82,11 @@ def generate_report(
     # Calculer les scores
     engine = ScoringEngine()
     analysis = engine.full_analysis(domains, org_name)
-    
+
+    integrity_fingerprint = short_hash(
+        compute_domains_hash(domains, org_name, analysis["metadata"]["timestamp"])
+    )
+
     timestamp = datetime.now(timezone.utc).strftime("%d/%m/%Y à %H:%M UTC")
     grade = analysis["scores"]["grade"]
     overall_score = analysis["scores"]["overall_score"]
@@ -1113,6 +1117,9 @@ def generate_report(
                 <a href="https://github.com/RyanRoy23">github.com/RyanRoy23</a></p>
             <p style="margin-top: 8px; font-size: 11px;">
                 Ce rapport est un outil d'aide à la décision. Il ne constitue pas un audit officiel ni un avis juridique.
+            </p>
+            <p style="margin-top: 4px; font-size: 11px;">
+                Empreinte d'intégrité (SHA-256) : {integrity_fingerprint}
             </p>
         </div>
     </div>

@@ -11,17 +11,18 @@ import io
 from datetime import datetime
 
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     BaseDocTemplate, Frame, HRFlowable, PageTemplate,
-    Paragraph, Spacer, Table, TableStyle, KeepTogether,
+    Paragraph, Spacer, Table, TableStyle,
 )
 
 from nis2_analyzer.core.models import AssessmentResult
 from nis2_analyzer.core.scoring import ScoringEngine
+from nis2_analyzer.core.integrity import compute_assessment_hash, short_hash
 
 PAGE_W, PAGE_H = A4
 MARGIN = 20 * mm
@@ -70,7 +71,7 @@ def _simple_page(canvas, doc, title: str, org: str, date: str):
     # Pied de page
     canvas.setFillColor(C_MUTED)
     canvas.setFont("Helvetica", 7.5)
-    canvas.drawString(MARGIN, 8 * mm, f"Généré le {date} par COMPASS — NIS 2 Art. 21 | Document confidentiel")
+    canvas.drawString(MARGIN, 8 * mm, f"Généré automatiquement le {date} par COMPASS — projet à valider par un expert avant usage officiel")
     canvas.drawRightString(PAGE_W - MARGIN, 8 * mm, f"Page {doc.page}")
     canvas.restoreState()
 
@@ -80,6 +81,24 @@ def _field_row(label: str, value: str, styles: dict) -> list:
     return [
         Paragraph(label, styles["field_label"]),
         Paragraph(value or "___________________________", styles["body"]),
+    ]
+
+
+def _disclaimer_flowables(text: str, styles: dict, result: AssessmentResult) -> list:
+    """
+    Bloc d'avertissement légal + empreinte d'intégrité de fin de document — même
+    esprit que celui déjà utilisé dans evidence_package.py et pdf_report.py. Ce
+    document ressemble à un livrable officiel : sans ce rappel, un lecteur peut
+    le confondre avec un document validé par un expert.
+    """
+    return [
+        Spacer(1, 6 * mm),
+        HRFlowable(width="100%", thickness=0.5, color=C_BORDER, spaceAfter=2 * mm),
+        Paragraph(f"<b>Avertissement :</b> {text}", styles["small"]),
+        Paragraph(
+            f"Empreinte d'intégrité (SHA-256) : {short_hash(compute_assessment_hash(result))}",
+            styles["small"],
+        ),
     ]
 
 
@@ -230,6 +249,15 @@ def generate_pssi(result: AssessmentResult) -> io.BytesIO:
     ]))
     story.append(t4)
 
+    story += _disclaimer_flowables(
+        "Ce document est un projet de PSSI généré automatiquement à partir de votre "
+        "auto-évaluation COMPASS. Il doit être revu, complété et validé par votre RSSI/DPO "
+        "puis approuvé par la direction avant tout usage officiel. Il ne constitue pas une "
+        "PSSI conforme en l'état.",
+        styles,
+        result,
+    )
+
     doc.build(story)
     buf.seek(0)
     return buf
@@ -371,6 +399,14 @@ def generate_notification_procedure(result: AssessmentResult) -> io.BytesIO:
     ]))
     story.append(t4)
 
+    story += _disclaimer_flowables(
+        "Cette procédure est générée automatiquement à partir de votre auto-évaluation COMPASS. "
+        "Les contacts, délais et étapes doivent être vérifiés, complétés et validés par votre "
+        "RSSI/DPO et votre juriste avant activation opérationnelle.",
+        styles,
+        result,
+    )
+
     doc.build(story)
     buf.seek(0)
     return buf
@@ -483,6 +519,14 @@ def generate_asset_register(result: AssessmentResult) -> io.BytesIO:
             ("VALIGN", (0, 0), (-1, -1), "TOP"),
         ]))
         story.append(t3)
+
+    story += _disclaimer_flowables(
+        "Ce registre est un canevas généré automatiquement à partir de votre auto-évaluation "
+        "COMPASS. Les actifs listés ne sont pas exhaustifs et doivent être complétés et validés "
+        "par votre DSI/RSSI pour constituer un registre conforme à l'Art. 21(2)(a) de NIS 2.",
+        styles,
+        result,
+    )
 
     doc.build(story)
     buf.seek(0)

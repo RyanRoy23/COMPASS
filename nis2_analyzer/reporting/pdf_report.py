@@ -16,7 +16,7 @@ from typing import Optional
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     BaseDocTemplate, Frame, HRFlowable, PageTemplate,
@@ -26,6 +26,7 @@ from reportlab.platypus.flowables import Flowable
 
 from nis2_analyzer.core.models import AssessmentResult, Domain
 from nis2_analyzer.core.scoring import ScoringEngine
+from nis2_analyzer.core.integrity import compute_assessment_hash, short_hash
 
 # ── Palette COMPASS ───────────────────────────────────────────────────────────
 
@@ -91,7 +92,6 @@ class ScoreBar(Flowable):
 # ── Styles typographiques ─────────────────────────────────────────────────────
 
 def _styles():
-    base = getSampleStyleSheet()
     return {
         "title": ParagraphStyle(
             "title", fontSize=26, fontName="Helvetica-Bold",
@@ -597,6 +597,10 @@ def generate_pdf_report(
         "Ce rapport a été généré automatiquement par COMPASS. Il constitue une aide à la décision "
         "et ne remplace pas une évaluation réalisée par un expert certifié. "
         "Référentiel : Directive NIS 2 (UE 2022/2555), Article 21 — Mesures de gestion des risques.",
+        styles["footer"],
+    ))
+    story.append(Paragraph(
+        f"Empreinte d'intégrité (SHA-256) : {short_hash(compute_assessment_hash(result))}",
         styles["footer"],
     ))
 

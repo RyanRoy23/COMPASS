@@ -29,6 +29,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
+from nis2_analyzer.core.integrity import compute_domains_hash
+
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -281,10 +283,16 @@ def build_evidence_package(
 
     # 6. manifest.json — checksums + métadonnées
     manifest = {
-        "compass_version": "1.1.0",
+        "compass_version": "1.2.0",
         "generated_at": generated_at,
         "organization": org_name,
         "framework": "NIS 2 Directive (UE) 2022/2555 — Article 21",
+        "assessment_integrity_hash": (
+            compute_domains_hash(
+                domains_obj, org_name, assessment.get("metadata", {}).get("timestamp", generated_at)
+            )
+            if domains_obj else None
+        ),
         "files": {
             name: {
                 "size_bytes": len(content),
