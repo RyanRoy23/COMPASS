@@ -184,6 +184,7 @@
   <button class="active" data-page="assessment" onclick="showPage('assessment')">Évaluation</button>
   <button data-page="results" onclick="showPage('results')">Résultats</button>
   <button data-page="monte-carlo" onclick="showPage('monte-carlo')">Risque financier</button>
+  <button data-page="cloudsec-audit" onclick="showPage('cloudsec-audit')">Audit CloudSec (Azure)</button>
   <button data-page="aws-audit" onclick="showPage('aws-audit')">Audit AWS</button>
   <button data-page="m365-audit" onclick="showPage('m365-audit')">Audit M365</button>
   <button data-page="sme" onclick="showPage('sme'); loadSMEQuestions()">Mode PME</button>
@@ -279,6 +280,33 @@
       <div class="mc-empty">
         <p>Lancez une évaluation puis cliquez sur <strong>Lancer la simulation</strong>.</p>
       </div>
+    </div>
+  </div>
+
+  <!-- ── PAGE : AUDIT CLOUDSEC (AZURE/ENTRA ID) ── -->
+  <div id="page-cloudsec-audit" class="page">
+    <div class="form-header">
+      <h2>Audit CloudSec — Azure / Entra ID</h2>
+      <p>Traduit les résultats du CloudSec Audit Toolkit (MFA, rôles privilégiés, accès conditionnel…) en preuves techniques NIS 2 Art. 21.</p>
+    </div>
+
+    <div class="mc-banner" style="background:#152a1e;border:1px solid #1f4a2d;padding:1rem 1.2rem;border-radius:8px;margin-bottom:1.5rem;">
+      <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">
+        <strong>Mode démonstration activé</strong>
+        <span style="background:#15803d;color:#fff;font-size:0.65rem;padding:2px 6px;border-radius:99px;margin-left:auto;">DÉMO</span>
+      </div>
+      <p style="color:var(--muted);font-size:0.83rem;">Ce rapport utilise un jeu de résultats CloudSec réaliste préchargé. Pour un audit réel, fournissez le rapport JSON produit par le <code style="background:#0d1424;padding:2px 5px;border-radius:3px;">CloudSec Audit Toolkit</code> via <code style="background:#0d1424;padding:2px 5px;border-radius:3px;">POST /api/cloudsec-audit</code>.</p>
+    </div>
+
+    <div style="display:flex;gap:1rem;margin-bottom:1.5rem;align-items:center;">
+      <button class="btn" onclick="runCloudSecAudit()" style="background:#15803d;">Lancer l'audit</button>
+      <span id="cloudsec-loading" style="color:var(--muted);font-size:0.85rem;display:none;">Analyse en cours…</span>
+    </div>
+
+    <div id="cloudsec-results" style="display:none;">
+      <div class="mc-kpis" id="cloudsec-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem;"></div>
+      <div id="cloudsec-mapping" style="margin-bottom:1.5rem;"></div>
+      <div id="cloudsec-evidence"></div>
     </div>
   </div>
 
@@ -1178,6 +1206,10 @@
           <span style="font-size:0.75rem">Art. 34 NIS 2 — selon votre catégorie d'entité et votre CA annuel</span>
         </div>
       </div>` : ''}
+
+      <p style="font-size:0.72rem;color:var(--muted);margin-top:1rem;">
+        Base de coûts : ${esc(data.data_version || '?')} — ${esc(data.data_sources || '')}
+      </p>
     `;
   }
 
@@ -1338,6 +1370,91 @@
 
   function clearError() {
     document.getElementById('form-error').innerHTML = '';
+  }
+
+  // ── Audit CloudSec (Azure/Entra ID) ──────────────────────────────────────
+  async function runCloudSecAudit() {
+    document.getElementById('cloudsec-loading').style.display = 'inline';
+    document.getElementById('cloudsec-results').style.display = 'none';
+
+    try {
+      const res = await fetch('/api/cloudsec-audit', {
+        method: 'POST',
+        headers: apiHeaders(),
+        body: JSON.stringify({ demo_mode: true }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        alert('Erreur : ' + (err.detail || res.statusText));
+        return;
+      }
+      const data = await res.json();
+      renderCloudSecAudit(data);
+    } catch (e) {
+      alert('Erreur réseau : ' + e.message);
+    } finally {
+      document.getElementById('cloudsec-loading').style.display = 'none';
+    }
+  }
+
+  function renderCloudSecAudit(data) {
+    const s = data.summary;
+    const passColor = s.pass_rate >= 80 ? 'var(--green)' : s.pass_rate >= 50 ? 'var(--yellow)' : 'var(--red)';
+
+    document.getElementById('cloudsec-kpis').innerHTML = `
+      <div class="mc-kpi">
+        <div class="kpi-label">Checks CloudSec mappés</div>
+        <div class="kpi-value" style="color:var(--accent-light)">${s.total_controls}</div>
+      </div>
+      <div class="mc-kpi">
+        <div class="kpi-label">Conformes (PASS)</div>
+        <div class="kpi-value" style="color:var(--green)">${s.passed}</div>
+      </div>
+      <div class="mc-kpi">
+        <div class="kpi-label">Non conformes (FAIL)</div>
+        <div class="kpi-value" style="color:var(--red)">${s.failed}</div>
+      </div>
+      <div class="mc-kpi">
+        <div class="kpi-label">Taux de conformité</div>
+        <div class="kpi-value" style="color:${passColor}">${s.pass_rate}%</div>
+      </div>
+    `;
+
+    // Résumé du mapping NIS 2
+    const ms = data.mapping_summary;
+    document.getElementById('cloudsec-mapping').innerHTML = `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem 1.2rem;">
+        <div style="font-weight:600;margin-bottom:0.4rem;">Pré-remplissage du questionnaire NIS 2</div>
+        <div style="color:var(--muted);font-size:0.85rem;">
+          <span style="color:var(--green);font-weight:600;">${ms.auto_filled}</span> question(s) sur ${ms.total_requirements}
+          pré-remplie(s) par l'audit technique (${ms.coverage_pct}% de couverture) —
+          <span style="color:var(--yellow);">${ms.remaining_manual}</span> question(s) organisationnelle(s) restante(s).
+        </div>
+      </div>
+    `;
+
+    // Liste des preuves
+    const evidenceHtml = data.evidence.map(e => {
+      const statusColor = e.result === 'PASS' ? '#22c55e' : '#ef4444';
+      const findings = (e.findings_sample || []).slice(0, 3)
+        .map(f => `<div style="color:var(--muted);font-size:0.78rem;">→ ${esc(f)}</div>`).join('');
+      return `
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.8rem 1.1rem;margin-bottom:0.6rem;">
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;">
+            <span style="background:#0d1424;color:${statusColor};font-size:0.7rem;font-weight:700;padding:1px 6px;border-radius:99px;">${esc(e.check_id)}</span>
+            <strong style="font-size:0.88rem;">${esc(e.check_title)}</strong>
+            <span style="margin-left:auto;font-size:0.72rem;font-weight:700;color:${statusColor};">${e.result}</span>
+          </div>
+          <div style="font-size:0.83rem;color:var(--text);margin-bottom:0.2rem;">${esc(e.details)}</div>
+          ${findings}
+        </div>`;
+    }).join('');
+    document.getElementById('cloudsec-evidence').innerHTML = `
+      <h4 style="margin-bottom:0.8rem;">Preuves techniques détaillées</h4>
+      ${evidenceHtml}
+    `;
+
+    document.getElementById('cloudsec-results').style.display = 'block';
   }
 
   // ── Audit AWS ─────────────────────────────────────────────────────────────

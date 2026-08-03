@@ -10,18 +10,21 @@ Endpoints :
   GET  /api/framework      → liste des domaines et questions
   POST /api/assess         → soumet les réponses, retourne le scoring complet
   POST /api/qualify        → qualification NIS 2 Art. 3 (EE/EI/hors champ)
+  POST /api/cloudsec-audit → bridge CloudSec Audit Toolkit (Azure/Entra ID) → preuves NIS 2
   GET  /api/history        → historique des assessments
   GET  /api/history/{id}   → détail d'un assessment
   GET  /api/compare/{a}/{b}→ comparaison de deux assessments
 """
 
+import collections
 import html
 import os
 import tempfile
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.background import BackgroundTasks
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -46,16 +49,17 @@ from nis2_analyzer.core.incident_notification import (
     SignificanceCriteria,
 )
 from nis2_analyzer.core.supply_chain import (
-    assess_supplier, assess_supplier_portfolio,
+    assess_supplier,
     assess_supply_chain_maturity, get_supply_chain_questions_schema,
-    SupplierProfile, AccessLevel, DataSensitivity, SupplierCriticality,
+    SupplierProfile, AccessLevel, DataSensitivity,
 )
 from nis2_analyzer.core.monte_carlo import MonteCarloEngine
 from nis2_analyzer.core.aws_connector import AWSConnector
 from nis2_analyzer.core.m365_connector import M365Connector
+from nis2_analyzer.connectors.cloudsec_bridge import CloudSecBridge
 from nis2_analyzer.core.financial import OrganizationProfile, OrgSize, Sector
 from nis2_analyzer.core.sector_profiles import (
-    get_sector_profile, apply_sector_weights, get_sector_report, SECTOR_PROFILES
+    apply_sector_weights, get_sector_report, SECTOR_PROFILES
 )
 from nis2_analyzer.core.sme_mode import (
     get_sme_schema, compute_sme_score, sme_responses_to_nis2, SME_QUESTIONS
@@ -68,7 +72,7 @@ from nis2_analyzer.reporting.templates import (
 app = FastAPI(
     title="COMPASS",
     description="API d'évaluation de conformité NIS 2 — Article 21",
-    version="1.1.0",
+    version="1.2.0",
 )
 
 app.add_middleware(
@@ -187,6 +191,13 @@ class M365AuditRequest(BaseModel):
     azure_tenant_id: Optional[str] = Field(None, description="ID du tenant Azure AD")
 
 
+class CloudSecAuditRequest(BaseModel):
+    demo_mode: bool = Field(True, description="Mode démonstration — rapport CloudSec réaliste préchargé")
+    cloudsec_report: Optional[dict] = Field(
+        None, description="Rapport JSON produit par le CloudSec Audit Toolkit (requis si demo_mode=false)"
+    )
+
+
 class TenantCreateRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=200, description="Nom de l'organisation")
     slug: str = Field(..., min_length=2, max_length=60, pattern=r"^[a-z0-9\-]+$",
@@ -196,17 +207,59 @@ class TenantCreateRequest(BaseModel):
 
 # ── Authentification multi-tenant ─────────────────────────────────────────────
 
+def _require_api_key() -> bool:
+    """
+    Si COMPASS_REQUIRE_API_KEY=true/1, une clé API valide est obligatoire sur
+    tous les endpoints tenant-scoped. Par défaut (variable absente), le fallback
+    mono-tenant 'default' reste actif — adapté à un usage local mono-utilisateur.
+    À activer dès que l'instance est exposée au-delà d'un poste local.
+    """
+    return os.environ.get("COMPASS_REQUIRE_API_KEY", "").strip().lower() in ("1", "true", "yes")
+
+
 def _resolve_tenant(x_api_key: Optional[str] = Header(None, alias="X-API-Key")) -> dict:
     """
     Dépendance FastAPI : résout la clé API → tenant.
-    Sans clé = tenant 'default' (compatibilité mono-tenant).
+    Sans clé = tenant 'default' (compatibilité mono-tenant), sauf si
+    COMPASS_REQUIRE_API_KEY force l'authentification.
     """
     if not x_api_key:
+        if _require_api_key():
+            raise HTTPException(status_code=401, detail="Clé API requise (COMPASS_REQUIRE_API_KEY activé).")
         return {"id": get_default_tenant_id(), "slug": "default", "name": "Default", "plan": "free"}
     tenant = get_tenant_by_key(x_api_key)
     if tenant is None:
         raise HTTPException(status_code=401, detail="Clé API invalide.")
     return tenant
+
+
+# ── Rate limiting (in-process, fenêtre glissante) ─────────────────────────────
+#
+# Pas de dépendance externe (pas de Redis/slowapi) — cohérent avec la philosophie
+# self-hosted/zéro-dépendance-superflue du projet. Suffisant pour un déploiement
+# mono-instance ; à remplacer par une solution distribuée si un jour multi-worker.
+
+_RATE_LIMIT_WINDOW_SECONDS = 60
+_RATE_LIMIT_MAX_REQUESTS = 30
+_rate_limit_hits: dict[str, collections.deque] = collections.defaultdict(collections.deque)
+
+
+def _rate_limit(request: Request) -> None:
+    """Dépendance FastAPI : limite chaque IP à _RATE_LIMIT_MAX_REQUESTS / fenêtre."""
+    client_ip = request.client.host if request.client else "unknown"
+    now = time.monotonic()
+    hits = _rate_limit_hits[client_ip]
+
+    while hits and now - hits[0] > _RATE_LIMIT_WINDOW_SECONDS:
+        hits.popleft()
+
+    if len(hits) >= _RATE_LIMIT_MAX_REQUESTS:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Trop de requêtes — limite de {_RATE_LIMIT_MAX_REQUESTS}/min dépassée. Réessayez plus tard.",
+        )
+
+    hits.append(now)
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -464,7 +517,7 @@ def api_qualify(body: QualifyRequest):
     return result.to_dict()
 
 
-@app.post("/api/tenants", status_code=201)
+@app.post("/api/tenants", status_code=201, dependencies=[Depends(_rate_limit)])
 def api_create_tenant(body: TenantCreateRequest):
     """
     Crée un nouveau tenant et retourne sa clé API.
@@ -495,7 +548,7 @@ def api_tenant_me(tenant: dict = Depends(_resolve_tenant)):
     return tenant
 
 
-@app.post("/api/assess", status_code=201)
+@app.post("/api/assess", status_code=201, dependencies=[Depends(_rate_limit)])
 def run_assessment(body: AssessmentRequest, tenant: dict = Depends(_resolve_tenant)):
     """
     Soumet les réponses au questionnaire et retourne le scoring complet.
@@ -584,7 +637,7 @@ def run_monte_carlo(body: MonteCarloRequest):
     return report.to_dict()
 
 
-@app.post("/api/aws-audit", status_code=200)
+@app.post("/api/aws-audit", status_code=200, dependencies=[Depends(_rate_limit)])
 def run_aws_audit(body: AWSAuditRequest):
     """
     Audite les contrôles de sécurité AWS et les mappe aux exigences NIS 2.
@@ -618,7 +671,7 @@ def run_aws_audit(body: AWSAuditRequest):
 
 
 
-@app.post("/api/m365-audit", status_code=200)
+@app.post("/api/m365-audit", status_code=200, dependencies=[Depends(_rate_limit)])
 def run_m365_audit(body: M365AuditRequest):
     """
     Audite les contrôles de sécurité Microsoft 365 / Azure AD et les mappe aux exigences NIS 2.
@@ -643,6 +696,51 @@ def run_m365_audit(body: M365AuditRequest):
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur Microsoft Graph : {str(e)}")
+
+
+@app.post("/api/cloudsec-audit", status_code=200, dependencies=[Depends(_rate_limit)])
+def run_cloudsec_audit(body: CloudSecAuditRequest):
+    """
+    Traduit un rapport CloudSec Audit Toolkit (Azure/Entra ID) en preuves NIS 2.
+
+    En mode demo_mode=true, utilise un rapport CloudSec réaliste préchargé.
+    En mode réel, fournissez le rapport JSON produit par le CloudSec Audit Toolkit
+    (`python -m cloudsec.cli --output report.json`) dans `cloudsec_report`.
+    """
+    if not body.demo_mode and not body.cloudsec_report:
+        raise HTTPException(
+            status_code=422,
+            detail="cloudsec_report est requis pour un audit réel. Utilisez demo_mode=true pour tester.",
+        )
+
+    bridge = CloudSecBridge()
+    try:
+        if body.demo_mode:
+            bridge.load_from_dict(CloudSecBridge.demo_report())
+        else:
+            bridge.load_from_dict(body.cloudsec_report)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
+    bridge.map_to_nis2()
+    evidence = bridge.get_evidence_report()
+    passed = sum(1 for e in evidence if e["result"] == "PASS")
+    failed = len(evidence) - passed
+
+    domains = load_framework()
+    mapping_summary = bridge.apply_to_framework(domains)
+
+    return {
+        "summary": {
+            "total_controls": bridge.total_mapped,
+            "passed": passed,
+            "failed": failed,
+            "pass_rate": round(passed / max(bridge.total_mapped, 1) * 100, 1),
+        },
+        "evidence": evidence,
+        "mapping_summary": mapping_summary,
+    }
+
 
 @app.get("/api/history")
 def get_history(org_name: str = None, limit: int = 20,

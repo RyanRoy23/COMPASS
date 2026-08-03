@@ -23,12 +23,9 @@ Architecture :
 
 import json
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
-from nis2_analyzer.core.models import (
-    Domain, SubRequirement, MaturityLevel, load_framework
-)
+from nis2_analyzer.core.models import Domain, MaturityLevel
 
 
 @dataclass
@@ -540,21 +537,55 @@ class CloudSecBridge:
             except json.JSONDecodeError as e:
                 raise ValueError(f"Rapport CloudSec invalide — JSON malformé : {e}") from e
 
-        # Validation du schéma minimum attendu
+        self._validate_schema(self.cloudsec_data)
+        return self.cloudsec_data
+
+    @staticmethod
+    def _validate_schema(data: dict) -> None:
+        """
+        Valide le schéma minimum attendu d'un rapport CloudSec Audit Toolkit.
+
+        'results' est une LISTE de checks (chacun avec id/passed/finding_count/...),
+        pas un objet — c'est le format réellement produit par le CloudSec Audit
+        Toolkit et itéré par map_to_nis2(). Utilisée par load_cloudsec_report()
+        et load_from_dict() pour partager la même validation.
+        """
         required_keys = {"results"}
-        missing = required_keys - set(self.cloudsec_data.keys())
+        missing = required_keys - set(data.keys())
         if missing:
             raise ValueError(
                 f"Format de rapport CloudSec invalide — clés manquantes : {', '.join(missing)}"
             )
 
-        if not isinstance(self.cloudsec_data["results"], dict):
+        if not isinstance(data["results"], list):
             raise ValueError(
-                "Format de rapport CloudSec invalide — 'results' doit être un objet JSON"
+                "Format de rapport CloudSec invalide — 'results' doit être une liste JSON"
             )
 
+    def load_from_dict(self, data: dict) -> dict:
+        """
+        Charge un rapport CloudSec déjà en mémoire (ex : payload JSON reçu via
+        l'API web), sans passer par un fichier sur disque. Même validation que
+        load_cloudsec_report().
+        """
+        self._validate_schema(data)
+        self.cloudsec_data = data
         return self.cloudsec_data
-    
+
+    @staticmethod
+    def demo_report() -> dict:
+        """
+        Rapport CloudSec de démonstration — réutilise la fixture réaliste déjà
+        maintenue pour les tests (tests/mock_data/cloudsec_report.json), pour
+        rester cohérent avec le comportement de `--demo --bridge` en CLI plutôt
+        que d'inventer de nouvelles données de démo.
+        """
+        fixture_path = os.path.join(
+            os.path.dirname(__file__), "..", "..", "tests", "mock_data", "cloudsec_report.json"
+        )
+        with open(os.path.realpath(fixture_path), "r", encoding="utf-8") as f:
+            return json.load(f)
+
     def _determine_maturity(self, check_id: str, check_result: dict) -> tuple[MaturityLevel, str]:
         """
         Détermine le niveau de maturité NIS 2 à partir d'un résultat CloudSec.
@@ -589,8 +620,6 @@ class CloudSecBridge:
             return MaturityLevel(level_info["level"]), level_info["reason"]
         else:
             # Déterminer si c'est un fail "léger" ou "grave"
-            threshold = logic.get("fail_low", {}).get("threshold", 0.3)
-            
             # Heuristique : si le nombre de findings est faible, c'est partiel
             # On utilise finding_count directement car on n'a pas toujours
             # le total pour calculer un ratio
