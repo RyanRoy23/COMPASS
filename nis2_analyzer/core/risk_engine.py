@@ -16,11 +16,12 @@ utilisée par les risk managers (ISO 27005, FAIR, NIST SP 800-30).
 Ce n'est pas une invention — c'est la pratique de l'industrie.
 """
 
-from dataclasses import dataclass, field
-from nis2_analyzer.core.models import Domain, SubRequirement, MaturityLevel
+from dataclasses import dataclass
+from nis2_analyzer.core.models import Domain
 from nis2_analyzer.core.financial import (
-    OrganizationProfile, OrgSize, Sector,
+    OrganizationProfile, OrgSize,
     IncidentType, COST_DATABASE, GAP_TO_RISK_SCENARIOS,
+    FINANCIAL_DATA_VERSION, FINANCIAL_DATA_SOURCES,
 )
 
 
@@ -263,7 +264,6 @@ class RiskEngine:
         YELLOW = "\033[33m"
         RED = "\033[31m"
         WHITE = "\033[97m"
-        MAGENTA = "\033[35m"
 
         def fmt_eur(amount: float) -> str:
             """Formate un montant en euros lisible."""
@@ -289,6 +289,7 @@ class RiskEngine:
         print(f"    {RED}Hypothese haute   :{RESET}  {RED}{BOLD}{fmt_eur(report.total_exposure_high)}{RESET}")
         print()
         print(f"  {DIM}Amende NIS 2 maximale applicable : {fmt_eur(report.max_nis2_fine)}{RESET}")
+        print(f"  {DIM}Base de coûts : {FINANCIAL_DATA_VERSION} ({FINANCIAL_DATA_SOURCES}){RESET}")
         print()
 
         # Top 5 risques
@@ -328,6 +329,8 @@ class RiskEngine:
     def to_dict(self, report: FinancialReport) -> dict:
         """Exporte le rapport financier en dictionnaire pour le JSON."""
         return {
+            "data_version": FINANCIAL_DATA_VERSION,
+            "data_sources": FINANCIAL_DATA_SOURCES,
             "organization": {
                 "name": report.organization.name,
                 "size": report.organization.size.value,

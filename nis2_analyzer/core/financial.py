@@ -19,9 +19,17 @@ Architecture :
 - SCENARIO_DATABASE : mapping gap NIS 2 → scénarios applicables
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
+
+# Version de la base de coûts — à mettre à jour à chaque refresh des sources
+# (IBM Cost of a Data Breach, ANSSI Panorama, Coveware sont publiés annuellement).
+FINANCIAL_DATA_VERSION = "2024-Q4"
+FINANCIAL_DATA_SOURCES = (
+    "IBM Cost of a Data Breach 2024 · ANSSI Panorama 2024 · "
+    "Coveware Q4 2024 · ENISA Supply Chain Threat Landscape 2024 · NIS 2 Art. 34"
+)
 
 
 class OrgSize(Enum):

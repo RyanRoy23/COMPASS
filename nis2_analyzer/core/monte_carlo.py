@@ -26,12 +26,13 @@ Méthodologie :
 
 import math
 import random
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from nis2_analyzer.core.models import Domain
 from nis2_analyzer.core.financial import (
     OrganizationProfile, OrgSize, IncidentType,
     COST_DATABASE, GAP_TO_RISK_SCENARIOS,
+    FINANCIAL_DATA_VERSION, FINANCIAL_DATA_SOURCES,
 )
 
 N_SIMULATIONS = 10_000
@@ -133,6 +134,8 @@ class MonteCarloReport:
 
     def to_dict(self) -> dict:
         return {
+            "data_version": FINANCIAL_DATA_VERSION,
+            "data_sources": FINANCIAL_DATA_SOURCES,
             "organization": {
                 "name": self.organization.name,
                 "size": self.organization.size.value,
