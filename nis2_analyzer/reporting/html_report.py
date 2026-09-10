@@ -31,16 +31,6 @@ def _h(value: str) -> str:
     return html.escape(str(value), quote=True)
 
 
-def _fmt_eur(amount: float) -> str:
-    """Formate un montant en euros."""
-    if amount >= 1_000_000:
-        return f"{amount/1_000_000:.1f}M €"
-    elif amount >= 1_000:
-        return f"{amount/1_000:.0f}K €"
-    else:
-        return f"{amount:.0f} €"
-
-
 def _grade_color(grade: str) -> str:
     return {"A": "#10B981", "B": "#3B82F6", "C": "#E5A100", "D": "#EF4444", "F": "#DC2626"}.get(grade, "#94A3B8")
 
@@ -65,17 +55,15 @@ def _score_color(score: float) -> str:
 def generate_report(
     domains: list[Domain],
     org_name: str,
-    financial_report: dict = None,
     bridge_summary: dict = None,
     output_path: str = "reports/nis2_report.html",
 ) -> str:
     """
     Génère le rapport HTML complet.
-    
+
     Args:
         domains: domaines avec maturités renseignées
         org_name: nom de l'organisation
-        financial_report: résultats du RiskEngine.to_dict() (optionnel)
         bridge_summary: résumé du bridge CloudSec (optionnel)
         output_path: chemin du fichier HTML de sortie
     """
@@ -96,8 +84,6 @@ def generate_report(
     total_critical = analysis["scores"]["total_critical_gaps"]
     compliant = total_reqs - total_gaps
     
-    # Préparer les données financières
-    has_financial = financial_report is not None
     has_bridge = bridge_summary is not None
     
     # ── Construire le HTML ──
@@ -359,87 +345,6 @@ def generate_report(
             font-weight: 500;
         }}
         
-        /* ── FINANCIAL CARDS ── */
-        .financial-hero {{
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 24px;
-        }}
-        
-        .financial-card {{
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 24px;
-        }}
-        
-        .financial-card.exposure {{
-            border-color: var(--red)40;
-            background: linear-gradient(135deg, var(--bg-card) 0%, var(--red-dim)30 100%);
-        }}
-        
-        .financial-card.savings {{
-            border-color: var(--green)40;
-            background: linear-gradient(135deg, var(--bg-card) 0%, var(--green-dim)30 100%);
-        }}
-        
-        .financial-card .label {{
-            font-size: 12px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 8px;
-        }}
-        
-        .financial-card .amount {{
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 32px;
-            font-weight: 700;
-        }}
-        
-        .financial-card .range {{
-            font-size: 13px;
-            color: var(--text-secondary);
-            margin-top: 4px;
-        }}
-        
-        /* ── RISK LIST ── */
-        .risk-item {{
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 16px 20px;
-            margin-bottom: 10px;
-            display: grid;
-            grid-template-columns: 3fr 1fr 1fr;
-            align-items: center;
-            gap: 12px;
-        }}
-        
-        .risk-item .risk-name {{
-            font-size: 14px;
-            font-weight: 500;
-        }}
-        
-        .risk-item .risk-type {{
-            font-size: 11px;
-            color: var(--text-muted);
-        }}
-        
-        .risk-item .risk-prob {{
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 13px;
-            text-align: center;
-        }}
-        
-        .risk-item .risk-cost {{
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 14px;
-            font-weight: 600;
-            text-align: right;
-        }}
-        
         /* ── BRIDGE SECTION ── */
         .bridge-stat {{
             display: grid;
@@ -690,8 +595,8 @@ def generate_report(
 
         @media print {{
             body {{ background: #fff; color: #1a1a1a; }}
-            .score-card, .domain-row, .gap-table td, .financial-card, 
-            .risk-item, .phase-card, .bridge-stat .stat-box {{
+            .score-card, .domain-row, .gap-table td,
+            .phase-card, .bridge-stat .stat-box {{
                 background: #f8f9fa;
                 border-color: #dee2e6;
                 color: #1a1a1a;
@@ -868,65 +773,6 @@ def generate_report(
 """
             html += """
             </table>
-"""
-        html += """
-        </div>
-"""
-
-    # ── SECTION : Quantification financière (si disponible) ──
-    if has_financial:
-        exp = financial_report.get("total_exposure", {})
-        exp_low = exp.get("low", 0)
-        exp_mid = exp.get("mid", 0)
-        exp_high = exp.get("high", 0)
-        fine = financial_report.get("organization", {}).get("max_nis2_fine", 0)
-        qw_value = financial_report.get("quick_wins_total_value", 0)
-        
-        html += f"""
-        <div class="section">
-            <div class="section-title">
-                <div class="icon">€</div>
-                Quantification du Risque Financier
-            </div>
-            <div class="financial-hero">
-                <div class="financial-card exposure">
-                    <div class="label">Exposition annuelle estimée</div>
-                    <div class="amount" style="color: var(--red)">{_fmt_eur(exp_mid)}</div>
-                    <div class="range">De {_fmt_eur(exp_low)} à {_fmt_eur(exp_high)} — Amende NIS 2 max : {_fmt_eur(fine)}</div>
-                </div>
-                <div class="financial-card savings">
-                    <div class="label">Réduction possible (Quick Wins)</div>
-                    <div class="amount" style="color: var(--green)">{_fmt_eur(qw_value)}</div>
-                    <div class="range">Actions réalisables en moins d'un mois</div>
-                </div>
-            </div>
-"""
-        
-        # Top risques
-        exposures = financial_report.get("exposures", [])
-        top_risks = sorted(exposures, key=lambda e: e.get("exposure_mid", 0), reverse=True)[:7]
-        
-        if top_risks:
-            html += """
-            <div style="margin-top: 16px;">
-"""
-            for risk in top_risks:
-                exp_mid_r = risk.get("exposure_mid", 0)
-                color = "var(--red)" if exp_mid_r > 200000 else "var(--orange)"
-                prob = risk.get("probability_pct", 0)
-                
-                html += f"""
-                <div class="risk-item">
-                    <div>
-                        <div class="risk-name">{risk['requirement_title']}</div>
-                        <div class="risk-type">{risk['incident_label']} — {risk.get('rationale', '')[:60]}</div>
-                    </div>
-                    <div class="risk-prob" style="color: var(--text-secondary)">{prob}%/an</div>
-                    <div class="risk-cost" style="color: {color}">{_fmt_eur(exp_mid_r)}/an</div>
-                </div>
-"""
-            html += """
-            </div>
 """
         html += """
         </div>

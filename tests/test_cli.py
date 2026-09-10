@@ -5,7 +5,7 @@ import pytest
 from unittest.mock import patch
 from io import StringIO
 
-from nis2_analyzer.cli import _cmd_history, _cmd_compare, _parse_profile
+from nis2_analyzer.cli import _cmd_history, _cmd_compare
 from nis2_analyzer.core.database import save_assessment
 
 
@@ -88,44 +88,3 @@ class TestCmdCompare:
             _cmd_compare(1, 99)
         out = capsys.readouterr().out
         assert "introuvable" in out or "Erreur" in out
-
-
-# ── Tests _parse_profile ──────────────────────────────────────────────────────
-
-class TestParseProfile:
-    def _make_args(self, org_name=None, size="eti", sector="autre", revenue=None):
-        class Args:
-            pass
-        a = Args()
-        a.org_name = org_name
-        a.size = size
-        a.sector = sector
-        a.revenue = revenue
-        return a
-
-    def test_default_org_name(self):
-        profile = _parse_profile(self._make_args())
-        assert profile.name == "Mon Organisation"
-
-    def test_custom_org_name(self):
-        profile = _parse_profile(self._make_args(org_name="TT Corporation"))
-        assert profile.name == "TT Corporation"
-
-    def test_size_mapping_pme(self):
-        from nis2_analyzer.core.financial import OrgSize
-        profile = _parse_profile(self._make_args(size="pme"))
-        assert profile.size == OrgSize.PME
-
-    def test_size_mapping_grand(self):
-        from nis2_analyzer.core.financial import OrgSize
-        profile = _parse_profile(self._make_args(size="grand"))
-        assert profile.size == OrgSize.GRAND_GROUPE
-
-    def test_sector_mapping(self):
-        from nis2_analyzer.core.financial import Sector
-        profile = _parse_profile(self._make_args(sector="sante"))
-        assert profile.sector == Sector.SANTE
-
-    def test_revenue_passed_through(self):
-        profile = _parse_profile(self._make_args(revenue=5_000_000))
-        assert profile.annual_revenue == 5_000_000

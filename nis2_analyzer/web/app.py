@@ -30,6 +30,7 @@ from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+from nis2_analyzer import __version__
 from nis2_analyzer.core.models import load_framework, MaturityLevel
 from nis2_analyzer.core.scoring import ScoringEngine
 from nis2_analyzer.core.database import (
@@ -53,26 +54,12 @@ from nis2_analyzer.core.supply_chain import (
     assess_supply_chain_maturity, get_supply_chain_questions_schema,
     SupplierProfile, AccessLevel, DataSensitivity,
 )
-from nis2_analyzer.core.monte_carlo import MonteCarloEngine
-from nis2_analyzer.core.aws_connector import AWSConnector
-from nis2_analyzer.core.m365_connector import M365Connector
 from nis2_analyzer.connectors.cloudsec_bridge import CloudSecBridge
-from nis2_analyzer.core.financial import OrganizationProfile, OrgSize, Sector
-from nis2_analyzer.core.sector_profiles import (
-    apply_sector_weights, get_sector_report, SECTOR_PROFILES
-)
-from nis2_analyzer.core.sme_mode import (
-    get_sme_schema, compute_sme_score, sme_responses_to_nis2, SME_QUESTIONS
-)
-from nis2_analyzer.reporting.pdf_report import generate_pdf_report
-from nis2_analyzer.reporting.templates import (
-    generate_pssi, generate_notification_procedure, generate_asset_register,
-)
 
 app = FastAPI(
     title="COMPASS",
     description="API d'évaluation de conformité NIS 2 — Article 21",
-    version="1.2.0",
+    version=__version__,
 )
 
 app.add_middleware(
@@ -93,7 +80,6 @@ class AssessmentRequest(BaseModel):
         ...,
         description="Mapping requirement_id → maturity (0-3)",
     )
-    sector: str = Field("autre", description="Secteur NIS 2 pour pondération sectorielle")
 
 
 class SupplierAssessRequest(BaseModel):
@@ -157,38 +143,6 @@ class QualifyRequest(BaseModel):
     annual_revenue_eur: float = Field(0.0, ge=0, description="CA annuel en euros")
     is_critical_infrastructure: bool = Field(False)
     provides_essential_digital_service: bool = Field(False)
-
-
-class MonteCarloRequest(BaseModel):
-    org_name: str = Field("Organisation", min_length=1, max_length=200)
-    responses: dict[str, int] = Field(..., description="Mapping requirement_id → maturity (0-3)")
-    org_size: str = Field("eti", description="'pme' | 'eti' | 'grand'")
-    sector: str = Field("autre", description="Secteur de l'organisation")
-    annual_revenue_eur: float = Field(0.0, ge=0)
-    n_simulations: int = Field(10_000, ge=1_000, le=50_000)
-
-
-class SMEAssessRequest(BaseModel):
-    org_name: str = Field("Mon entreprise", min_length=1, max_length=200)
-    responses: dict[str, int] = Field(..., description="Mapping PME-XX → niveau (0-3)")
-    sector: str = Field("autre")
-    include_nis2_detail: bool = Field(True, description="Inclure la conversion en scoring NIS 2 complet")
-
-
-class AWSAuditRequest(BaseModel):
-    region: str = Field("eu-west-1", description="Région AWS à auditer")
-    demo_mode: bool = Field(True, description="Mode démonstration sans credentials AWS")
-    # Credentials optionnels (non recommandés — préférer IAM roles)
-    aws_access_key_id: Optional[str] = Field(None)
-    aws_secret_access_key: Optional[str] = Field(None)
-    aws_session_token: Optional[str] = Field(None)
-
-
-class M365AuditRequest(BaseModel):
-    tenant_name: str = Field("Mon Organisation", min_length=1, max_length=200)
-    demo_mode: bool = Field(True, description="Mode démonstration sans token Graph API")
-    access_token: Optional[str] = Field(None, description="Token OAuth2 Microsoft Graph (scope: Directory.Read.All, Policy.Read.All, AuditLog.Read.All)")
-    azure_tenant_id: Optional[str] = Field(None, description="ID du tenant Azure AD")
 
 
 class CloudSecAuditRequest(BaseModel):
@@ -292,79 +246,6 @@ def get_framework():
             for d in domains
         ]
     }
-
-
-@app.get("/api/sector-profiles")
-def get_sector_profiles_list():
-    """Retourne la liste des profils sectoriels disponibles."""
-    return {
-        "sectors": [
-            {
-                "id": p.sector_id,
-                "label": p.sector_label,
-                "priority_requirements_count": len(p.priority_requirements),
-                "specific_controls_count": len(p.specific_controls),
-                "regulatory_context": p.regulatory_context,
-                "key_threats": p.key_threats,
-                "priority_requirements": p.priority_requirements,
-                "specific_controls": p.specific_controls,
-            }
-            for p in SECTOR_PROFILES.values()
-        ]
-    }
-
-
-@app.get("/api/sme/questions")
-def get_sme_questions():
-    """Retourne les 15 questions du mode PME en langage non-technique."""
-    return {"questions": get_sme_schema(), "total": len(SME_QUESTIONS)}
-
-
-@app.post("/api/sme/assess", status_code=200)
-def sme_assess(body: SMEAssessRequest):
-    """
-    Évalue une PME à partir des 15 questions simplifiées.
-
-    Retourne :
-    - Score PME simplifié (0-100) avec grade
-    - Points faibles et points forts
-    - Priorité d'action numéro 1
-    - Si include_nis2_detail : scoring NIS 2 complet via conversion automatique
-    """
-    valid_ids = {q.id for q in SME_QUESTIONS}
-    for qid, lvl in body.responses.items():
-        if qid not in valid_ids:
-            raise HTTPException(status_code=422, detail=f"Question inconnue : {qid}. Utilisez PME-01 à PME-15.")
-        if lvl not in (0, 1, 2, 3):
-            raise HTTPException(status_code=422, detail=f"Niveau invalide pour {qid} : {lvl}. Valeurs : 0, 1, 2, 3.")
-
-    if not body.responses:
-        raise HTTPException(status_code=422, detail="Aucune réponse fournie.")
-
-    # Score PME simplifié
-    sme_result = compute_sme_score(body.responses)
-    sme_result["org_name"] = html.escape(body.org_name.strip())
-    sme_result["sector"] = body.sector
-
-    result = {"sme_assessment": sme_result}
-
-    # Optionnel : scoring NIS 2 complet
-    if body.include_nis2_detail:
-        nis2_responses = sme_responses_to_nis2(body.responses)
-        domains = load_framework()
-        sector_id = body.sector if body.sector in SECTOR_PROFILES else "autre"
-        apply_sector_weights(domains, sector_id)
-        for domain in domains:
-            for req in domain.sub_requirements:
-                if req.id in nis2_responses:
-                    req.maturity = MaturityLevel(nis2_responses[req.id])
-        engine = ScoringEngine()
-        analysis = engine.full_analysis(domains, html.escape(body.org_name.strip()))
-        analysis["sector_report"] = get_sector_report(sector_id, analysis)
-        result["nis2_detail"] = analysis
-        result["nis2_responses_inferred"] = nis2_responses
-
-    return result
 
 
 @app.get("/api/supply-chain/questions")
@@ -578,124 +459,12 @@ def run_assessment(body: AssessmentRequest, tenant: dict = Depends(_resolve_tena
             detail="Aucune réponse valide fournie. Vérifiez les identifiants de requirements."
         )
 
-    # Appliquer les pondérations sectorielles avant le scoring
-    sector_id = body.sector if body.sector in SECTOR_PROFILES else "autre"
-    apply_sector_weights(domains, sector_id)
-
     engine = ScoringEngine()
     analysis = engine.full_analysis(domains, org_name)
     assessment_id = save_assessment(analysis, tenant_id=tenant["id"])
     analysis["assessment_id"] = assessment_id
 
-    # Ajouter le rapport sectoriel
-    analysis["sector_report"] = get_sector_report(sector_id, analysis)
-
     return analysis
-
-
-@app.post("/api/monte-carlo", status_code=200)
-def run_monte_carlo(body: MonteCarloRequest):
-    """
-    Lance une simulation Monte Carlo (10 000 scénarios par défaut).
-    Retourne la distribution de la perte annuelle totale avec percentiles.
-    """
-    _ALLOWED_SIZES = ("pme", "eti", "grand")
-    if body.org_size not in _ALLOWED_SIZES:
-        raise HTTPException(status_code=422, detail=f"org_size invalide. Valeurs : {_ALLOWED_SIZES}")
-
-    for req_id, value in body.responses.items():
-        if value not in (0, 1, 2, 3):
-            raise HTTPException(
-                status_code=422,
-                detail=f"Maturité invalide pour {req_id} : {value}. Valeurs acceptées : 0, 1, 2, 3."
-            )
-
-    domains = load_framework()
-    answered = 0
-    for domain in domains:
-        for req in domain.sub_requirements:
-            if req.id in body.responses:
-                req.maturity = MaturityLevel(body.responses[req.id])
-                answered += 1
-
-    if answered == 0:
-        raise HTTPException(status_code=422, detail="Aucune réponse valide fournie.")
-
-    size_map = {"pme": OrgSize.PME, "eti": OrgSize.ETI, "grand": OrgSize.GRAND_GROUPE}
-    sector_map = {s.value: s for s in Sector}
-    sector = sector_map.get(body.sector, Sector.AUTRE)
-
-    profile = OrganizationProfile(
-        name=html.escape(body.org_name.strip()),
-        size=size_map[body.org_size],
-        sector=sector,
-        annual_revenue=body.annual_revenue_eur if body.annual_revenue_eur > 0 else None,
-    )
-
-    engine = MonteCarloEngine(profile=profile, n_simulations=body.n_simulations)
-    report = engine.simulate(domains)
-    return report.to_dict()
-
-
-@app.post("/api/aws-audit", status_code=200, dependencies=[Depends(_rate_limit)])
-def run_aws_audit(body: AWSAuditRequest):
-    """
-    Audite les contrôles de sécurité AWS et les mappe aux exigences NIS 2.
-
-    En mode demo_mode=true, retourne un rapport réaliste sans credentials AWS.
-    En mode réel, passe les credentials ou utilise le profil AWS local.
-    """
-    if body.demo_mode:
-        connector = AWSConnector(demo_mode=True)
-        return connector.audit(region=body.region).to_dict()
-
-    # Mode réel : credentials optionnels (IAM role recommandé)
-    try:
-        import boto3
-        session_kwargs: dict = {"region_name": body.region}
-        if body.aws_access_key_id and body.aws_secret_access_key:
-            session_kwargs["aws_access_key_id"] = body.aws_access_key_id
-            session_kwargs["aws_secret_access_key"] = body.aws_secret_access_key
-            if body.aws_session_token:
-                session_kwargs["aws_session_token"] = body.aws_session_token
-        session = boto3.Session(**session_kwargs)
-        connector = AWSConnector(session=session, demo_mode=False)
-        return connector.audit(region=body.region).to_dict()
-    except ImportError:
-        raise HTTPException(
-            status_code=503,
-            detail="boto3 non installé. Ajoutez boto3 aux dépendances ou utilisez demo_mode=true.",
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur AWS : {str(e)}")
-
-
-
-@app.post("/api/m365-audit", status_code=200, dependencies=[Depends(_rate_limit)])
-def run_m365_audit(body: M365AuditRequest):
-    """
-    Audite les contrôles de sécurité Microsoft 365 / Azure AD et les mappe aux exigences NIS 2.
-    En mode demo_mode=true, retourne un rapport réaliste sans credentials.
-    """
-    if body.demo_mode:
-        connector = M365Connector(demo_mode=True)
-        return connector.audit(tenant_name=html.escape(body.tenant_name.strip())).to_dict()
-    if not body.access_token:
-        raise HTTPException(
-            status_code=422,
-            detail="Un access_token Microsoft Graph est requis pour le mode réel. Utilisez demo_mode=true pour tester.",
-        )
-    try:
-        connector = M365Connector(
-            demo_mode=False,
-            access_token=body.access_token,
-            tenant_id=body.azure_tenant_id,
-        )
-        return connector.audit(tenant_name=html.escape(body.tenant_name.strip())).to_dict()
-    except RuntimeError as e:
-        raise HTTPException(status_code=503, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur Microsoft Graph : {str(e)}")
 
 
 @app.post("/api/cloudsec-audit", status_code=200, dependencies=[Depends(_rate_limit)])
@@ -803,64 +572,6 @@ def api_evidence_package(body: AssessmentRequest, background_tasks: BackgroundTa
     )
 
 
-def _build_assessment_from_request(body: AssessmentRequest) -> tuple:
-    """Shared helper: load framework, apply responses, return (engine, assessment, org_name)."""
-    org_name = html.escape(body.org_name.strip())
-    for req_id, value in body.responses.items():
-        if value not in (0, 1, 2, 3):
-            raise HTTPException(status_code=422, detail=f"Maturité invalide pour {req_id} : {value}.")
-    domains = load_framework()
-    if body.sector:
-        apply_sector_weights(domains, body.sector)
-    answered = 0
-    for domain in domains:
-        for req in domain.sub_requirements:
-            if req.id in body.responses:
-                req.maturity = MaturityLevel(body.responses[req.id])
-                answered += 1
-    if answered == 0:
-        raise HTTPException(status_code=422, detail="Aucune réponse valide fournie.")
-    engine = ScoringEngine()
-    return engine, engine.calculate(domains, org_name), org_name
-
-
-def _template_response(
-    buf,
-    background_tasks: BackgroundTasks,
-    org_name: str,
-    slug: str,
-) -> FileResponse:
-    tmp = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
-    tmp.write(buf.read())
-    tmp.close()
-    background_tasks.add_task(os.unlink, tmp.name)
-    safe = org_name.replace(" ", "_").replace("/", "_")[:40]
-    fname = f"compass_{slug}_{safe}.pdf"
-    return FileResponse(tmp.name, media_type="application/pdf", filename=fname,
-                        headers={"Content-Disposition": f'attachment; filename="{fname}"'})
-
-
-@app.post("/api/templates/pssi")
-def api_template_pssi(body: AssessmentRequest, background_tasks: BackgroundTasks):
-    """Génère une PSSI simplifiée pré-remplie depuis l'évaluation NIS 2."""
-    _, assessment, org_name = _build_assessment_from_request(body)
-    return _template_response(generate_pssi(assessment), background_tasks, org_name, "pssi")
-
-
-@app.post("/api/templates/notification")
-def api_template_notification(body: AssessmentRequest, background_tasks: BackgroundTasks):
-    """Génère la procédure de notification NIS 2 Art. 23 pré-remplie."""
-    _, assessment, org_name = _build_assessment_from_request(body)
-    return _template_response(generate_notification_procedure(assessment), background_tasks, org_name, "notification")
-
-
-@app.post("/api/templates/assets")
-def api_template_assets(body: AssessmentRequest, background_tasks: BackgroundTasks):
-    """Génère le registre des actifs critiques pré-rempli depuis les gaps identifiés."""
-    _, assessment, org_name = _build_assessment_from_request(body)
-    return _template_response(generate_asset_register(assessment), background_tasks, org_name, "actifs")
-
-
 @app.get("/api/compare/{id_a}/{id_b}")
 def compare(id_a: int, id_b: int, tenant: dict = Depends(_resolve_tenant)):
     """Compare deux assessments du tenant et retourne le delta."""
@@ -870,55 +581,3 @@ def compare(id_a: int, id_b: int, tenant: dict = Depends(_resolve_tenant)):
         raise HTTPException(status_code=404, detail=str(e))
 
 
-@app.post("/api/pdf-report")
-def api_pdf_report(body: AssessmentRequest, background_tasks: BackgroundTasks):
-    """
-    Génère un rapport PDF professionnel à partir des réponses au questionnaire.
-    Retourne le fichier PDF en téléchargement direct.
-    """
-    org_name = html.escape(body.org_name.strip())
-
-    for req_id, value in body.responses.items():
-        if value not in (0, 1, 2, 3):
-            raise HTTPException(
-                status_code=422,
-                detail=f"Maturité invalide pour {req_id} : {value}."
-            )
-
-    domains = load_framework()
-    if body.sector:
-        apply_sector_weights(domains, body.sector)
-
-    answered = 0
-    for domain in domains:
-        for req in domain.sub_requirements:
-            if req.id in body.responses:
-                req.maturity = MaturityLevel(body.responses[req.id])
-                answered += 1
-
-    if answered == 0:
-        raise HTTPException(status_code=422, detail="Aucune réponse valide fournie.")
-
-    engine = ScoringEngine()
-    assessment = engine.calculate(domains, org_name)
-
-    # Label lisible du secteur
-    sector_label = "Non précisé"
-    if body.sector:
-        from nis2_analyzer.core.sector_profiles import get_sector_profile
-        sector_label = get_sector_profile(body.sector).sector_label
-
-    pdf_buffer = generate_pdf_report(assessment, sector=sector_label)
-
-    tmp = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
-    tmp.write(pdf_buffer.read())
-    tmp.close()
-    background_tasks.add_task(os.unlink, tmp.name)
-
-    safe_name = org_name.replace(" ", "_").replace("/", "_")[:40]
-    return FileResponse(
-        tmp.name,
-        media_type="application/pdf",
-        filename=f"compass_rapport_{safe_name}.pdf",
-        headers={"Content-Disposition": f'attachment; filename="compass_rapport_{safe_name}.pdf"'},
-    )

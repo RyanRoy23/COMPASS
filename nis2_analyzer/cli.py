@@ -6,7 +6,7 @@ Modes disponibles :
 1. Interactif     : python -m nis2_analyzer
 2. Demo           : python -m nis2_analyzer --demo
 3. Bridge + Inter : python -m nis2_analyzer --bridge rapport_cloudsec.json
-4. Complet        : python -m nis2_analyzer --demo --bridge rapport.json --report reports/rapport.html --size eti --sector industrie --revenue 50000000
+4. Complet        : python -m nis2_analyzer --demo --bridge rapport.json --report reports/rapport.html
 """
 
 import argparse
@@ -31,7 +31,7 @@ BLUE = "\033[34m"
 MAGENTA = "\033[35m"
 
 
-def run_demo_mode(with_bridge=False, with_financial=False, profile=None, report_path=None, no_save=False):
+def run_demo_mode(with_bridge=False, report_path=None, no_save=False):
     """Mode demo avec toutes les couches."""
     from nis2_analyzer.assessment.interactive import display_banner
 
@@ -41,7 +41,7 @@ def run_demo_mode(with_bridge=False, with_financial=False, profile=None, report_
     print()
 
     domains = load_framework()
-    org_name = profile.name if profile else "IndustrieCorp SA"
+    org_name = "IndustrieCorp SA"
     bridge_result = None
 
     if with_bridge:
@@ -80,18 +80,14 @@ def run_demo_mode(with_bridge=False, with_financial=False, profile=None, report_
 
     _display_results(domains, org_name)
 
-    financial_dict = None
-    if with_financial and profile:
-        financial_dict = _run_financial(domains, profile)
-
     if report_path:
-        _generate_report(domains, org_name, financial_dict, bridge_result, report_path)
+        _generate_report(domains, org_name, bridge_result, report_path)
 
     _save_assessment(domains, org_name, skip=no_save)
-    return domains, org_name, financial_dict
+    return domains, org_name
 
 
-def run_bridge_interactive(bridge_path, profile=None, report_path=None, no_save=False):
+def run_bridge_interactive(bridge_path, report_path=None, no_save=False):
     """
     Mode bridge + interactif.
     Le bridge pre-remplit les questions techniques.
@@ -175,12 +171,8 @@ def run_bridge_interactive(bridge_path, profile=None, report_path=None, no_save=
         print(f"\n\n  {YELLOW}Evaluation interrompue. Resultats partiels :{RESET}\n")
         display_final_result(domains, org_name)
 
-    financial_dict = None
-    if profile:
-        financial_dict = _run_financial(domains, profile)
-
     if report_path:
-        _generate_report(domains, org_name, financial_dict, bridge_result, report_path)
+        _generate_report(domains, org_name, bridge_result, report_path)
 
     _save_assessment(domains, org_name, skip=no_save)
     return domains, org_name
@@ -266,22 +258,12 @@ def _display_results(domains, org_name):
     print()
 
 
-def _run_financial(domains, profile):
-    """Lance l'analyse financiere."""
-    from nis2_analyzer.core.risk_engine import RiskEngine
-    engine = RiskEngine(profile)
-    report = engine.analyze(domains)
-    engine.display_summary(report)
-    return engine.to_dict(report)
-
-
-def _generate_report(domains, org_name, financial_dict, bridge_result, report_path):
+def _generate_report(domains, org_name, bridge_result, report_path):
     """Genere le rapport HTML unifie."""
     from nis2_analyzer.reporting.html_report import generate_report
     path = generate_report(
         domains=domains,
         org_name=org_name,
-        financial_report=financial_dict,
         bridge_summary=bridge_result,
         output_path=report_path,
     )
@@ -363,26 +345,6 @@ def _cmd_compare(id_a, id_b):
             indicator = f"{DIM}={RESET}"
         print(f"    {d['domain'][:38]:<38} {indicator}")
     print()
-
-
-def _parse_profile(args):
-    """Construit le profil d'organisation a partir des arguments CLI."""
-    from nis2_analyzer.core.financial import OrganizationProfile, OrgSize, Sector
-
-    size_map = {"pme": OrgSize.PME, "eti": OrgSize.ETI, "grand": OrgSize.GRAND_GROUPE}
-    sector_map = {
-        "sante": Sector.SANTE, "finance": Sector.FINANCE, "energie": Sector.ENERGIE,
-        "industrie": Sector.INDUSTRIE, "numerique": Sector.NUMERIQUE,
-        "transport": Sector.TRANSPORT, "administration": Sector.ADMINISTRATION,
-        "autre": Sector.AUTRE,
-    }
-
-    return OrganizationProfile(
-        name=args.org_name or "Mon Organisation",
-        size=size_map.get(args.size, OrgSize.ETI),
-        sector=sector_map.get(args.sector, Sector.AUTRE),
-        annual_revenue=args.revenue,
-    )
 
 
 def _generate_evidence_package(domains, org_name, evidence_path):
@@ -530,11 +492,11 @@ Exemples :
   Mode demonstration :
     python -m nis2_analyzer --demo
 
-  Demo complete (bridge + financier + rapport HTML) :
-    python -m nis2_analyzer --demo --bridge tests/mock_data/cloudsec_report.json --report reports/rapport.html --size eti --sector industrie --revenue 50000000
+  Demo complete (bridge + rapport HTML) :
+    python -m nis2_analyzer --demo --bridge tests/mock_data/cloudsec_report.json --report reports/rapport.html
 
   Bridge + interactif + rapport :
-    python -m nis2_analyzer --bridge rapport_cloudsec.json --report reports/rapport.html --size pme --sector sante
+    python -m nis2_analyzer --bridge rapport_cloudsec.json --report reports/rapport.html
         """
     )
 
@@ -546,14 +508,10 @@ Exemples :
                         help="Chemin du rapport HTML de sortie")
     parser.add_argument("--output", "-o", default=None,
                         help="Chemin du fichier JSON de sortie")
-    parser.add_argument("--size", default="eti", choices=["pme", "eti", "grand"],
-                        help="Taille de l'organisation")
     parser.add_argument("--sector", default="autre",
-                        choices=["sante", "finance", "energie", "industrie",
-                                 "numerique", "transport", "administration", "autre"],
-                        help="Secteur d'activite")
-    parser.add_argument("--revenue", type=float, default=None,
-                        help="Chiffre d'affaires annuel en euros")
+                        help="Secteur NIS 2 (pour --qualify)")
+    parser.add_argument("--revenue", type=float, default=0.0,
+                        help="Chiffre d'affaires annuel en euros (pour --qualify)")
     parser.add_argument("--org-name", default=None,
                         help="Nom de l'organisation")
     parser.add_argument("--history", action="store_true",
@@ -596,18 +554,12 @@ Exemples :
         _cmd_compare(args.compare[0], args.compare[1])
         return
 
-    profile = None
-    if args.size or args.sector or args.revenue or args.report:
-        profile = _parse_profile(args)
-
     try:
-        domains, org_name, financial_dict = None, None, None
+        domains, org_name = None, None
 
         if args.demo:
-            domains, org_name, financial_dict = run_demo_mode(
+            domains, org_name = run_demo_mode(
                 with_bridge=args.bridge,
-                with_financial=(profile is not None),
-                profile=profile,
                 report_path=args.report,
                 no_save=args.no_save,
             )
@@ -615,7 +567,6 @@ Exemples :
         elif args.bridge:
             run_bridge_interactive(
                 bridge_path=args.bridge,
-                profile=profile,
                 report_path=args.report,
                 no_save=args.no_save,
             )
@@ -625,11 +576,8 @@ Exemples :
 
             domains, org_name = run_assessment()
 
-            if profile:
-                financial_dict = _run_financial(domains, profile)
-
             if args.report:
-                _generate_report(domains, org_name, financial_dict, None, args.report)
+                _generate_report(domains, org_name, None, args.report)
 
             _save_assessment(domains, org_name, skip=args.no_save)
 

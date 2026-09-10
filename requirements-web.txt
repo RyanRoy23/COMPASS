@@ -4,4 +4,3 @@ python-multipart>=0.0.9
 # starlette/fastapi TestClient : httpx2 est le successeur maintenu depuis 2026
 # (starlette déprécie le paquet `httpx` historique). Ne pas « corriger » en httpx.
 httpx2>=2.12.0
-reportlab>=4.0.0
