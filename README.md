@@ -8,22 +8,22 @@ technique (bridge Entra ID / Azure), ce qui est **déclaré** par questionnaire,
 > **⚠️ Refonte en cours (v2.0-dev).** Le référentiel bascule de l'Article 21 + ISO 27001 vers
 > **ReCyF** (Référentiel Cyber France, ANSSI). Le périmètre technique se recentre sur **Entra
 > ID / Azure**. Les modules quantification financière, Monte Carlo, connecteurs AWS/M365 et
-> mode PME ont été retirés — récupérables au tag `archive/v1.2-full`. Les sections
-> *Architecture* et *Roadmap* décrivent encore la v1.2 et seront réécrites.
+> mode PME ont été retirés — récupérables au tag `archive/v1.2-full`. Le questionnaire et le
+> rapport HTML reflètent encore la grille Article 21 en attendant la modélisation ReCyF.
 
 ---
 
 ## Ce que fait l'outil
 
-NIS 2 Risk Analyzer évalue la conformité aux 10 mesures de l'Article 21 (UE 2022/2555) en combinant **cinq couches** :
+COMPASS évalue la conformité NIS 2 en combinant :
 
 | Couche | Description |
 |--------|-------------|
-| **Conformité structurée** | 35 questions, 10 domaines, scoring pondéré A-F, plan de remédiation priorisé |
-| **Bridge technique** | Audit Azure/Entra ID via CloudSec Toolkit — pré-remplit les réponses avec des preuves réelles |
-| **Transparence du périmètre** | Chaque rapport distingue prouvé / déclaré / non couvert |
-| **Mapping DORA** | 16 questions NIS 2 mappées aux 5 piliers DORA |
-| **Quantification financière** | Exposition ALE en euros, scénarios basse/moyenne/haute, valeur des quick wins |
+| **Conformité structurée** | 35 questions, 10 domaines, scoring pondéré A-F, plan de remédiation priorisé (bascule ReCyF en cours) |
+| **Bridge technique** | Audit Entra ID / Azure via CloudSec Toolkit — pré-remplit les réponses avec des preuves techniques horodatées |
+| **Transparence du périmètre** | Chaque rapport distingue **prouvé** / **déclaré** / **non couvert** |
+| **Volets réglementaires** | Qualification Art. 3, gouvernance Art. 20, notification Art. 23, supply chain Art. 21(d) |
+| **Dossier de preuves** | Export ZIP horodaté et intègre (hash SHA-256) pour un contrôle ANSSI |
 
 ---
 
@@ -46,8 +46,7 @@ Ouvrez **http://localhost:8000** dans votre navigateur. Remplissez le questionna
 git clone https://github.com/RyanRoy23/COMPASS.git
 cd COMPASS
 make build
-make demo        # démonstration
-make run         # évaluation interactive
+make up           # interface web → http://localhost:8000
 ```
 
 ### Option 3 — CLI Python
@@ -59,14 +58,13 @@ cd COMPASS
 # Démonstration rapide
 python -m nis2_analyzer --demo
 
-# Démo complète : bridge Azure + analyse financière + rapport HTML
+# Démo complète : bridge Azure + rapport HTML
 python -m nis2_analyzer --demo \
   --bridge tests/mock_data/cloudsec_report.json \
-  --report reports/rapport.html \
-  --size eti --sector industrie --revenue 50000000
+  --report reports/rapport.html
 ```
 
-> **Aucune dépendance externe** pour le mode CLI — uniquement la bibliothèque standard Python 3.10+.  
+> **Aucune dépendance externe** pour le mode CLI — uniquement la bibliothèque standard Python 3.10+.
 > Les dépendances web (`fastapi`, `uvicorn`) ne sont requises que pour l'interface web.
 
 ---
@@ -94,9 +92,15 @@ python serve.py
 |----------|-------------|
 | `GET /api/framework` | Liste des 10 domaines et 35 questions |
 | `POST /api/assess` | Soumet les réponses, retourne le scoring + sauvegarde |
-| `GET /api/history` | Historique des assessments |
-| `GET /api/history/{id}` | Détail d'un assessment |
-| `GET /api/compare/{a}/{b}` | Delta entre deux assessments |
+| `POST /api/cloudsec-audit` | Traduit un rapport CloudSec (Entra ID) en preuves NIS 2 |
+| `POST /api/qualify` | Qualification NIS 2 Art. 3 (essentielle / importante / hors champ) |
+| `POST /api/governance` | Gouvernance Art. 20 |
+| `POST /api/incident/*` | Notification d'incident Art. 23 (classification, deadlines, maturité) |
+| `POST /api/supply-chain/*` | Fournisseurs et maturité supply chain Art. 21(d) |
+| `POST /api/evidence-package` | Dossier de preuves ZIP |
+| `GET /api/history` · `GET /api/compare/{a}/{b}` | Historique et delta entre assessments |
+
+> L'ensemble des routes est documenté sur `http://localhost:8000/docs` (OpenAPI).
 
 ---
 
@@ -143,10 +147,10 @@ Evolution par domaine :
 | `--bridge`, `-b` | Rapport CloudSec Audit Toolkit (JSON) |
 | `--report`, `-r` | Rapport HTML de sortie |
 | `--output`, `-o` | Export JSON des résultats |
-| `--size` | Taille : `pme`, `eti`, `grand` |
-| `--sector` | Secteur : `sante`, `finance`, `energie`, `industrie`, `numerique`, `transport`, `administration`, `autre` |
-| `--revenue` | Chiffre d'affaires annuel en euros |
+| `--evidence`, `-e` | Dossier de preuves ZIP de sortie |
 | `--org-name` | Nom de l'organisation |
+| `--qualify` | Qualification NIS 2 Art. 3 (avec `--sector`, `--employees`, `--revenue`) |
+| `--governance` | Questionnaire de gouvernance Art. 20 |
 | `--history` | Affiche l'historique des assessments |
 | `--compare ID_A ID_B` | Compare deux assessments |
 | `--no-save` | Ne pas sauvegarder cet assessment |
@@ -157,52 +161,49 @@ Evolution par domaine :
 
 ```bash
 make build    # construire l'image
-make run      # évaluation interactive
-make demo     # mode démonstration
-make history  # consulter l'historique
-make test     # tests dans le conteneur
-make shell    # shell interactif
-make clean    # tout supprimer
+make up        # interface web → http://localhost:8000
+make demo      # démonstration CLI ponctuelle
+make history   # consulter l'historique
+make shell     # shell interactif dans le conteneur
+make clean     # supprimer conteneurs, volumes et image
 ```
 
-L'historique est persisté dans un volume Docker nommé `nis2_history`.  
-Les rapports HTML générés sont disponibles dans `./reports/`.
+L'historique SQLite est persisté dans le volume Docker `compass_history`.
+Les rapports HTML générés par le CLI sont disponibles dans `./reports/`.
+`make test` lance la suite dans l'environnement local (venv), pas dans l'image runtime.
 
 ---
 
 ## Architecture
 
 ```
-nis2-risk-analyzer/
+COMPASS/
 ├── nis2_analyzer/
+│   ├── __init__.py                  # __version__ (source unique)
 │   ├── core/
-│   │   ├── models.py           # Domain, MaturityLevel, ComplianceGrade
-│   │   ├── scoring.py          # Moteur de scoring pondéré + gap analysis
-│   │   ├── financial.py        # Base de données d'impact financier
-│   │   ├── risk_engine.py      # Quantification ALE
-│   │   └── database.py         # Persistance SQLite (historique)
-│   ├── assessment/
-│   │   ├── interactive.py      # Questionnaire CLI interactif
-│   │   └── exporter.py         # Export JSON
+│   │   ├── models.py                # Domain, MaturityLevel, ComplianceGrade
+│   │   ├── scoring.py               # Scoring pondéré + gap analysis + plan SMART
+│   │   ├── database.py              # Persistance SQLite (historique, multi-tenant)
+│   │   ├── integrity.py             # Empreinte SHA-256 des rapports
+│   │   ├── entity_qualification.py  # Qualification Art. 3
+│   │   ├── governance.py            # Gouvernance Art. 20
+│   │   ├── incident_notification.py # Notification Art. 23
+│   │   └── supply_chain.py          # Supply chain Art. 21(d)
+│   ├── assessment/                  # Questionnaire CLI interactif + export JSON
 │   ├── connectors/
-│   │   └── cloudsec_bridge.py  # Bridge CloudSec → NIS 2
+│   │   └── cloudsec_bridge.py       # Bridge CloudSec (Entra ID) → preuves NIS 2
 │   ├── reporting/
-│   │   └── html_report.py      # Générateur de rapport HTML autonome
+│   │   ├── html_report.py           # Rapport HTML autonome
+│   │   └── evidence_package.py      # Dossier de preuves ZIP
 │   ├── web/
-│   │   ├── app.py              # API FastAPI
-│   │   └── templates/
-│   │       └── index.html      # Interface web (vanilla JS)
-│   ├── data/
-│   │   └── nis2_framework.json # Référentiel NIS 2 Article 21
-│   └── cli.py                  # Orchestration CLI
-├── tests/                      # 427 tests unitaires
-├── Dockerfile
-├── docker-compose.yml
-├── Makefile
-├── serve.py                    # Lancement interface web
-├── requirements-web.txt        # Dépendances web uniquement
-└── docs/
-    └── azure-service-account.md
+│   │   ├── app.py                   # API FastAPI
+│   │   └── templates/index.html     # Interface web (vanilla JS)
+│   ├── data/nis2_framework.json     # Référentiel (bascule ReCyF en cours)
+│   └── cli.py                       # Orchestration CLI
+├── tests/                           # 260 tests unitaires
+├── Dockerfile · docker-compose.yml · Makefile
+├── serve.py                         # Lancement interface web
+└── requirements-web.txt             # Dépendances web uniquement
 ```
 
 ---
@@ -248,51 +249,25 @@ Le bridge connecte les résultats du [CloudSec Audit Toolkit](https://github.com
 
 ---
 
-## Quantification financière
-
-**Méthode :** ALE (Annualized Loss Expectancy) = Probabilité annuelle × Impact financier
-
-**Sources :** IBM Cost of a Data Breach 2024 · ANSSI Panorama 2024 · Coveware Q4 2024 · NIS 2 Article 34
-
-**Ajustement par maturité :**
-
-| Niveau | Multiplicateur |
-|--------|:--------------:|
-| 0 — Non implémenté | ×1.5 |
-| 1 — Partiel | ×1.0 |
-| 2 — Implémenté | ×0.3 |
-| 3 — Géré/Mesuré | ×0.1 |
-
-> Ces estimations sont indicatives. Elles ne remplacent pas une analyse FAIR ou ISO 27005.
-
----
-
 ## Tests
 
 ```bash
-# Lancer les tests
 pip install pytest pytest-cov
-python -m pytest tests/ -v
+python -m pytest tests/ -q
 
 # Avec couverture
 python -m pytest tests/ --cov=nis2_analyzer --cov-report=term-missing
 ```
 
-**État actuel : 427 tests, CI GitHub Actions verte (Python 3.11 et 3.12).**
-
-Modules couverts : `core/scoring` (100%), `core/database` (100%), `web/app` (98%), `reporting/html_report` (71%).
+**État actuel : 260 tests, CI GitHub Actions verte (Python 3.11 et 3.12).**
 
 ---
 
 ## Limitations
 
-**Périmètre technique partiel** — Le bridge ne couvre qu'Azure/Entra ID. Les environnements AWS, GCP et on-premise restent en mode déclaratif.
+**Périmètre technique** — Le bridge ne couvre qu'Entra ID / Azure. Le reste (AWS, GCP, on-premise) est évalué en mode déclaratif.
 
-**Couverture organisationnelle** — NIS 2 est à 60-70% un cadre organisationnel. Ces dimensions sont évaluées par questionnaire déclaratif uniquement et nécessitent un audit externe pour être vraiment vérifiées.
-
-**Mapping DORA partiel** — Trois exigences DORA ne sont pas couvertes : TLPT (art. 26), registre TIC (art. 28(3)), partage de cybermenaces (art. 45).
-
-**Quantification indicative** — L'ALE linéaire n'est pas un modèle actuariel. Les fourchettes structurent la décision, elles ne la remplacent pas.
+**Couverture organisationnelle** — NIS 2 est à 60-70% un cadre organisationnel. Ces dimensions sont évaluées par questionnaire déclaratif et nécessitent un audit externe pour être vraiment vérifiées.
 
 **Pas de substitution à un audit** — L'outil produit une auto-évaluation outillée, pas un rapport d'audit certifié.
 
@@ -300,19 +275,16 @@ Modules couverts : `core/scoring` (100%), `core/database` (100%), `web/app` (98%
 
 ## Roadmap
 
-### Livré (v1.1)
-- Interface web FastAPI — évaluation depuis le navigateur, sans CLI
-- Persistance SQLite — historique des assessments, comparaison dans le temps
-- Docker + Makefile — déploiement en une commande
-- 427 tests unitaires, CI/CD GitHub Actions
-- Sécurité renforcée : protection XSS, validation des entrées, sécurisation du bridge
+### En cours (v2.0)
+- **Bascule vers ReCyF** (Référentiel Cyber France, ANSSI) : 20 objectifs / 4 piliers, en remplacement de la grille Article 21 + ISO 27001
+- Gradation de chaque objectif ReCyF par type de preuve : prouvé (audit Entra) / déclaré / non couvert
+- Élargissement du bridge CloudSec côté identité
 
-### Prochaines étapes
-- Élargissement du bridge CloudSec (40+ checks Azure)
-- Connecteur AWS (boto3)
-- Rapport HTML généré depuis l'interface web
-- Suivi temporel visuel dans l'interface web (courbes de progression)
-- Modèle financier Monte Carlo (distributions FAIR)
+### Fait
+- Interface web FastAPI, persistance SQLite multi-tenant, Docker
+- Volets Art. 3 / 20 / 23 / 21(d), dossier de preuves ZIP intègre
+- 260 tests, CI GitHub Actions (Python 3.11 + 3.12)
+- Sécurité : échappement XSS, validation Pydantic, hash des clés API, rate limiting
 
 ---
 

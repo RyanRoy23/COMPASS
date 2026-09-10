@@ -1,26 +1,32 @@
-.PHONY: build run demo history test shell clean web
+.PHONY: build up down web demo history shell test clean
 
-build:
-	docker build -t nis2-risk-analyzer:latest .
+# ── Docker : interface web ────────────────────────────────────────────────────
+build:            ## Construire l'image
+	docker compose build
 
-run:
-	docker compose run --rm nis2-analyzer
+up:               ## Lancer l'interface web → http://localhost:8000
+	docker compose up
 
-demo:
-	docker compose run --rm nis2-analyzer --demo
+down:             ## Arrêter
+	docker compose down
 
-history:
-	docker compose run --rm nis2-analyzer --history
+# ── Docker : CLI ponctuel ─────────────────────────────────────────────────────
+demo:             ## Démonstration CLI
+	docker compose run --rm compass python -m nis2_analyzer --demo
 
-test:
-	docker compose run --rm --entrypoint python nis2-analyzer -m pytest tests/ -v
+history:          ## Historique des assessments
+	docker compose run --rm compass python -m nis2_analyzer --history
 
-shell:
-	docker compose run --rm --entrypoint bash nis2-analyzer
+shell:            ## Shell interactif dans le conteneur
+	docker compose run --rm compass bash
 
-web:
+# ── Local (venv) ──────────────────────────────────────────────────────────────
+web:              ## Interface web sans Docker
 	pip install -q -r requirements-web.txt && python serve.py
 
-clean:
+test:             ## Tests (environnement local, pas l'image runtime)
+	python -m pytest tests/ -q
+
+clean:            ## Supprimer conteneurs, volumes et image
 	docker compose down -v
-	docker rmi nis2-risk-analyzer:latest 2>/dev/null || true
+	docker rmi compass:latest 2>/dev/null || true

@@ -1,19 +1,23 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
+# Dépendances web d'abord (cache Docker)
+COPY requirements-web.txt .
+RUN pip install --no-cache-dir -r requirements-web.txt
+
 COPY nis2_analyzer/ ./nis2_analyzer/
-COPY tests/ ./tests/
+COPY serve.py .
 
-RUN pip install --no-cache-dir pytest pytest-cov
+RUN useradd --create-home --shell /bin/bash compass && \
+    mkdir -p /home/compass/.nis2_analyzer /app/reports && \
+    chown -R compass:compass /app /home/compass/.nis2_analyzer
+USER compass
 
-RUN useradd --create-home --shell /bin/bash nis2user && \
-    mkdir -p /home/nis2user/.nis2_analyzer && \
-    chown -R nis2user:nis2user /app /home/nis2user/.nis2_analyzer
+# Historique SQLite persistant + rapports HTML générés par le CLI
+VOLUME ["/home/compass/.nis2_analyzer", "/app/reports"]
+EXPOSE 8000
 
-USER nis2user
-
-VOLUME ["/home/nis2user/.nis2_analyzer", "/app/reports"]
-
-ENTRYPOINT ["python", "-m", "nis2_analyzer"]
-CMD ["--help"]
+# Par défaut : interface web. CLI toujours disponible via
+#   docker compose run --rm compass python -m nis2_analyzer --demo
+CMD ["python", "serve.py"]
