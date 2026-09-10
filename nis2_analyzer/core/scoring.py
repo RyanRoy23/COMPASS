@@ -4,6 +4,7 @@ Calculates compliance scores, identifies gaps, and generates prioritized action 
 """
 
 from dataclasses import dataclass
+from nis2_analyzer import __version__
 from nis2_analyzer.core.models import (
     Domain, SubRequirement, AssessmentResult,
     MaturityLevel, EffortLevel, ComplianceGrade
@@ -211,7 +212,7 @@ class ScoringEngine:
         return {
             "metadata": {
                 "tool": "COMPASS",
-                "version": "1.1.0",
+                "version": __version__,
                 "timestamp": result.timestamp,
                 "organization": org_name,
                 "framework": "NIS 2 Directive — Article 21",

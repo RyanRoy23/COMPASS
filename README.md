@@ -1,10 +1,15 @@
-# COMPASS  (NIS 2 Risk Analyzer)
+# COMPASS — Compliance Posture Assessment System
 
-Évaluation de conformité NIS 2 Article 21 avec audit technique Azure, quantification du risque financier, interface web et suivi de progression dans le temps.
+Évaluation de conformité NIS 2 qui distingue explicitement ce qui est **prouvé** par audit
+technique (bridge Entra ID / Azure), ce qui est **déclaré** par questionnaire, et ce qui n'est
+**pas couvert**. La plupart des outils demandent « avez-vous le MFA ? » et l'utilisateur coche
+« oui » — personne ne vérifie, personne ne dit ce qui n'a pas été évalué.
 
-La majorité des outils d'évaluation NIS 2 demandent "avez-vous déployé le MFA ?" et l'utilisateur coche "oui". Personne ne vérifie, et personne ne dit ce qui n'a pas été évalué.
-
-Cet outil propose une approche différente : il distingue explicitement ce qui est **prouvé** par audit technique, ce qui est **déclaré** par questionnaire, et ce qui n'est **pas couvert** et nécessite une vérification externe.
+> **⚠️ Refonte en cours (v2.0-dev).** Le référentiel bascule de l'Article 21 + ISO 27001 vers
+> **ReCyF** (Référentiel Cyber France, ANSSI). Le périmètre technique se recentre sur **Entra
+> ID / Azure**. Les modules quantification financière, Monte Carlo, connecteurs AWS/M365 et
+> mode PME ont été retirés — récupérables au tag `archive/v1.2-full`. Les sections
+> *Architecture* et *Roadmap* décrivent encore la v1.2 et seront réécrites.
 
 ---
 
@@ -27,8 +32,8 @@ NIS 2 Risk Analyzer évalue la conformité aux 10 mesures de l'Article 21 (UE 20
 ### Option 1 — Interface web (recommandée)
 
 ```bash
-git clone https://github.com/RyanRoy23/nis2-risk-analyzer.git
-cd nis2-risk-analyzer
+git clone https://github.com/RyanRoy23/COMPASS.git
+cd COMPASS
 pip install -r requirements-web.txt
 python serve.py
 ```
@@ -38,8 +43,8 @@ Ouvrez **http://localhost:8000** dans votre navigateur. Remplissez le questionna
 ### Option 2 — Docker (zéro configuration)
 
 ```bash
-git clone https://github.com/RyanRoy23/nis2-risk-analyzer.git
-cd nis2-risk-analyzer
+git clone https://github.com/RyanRoy23/COMPASS.git
+cd COMPASS
 make build
 make demo        # démonstration
 make run         # évaluation interactive
@@ -48,8 +53,8 @@ make run         # évaluation interactive
 ### Option 3 — CLI Python
 
 ```bash
-git clone https://github.com/RyanRoy23/nis2-risk-analyzer.git
-cd nis2-risk-analyzer
+git clone https://github.com/RyanRoy23/COMPASS.git
+cd COMPASS
 
 # Démonstration rapide
 python -m nis2_analyzer --demo
@@ -190,7 +195,7 @@ nis2-risk-analyzer/
 │   ├── data/
 │   │   └── nis2_framework.json # Référentiel NIS 2 Article 21
 │   └── cli.py                  # Orchestration CLI
-├── tests/                      # 114 tests unitaires
+├── tests/                      # 427 tests unitaires
 ├── Dockerfile
 ├── docker-compose.yml
 ├── Makefile
@@ -273,7 +278,7 @@ python -m pytest tests/ -v
 python -m pytest tests/ --cov=nis2_analyzer --cov-report=term-missing
 ```
 
-**État actuel : 114 tests, CI GitHub Actions vert.**
+**État actuel : 427 tests, CI GitHub Actions verte (Python 3.11 et 3.12).**
 
 Modules couverts : `core/scoring` (100%), `core/database` (100%), `web/app` (98%), `reporting/html_report` (71%).
 
@@ -299,7 +304,7 @@ Modules couverts : `core/scoring` (100%), `core/database` (100%), `web/app` (98%
 - Interface web FastAPI — évaluation depuis le navigateur, sans CLI
 - Persistance SQLite — historique des assessments, comparaison dans le temps
 - Docker + Makefile — déploiement en une commande
-- 114 tests unitaires, CI/CD GitHub Actions
+- 427 tests unitaires, CI/CD GitHub Actions
 - Sécurité renforcée : protection XSS, validation des entrées, sécurisation du bridge
 
 ### Prochaines étapes

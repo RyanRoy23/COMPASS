@@ -22,6 +22,7 @@ import os
 from datetime import datetime, timezone
 from nis2_analyzer.core.models import Domain
 from nis2_analyzer.core.scoring import ScoringEngine
+from nis2_analyzer import __version__
 from nis2_analyzer.core.integrity import compute_domains_hash, short_hash
 
 
@@ -706,7 +707,7 @@ def generate_report(
             <div class="header-badge">NIS 2 — Article 21</div>
             <h1>Rapport de Conformité & Analyse de Risque</h1>
             <div class="subtitle">{_h(org_name)}</div>
-            <div class="meta">Généré le {timestamp} — COMPASS v1.1.0</div>
+            <div class="meta">Généré le {timestamp} — COMPASS v{__version__}</div>
         </div>
         
         <!-- SCORE HERO -->
@@ -1112,7 +1113,7 @@ def generate_report(
     # ── FOOTER ──
     html += f"""
         <div class="footer">
-            <p>COMPASS v1.1.0 — Généré le {timestamp}</p>
+            <p>COMPASS v{__version__} — Généré le {timestamp}</p>
             <p style="margin-top: 4px;">Développé par Ryan Roy TASSEH TAGNY — 
                 <a href="https://github.com/RyanRoy23">github.com/RyanRoy23</a></p>
             <p style="margin-top: 8px; font-size: 11px;">
