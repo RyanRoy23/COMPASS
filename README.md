@@ -5,7 +5,7 @@ technique (bridge Entra ID / Azure), ce qui est **déclaré** par questionnaire,
 **pas couvert**. La plupart des outils demandent « avez-vous le MFA ? » et l'utilisateur coche
 « oui » — personne ne vérifie, personne ne dit ce qui n'a pas été évalué.
 
-> **⚠️ Refonte en cours (v2.0-dev).** Le référentiel bascule de l'Article 21 + ISO 27001 vers
+> ** Refonte en cours (v2.0-dev).** Le référentiel bascule de l'Article 21 + ISO 27001 vers
 > **ReCyF** (Référentiel Cyber France, ANSSI). Le périmètre technique se recentre sur **Entra
 > ID / Azure**. Les modules quantification financière, Monte Carlo, connecteurs AWS/M365 et
 > mode PME ont été retirés — récupérables au tag `archive/v1.2-full`. Le questionnaire et le
