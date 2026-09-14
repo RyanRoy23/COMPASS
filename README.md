@@ -8,8 +8,9 @@ technique (bridge Entra ID / Azure), ce qui est **déclaré** par questionnaire,
 > ** Refonte en cours (v2.0-dev).** Le référentiel bascule de l'Article 21 + ISO 27001 vers
 > **ReCyF** (Référentiel Cyber France, ANSSI). Le périmètre technique se recentre sur **Entra
 > ID / Azure**. Les modules quantification financière, Monte Carlo, connecteurs AWS/M365 et
-> mode PME ont été retirés — récupérables au tag `archive/v1.2-full`. Le questionnaire et le
-> rapport HTML reflètent encore la grille Article 21 en attendant la modélisation ReCyF.
+> mode PME ont été retirés — récupérables au tag `archive/v1.2-full`. Le référentiel ReCyF (20
+> objectifs, 4 piliers) est modélisé (`docs/recyf-referentiel.md`) mais pas encore branché sur
+> l'API ni l'interface, qui reflètent aujourd'hui la grille Article 21.
 
 ---
 
@@ -29,7 +30,15 @@ COMPASS évalue la conformité NIS 2 en combinant :
 
 ## Démarrage rapide
 
-### Option 1 — Interface web (recommandée)
+### Option 0 — Essayer sans rien installer
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/RyanRoy23/COMPASS)
+
+Un clic, ~30 secondes de démarrage, l'interface web s'ouvre automatiquement dans un
+environnement jetable qui vous est propre (aucune donnée partagée avec d'autres visiteurs).
+Aucun compte GitHub payant requis — quota gratuit de GitHub Codespaces.
+
+### Option 1 — Interface web (recommandée pour un usage régulier)
 
 ```bash
 git clone https://github.com/RyanRoy23/COMPASS.git

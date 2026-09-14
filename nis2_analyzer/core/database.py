@@ -186,7 +186,7 @@ def list_assessments(org_name: str = None, limit: int = 20,
                 """SELECT id, org_name, assessed_at, score, grade, total_gaps
                    FROM assessments
                    WHERE tenant_id = ? AND org_name LIKE ?
-                   ORDER BY assessed_at DESC LIMIT ?""",
+                   ORDER BY assessed_at DESC, id DESC LIMIT ?""",
                 (tenant_id, f"%{org_name}%", limit),
             ).fetchall()
         else:
@@ -194,7 +194,7 @@ def list_assessments(org_name: str = None, limit: int = 20,
                 """SELECT id, org_name, assessed_at, score, grade, total_gaps
                    FROM assessments
                    WHERE tenant_id = ?
-                   ORDER BY assessed_at DESC LIMIT ?""",
+                   ORDER BY assessed_at DESC, id DESC LIMIT ?""",
                 (tenant_id, limit),
             ).fetchall()
     return [dict(r) for r in rows]
