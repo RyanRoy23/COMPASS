@@ -1,0 +1,371 @@
+{
+  "framework": {
+    "name": "ReCyF — Référentiel Cyber France",
+    "version": "2.5",
+    "reference": "ANSSI, document de travail du 17/03/2026",
+    "effective_date": "2026-03-17",
+    "description": "20 objectifs de sécurité traduisant les mesures NIS 2 (Art. 20 et 21) en exigences opérationnelles. Document de travail non contraignant à ce stade ; deviendra opposable à la publication des décrets techniques de la loi résilience. Voir docs/recyf-referentiel.md pour la table de correspondance complète avec l'Article 21.",
+    "author": "Ryan Roy TASSEH TAGNY",
+    "last_updated": "2026-09-14"
+  },
+  "maturity_levels": {
+    "0": {
+      "label": "Non implémenté",
+      "description": "Aucune mesure en place ou non documentée.",
+      "color": "#DC2626"
+    },
+    "1": {
+      "label": "Initial / Partiel",
+      "description": "Mesure ad hoc, non formalisée, appliquée de manière incohérente.",
+      "color": "#EA580C"
+    },
+    "2": {
+      "label": "Défini / Implémenté",
+      "description": "Mesure formalisée, documentée et appliquée de manière cohérente.",
+      "color": "#CA8A04"
+    },
+    "3": {
+      "label": "Géré / Mesuré",
+      "description": "Mesure surveillée via KPI, revue régulièrement, améliorée continuellement.",
+      "color": "#10B981"
+    }
+  },
+  "domains": [
+    {
+      "id": "RECYF-GOUV",
+      "title": "Gouvernance",
+      "article_ref": "ReCyF — Pilier Gouvernance (OS1-5, OS16-17)",
+      "weight": 1.0,
+      "description": "Pilotage de la sécurité numérique par la direction : inventaire, cadre de gouvernance, écosystème, RH, maîtrise des systèmes, approche par les risques, audit.",
+      "sub_requirements": [
+        {
+          "id": "RECYF-OS01",
+          "title": "Recensement des systèmes d'information",
+          "description": "Inventaire à jour des systèmes d'information, des données et des interdépendances critiques de l'entité.",
+          "question": "Disposez-vous d'un inventaire à jour de vos systèmes d'information (matériels, logiciels, données, interdépendances), incluant les actifs critiques ?",
+          "iso27001_refs": [],
+          "iso27001_controls": [],
+          "evidence_examples": ["Inventaire des actifs à jour", "CMDB ou registre équivalent"],
+          "remediation": {
+            "quick_win": "Constituer un inventaire déclaratif des systèmes critiques dans un tableur partagé, avec un propriétaire désigné par système.",
+            "full_implementation": "Déployer un outil de CMDB / asset management avec découverte automatique et mise à jour continue de l'inventaire.",
+            "effort": "medium"
+          },
+          "applicability": "EI_EE"
+        },
+        {
+          "id": "RECYF-OS02",
+          "title": "Mise en œuvre d'un cadre de gouvernance de la sécurité numérique",
+          "description": "Politique de sécurité formalisée, rôles et responsabilités définis, portée par la direction (Art. 20).",
+          "question": "L'organe de direction a-t-il approuvé une politique de sécurité numérique et désigné des responsabilités claires pour sa mise en œuvre ?",
+          "iso27001_refs": [],
+          "iso27001_controls": [],
+          "evidence_examples": ["PSSI approuvée par la direction", "Fiche de désignation des responsabilités"],
+          "remediation": {
+            "quick_win": "Faire approuver formellement une politique de sécurité courte par la direction, même minimale.",
+            "full_implementation": "Cadre de gouvernance complet avec comité de pilotage, reporting régulier à la direction et revue annuelle.",
+            "effort": "medium"
+          },
+          "applicability": "EI_EE"
+        },
+        {
+          "id": "RECYF-OS03",
+          "title": "Maîtrise de l'écosystème",
+          "description": "Identification et maîtrise des risques liés aux fournisseurs, prestataires et partenaires ayant accès au système d'information.",
+          "question": "Évaluez-vous le risque cyber de vos fournisseurs et prestataires critiques avant et pendant la relation contractuelle ?",
+          "iso27001_refs": [],
+          "iso27001_controls": [],
+          "evidence_examples": ["Cartographie des fournisseurs critiques", "Clauses de sécurité contractuelles"],
+          "remediation": {
+            "quick_win": "Cartographier les fournisseurs ayant accès au SI et identifier les plus critiques.",
+            "full_implementation": "Processus formalisé d'évaluation et de suivi du risque fournisseur, avec clauses contractuelles et audits périodiques.",
+            "effort": "medium"
+          },
+          "applicability": "EI_EE"
+        },
+        {
+          "id": "RECYF-OS04",
+          "title": "Intégration de la sécurité numérique dans la gestion des ressources humaines",
+          "description": "Sensibilisation, formation et clauses de sécurité tout au long du cycle de vie RH (arrivée, mobilité, départ).",
+          "question": "Vos collaborateurs reçoivent-ils une formation à la sécurité numérique, et les accès sont-ils révoqués systématiquement lors d'un départ ?",
+          "iso27001_refs": [],
+          "iso27001_controls": [],
+          "evidence_examples": ["Programme de sensibilisation", "Checklist de départ avec révocation des accès"],
+          "remediation": {
+            "quick_win": "Mettre en place une checklist de départ incluant la révocation systématique des accès.",
+            "full_implementation": "Programme de sensibilisation continu, clauses de sécurité dans les contrats, procédure formalisée arrivée/mobilité/départ.",
+            "effort": "low"
+          },
+          "applicability": "EI_EE"
+        },
+        {
+          "id": "RECYF-OS05",
+          "title": "Maîtrise des systèmes d'information",
+          "description": "Connaissance et maîtrise technique des systèmes (configuration, cycle de vie, obsolescence) qui composent le SI.",
+          "question": "Disposez-vous d'une vision à jour de la configuration et du niveau de maintien en condition de sécurité de vos systèmes ?",
+          "iso27001_refs": [],
+          "iso27001_controls": [],
+          "evidence_examples": ["Registre de configuration", "Suivi des correctifs de sécurité"],
+          "remediation": {
+            "quick_win": "Identifier les systèmes en fin de support ou non patchés depuis plus de 90 jours.",
+            "full_implementation": "Gestion de configuration formalisée avec suivi du cycle de vie et remédiation planifiée de l'obsolescence.",
+            "effort": "medium"
+          },
+          "applicability": "EI_EE"
+        },
+        {
+          "id": "RECYF-OS16",
+          "title": "Mise en œuvre d'une approche par les risques",
+          "description": "Analyse de risques formalisée (type EBIOS RM) pour prioriser les mesures de sécurité. Exigence avancée réservée aux entités essentielles.",
+          "question": "Réalisez-vous une analyse de risques formalisée (type EBIOS RM) pour prioriser vos investissements en sécurité ?",
+          "iso27001_refs": [],
+          "iso27001_controls": [],
+          "evidence_examples": ["Étude EBIOS RM", "Cartographie des risques à jour"],
+          "remediation": {
+            "quick_win": "Réaliser une cartographie des risques simplifiée sur les scénarios de menace les plus probables.",
+            "full_implementation": "Analyse de risques EBIOS RM complète, mise à jour périodique, utilisée pour arbitrer les priorités de sécurité.",
+            "effort": "high"
+          },
+          "applicability": "EE"
+        },
+        {
+          "id": "RECYF-OS17",
+          "title": "Audit de la sécurité des systèmes d'information",
+          "description": "Audits de sécurité réguliers (internes ou externes) pour vérifier l'effectivité des mesures. Exigence avancée réservée aux entités essentielles.",
+          "question": "Vos systèmes d'information font-ils l'objet d'audits de sécurité réguliers (tests d'intrusion, audits de configuration) ?",
+          "iso27001_refs": [],
+          "iso27001_controls": [],
+          "evidence_examples": ["Rapport de test d'intrusion", "Plan de remédiation post-audit"],
+          "remediation": {
+            "quick_win": "Planifier un audit ou un test d'intrusion externe sur le périmètre le plus exposé.",
+            "full_implementation": "Programme d'audit récurrent (interne + externe), suivi formalisé des plans de remédiation.",
+            "effort": "high"
+          },
+          "applicability": "EE"
+        }
+      ]
+    },
+    {
+      "id": "RECYF-PROT",
+      "title": "Protection",
+      "article_ref": "ReCyF — Pilier Protection (OS6-11, OS18-19)",
+      "weight": 1.0,
+      "description": "Mesures techniques de protection : accès physiques, architecture, accès distants, anti-malware, gestion des identités, administration des systèmes.",
+      "sub_requirements": [
+        {
+          "id": "RECYF-OS06",
+          "title": "Maîtrise des accès physiques aux locaux",
+          "description": "Contrôle d'accès physique aux locaux hébergeant des systèmes d'information sensibles.",
+          "question": "L'accès physique aux locaux hébergeant vos systèmes sensibles (salles serveurs, locaux techniques) est-il contrôlé et tracé ?",
+          "iso27001_refs": [],
+          "iso27001_controls": [],
+          "evidence_examples": ["Registre des accès physiques", "Liste des personnes habilitées"],
+          "remediation": {
+            "quick_win": "Verrouiller les locaux techniques et limiter la liste des personnes habilitées.",
+            "full_implementation": "Contrôle d'accès physique (badge, biométrie), journalisation des accès et revue périodique des habilitations.",
+            "effort": "low"
+          },
+          "applicability": "EI_EE"
+        },
+        {
+          "id": "RECYF-OS07",
+          "title": "Sécurisation de l'architecture des systèmes d'information",
+          "description": "Segmentation réseau, durcissement et conception sécurisée de l'architecture du SI.",
+          "question": "Votre architecture SI est-elle segmentée (réseaux, environnements) pour limiter la propagation d'un incident ?",
+          "iso27001_refs": [],
+          "iso27001_controls": [],
+          "evidence_examples": ["Schéma d'architecture réseau", "Preuve de segmentation (VLAN, pare-feu)"],
+          "remediation": {
+            "quick_win": "Isoler les systèmes critiques sur un segment réseau dédié.",
+            "full_implementation": "Architecture segmentée ou Zero Trust documentée, revue à chaque évolution significative du SI.",
+            "effort": "high"
+          },
+          "applicability": "EI_EE"
+        },
+        {
+          "id": "RECYF-OS08",
+          "title": "Sécurisation des accès distants aux systèmes d'information",
+          "description": "Contrôle et sécurisation des accès distants (VPN, accès conditionnel, authentification adaptative).",
+          "question": "Les accès distants à votre SI sont-ils protégés par une politique d'accès conditionnel, et l'authentification legacy est-elle bloquée ?",
+          "iso27001_refs": [],
+          "iso27001_controls": [],
+          "evidence_examples": ["Politiques d'accès conditionnel", "Preuve de blocage de l'authentification legacy"],
+          "remediation": {
+            "quick_win": "Bloquer les protocoles d'authentification legacy et activer une politique d'accès conditionnel de base.",
+            "full_implementation": "Politiques d'accès conditionnel granulaires (localisation, appareil, niveau de risque), MFA systématique sur les accès distants.",
+            "effort": "medium"
+          },
+          "applicability": "EI_EE"
+        },
+        {
+          "id": "RECYF-OS09",
+          "title": "Protection des systèmes d'information contre les codes malveillants",
+          "description": "Dispositifs anti-malware, contrôle des applications tierces et de leurs permissions.",
+          "question": "Disposez-vous d'une protection anti-malware à jour et contrôlez-vous les permissions accordées aux applications tierces sur votre SI ?",
+          "iso27001_refs": [],
+          "iso27001_controls": [],
+          "evidence_examples": ["Déploiement EDR/antivirus", "Revue des permissions applicatives OAuth"],
+          "remediation": {
+            "quick_win": "Restreindre le consentement utilisateur aux applications tierces non validées.",
+            "full_implementation": "EDR/XDR déployé sur l'ensemble du parc, revue périodique des permissions applicatives (OAuth / Microsoft Graph).",
+            "effort": "medium"
+          },
+          "applicability": "EI_EE"
+        },
+        {
+          "id": "RECYF-OS10",
+          "title": "Gestion des identités et des accès des utilisateurs aux systèmes d'information",
+          "description": "Authentification, cycle de vie des comptes et principe du moindre privilège pour les utilisateurs.",
+          "question": "L'authentification multifacteur est-elle déployée sur l'ensemble des comptes utilisateurs, et les comptes inactifs sont-ils désactivés ?",
+          "iso27001_refs": [],
+          "iso27001_controls": [],
+          "evidence_examples": ["Taux de couverture MFA", "Revue des comptes inactifs"],
+          "remediation": {
+            "quick_win": "Déployer le MFA sur les comptes à privilèges et les comptes exposés (VPN, messagerie).",
+            "full_implementation": "MFA généralisé, revue périodique des comptes inactifs et des privilèges, politique de mot de passe appliquée techniquement.",
+            "effort": "medium"
+          },
+          "applicability": "EI_EE"
+        },
+        {
+          "id": "RECYF-OS11",
+          "title": "Maîtrise de l'administration des systèmes d'information",
+          "description": "Séparation des rôles, gestion des comptes à privilèges (PIM/JIT) et limitation du nombre d'administrateurs.",
+          "question": "Le nombre de comptes administrateurs est-il limité et maîtrisé, avec des attributions de privilèges temporaires plutôt que permanentes ?",
+          "iso27001_refs": [],
+          "iso27001_controls": [],
+          "evidence_examples": ["Liste des comptes à privilèges", "Configuration PIM / Just-In-Time"],
+          "remediation": {
+            "quick_win": "Réduire le nombre de comptes administrateur global à moins de 5 et supprimer les comptes non utilisés.",
+            "full_implementation": "Privileged Identity Management (PIM) avec attribution Just-In-Time, séparation stricte comptes standards / comptes admin.",
+            "effort": "medium"
+          },
+          "applicability": "EI_EE"
+        },
+        {
+          "id": "RECYF-OS18",
+          "title": "Sécurisation de la configuration des ressources des systèmes d'information",
+          "description": "Durcissement systématique des configurations (hardening) selon des référentiels reconnus. Exigence avancée réservée aux entités essentielles.",
+          "question": "Vos systèmes sont-ils configurés selon des référentiels de durcissement reconnus (CIS Benchmarks, guides ANSSI) ?",
+          "iso27001_refs": [],
+          "iso27001_controls": [],
+          "evidence_examples": ["Référentiel de durcissement appliqué", "Rapport de conformité de configuration"],
+          "remediation": {
+            "quick_win": "Appliquer un guide de durcissement de base sur les systèmes les plus exposés.",
+            "full_implementation": "Référentiels de configuration sécurisée appliqués et vérifiés automatiquement (conformité continue).",
+            "effort": "high"
+          },
+          "applicability": "EE"
+        },
+        {
+          "id": "RECYF-OS19",
+          "title": "Administration des systèmes d'information depuis des ressources dédiées",
+          "description": "Postes et réseaux d'administration dédiés, isolés du reste du SI (bastions). Exigence avancée réservée aux entités essentielles.",
+          "question": "L'administration de vos systèmes sensibles se fait-elle depuis des postes et réseaux dédiés, isolés du reste du SI ?",
+          "iso27001_refs": [],
+          "iso27001_controls": [],
+          "evidence_examples": ["Inventaire des postes d'administration", "Architecture de bastion"],
+          "remediation": {
+            "quick_win": "Identifier les postes utilisés pour l'administration et limiter leur usage aux seules tâches d'administration.",
+            "full_implementation": "Postes d'administration durcis (PAW), bastions d'administration, réseau d'administration isolé.",
+            "effort": "high"
+          },
+          "applicability": "EE"
+        }
+      ]
+    },
+    {
+      "id": "RECYF-DEF",
+      "title": "Défense",
+      "article_ref": "ReCyF — Pilier Défense (OS12, OS20)",
+      "weight": 1.0,
+      "description": "Capacités de détection, réaction aux incidents et supervision continue de la sécurité.",
+      "sub_requirements": [
+        {
+          "id": "RECYF-OS12",
+          "title": "Identification et réaction aux incidents de sécurité",
+          "description": "Capacités de détection, qualification et réaction face à un incident de sécurité (Art. 23).",
+          "question": "Disposez-vous d'un processus formalisé de détection et de réaction aux incidents de sécurité, avec des délais de notification connus ?",
+          "iso27001_refs": [],
+          "iso27001_controls": [],
+          "evidence_examples": ["Procédure de gestion des incidents", "Registre des incidents traités"],
+          "remediation": {
+            "quick_win": "Formaliser un processus minimal de classification et d'escalade des incidents.",
+            "full_implementation": "SOC/SIEM avec détection continue, procédure de notification Art. 23 testée (délais 24h / 72h / 1 mois).",
+            "effort": "high"
+          },
+          "applicability": "EI_EE"
+        },
+        {
+          "id": "RECYF-OS20",
+          "title": "Supervision de la sécurité des systèmes d'information",
+          "description": "Supervision continue de la sécurité (SOC/SIEM) pour détecter les signaux faibles. Exigence avancée réservée aux entités essentielles.",
+          "question": "Disposez-vous d'une supervision continue de la sécurité de vos systèmes (SOC interne ou externalisé, SIEM) ?",
+          "iso27001_refs": [],
+          "iso27001_controls": [],
+          "evidence_examples": ["Contrat SOC / SIEM", "Cas d'usage de détection documentés"],
+          "remediation": {
+            "quick_win": "Centraliser les journaux des systèmes critiques dans un outil de collecte, même sans surveillance 24/7.",
+            "full_implementation": "SOC/SIEM avec surveillance continue, cas d'usage de détection adaptés aux menaces propres à l'entité.",
+            "effort": "high"
+          },
+          "applicability": "EE"
+        }
+      ]
+    },
+    {
+      "id": "RECYF-RES",
+      "title": "Résilience",
+      "article_ref": "ReCyF — Pilier Résilience (OS13-15)",
+      "weight": 1.0,
+      "description": "Continuité d'activité, gestion de crise cyber et mise à l'épreuve régulière des dispositifs.",
+      "sub_requirements": [
+        {
+          "id": "RECYF-OS13",
+          "title": "Continuité et reprise d'activité",
+          "description": "Plans de continuité (PCA) et de reprise (PRA) d'activité, gestion des sauvegardes.",
+          "question": "Disposez-vous d'un plan de continuité et de reprise d'activité testé, incluant une stratégie de sauvegarde ?",
+          "iso27001_refs": [],
+          "iso27001_controls": [],
+          "evidence_examples": ["PCA/PRA documenté", "Rapport de test de restauration"],
+          "remediation": {
+            "quick_win": "Mettre en place des sauvegardes régulières testées et documenter un plan de reprise minimal pour les systèmes critiques.",
+            "full_implementation": "PCA/PRA formalisés, objectifs RTO/RPO définis par système critique, tests de restauration réguliers.",
+            "effort": "high"
+          },
+          "applicability": "EI_EE"
+        },
+        {
+          "id": "RECYF-OS14",
+          "title": "Réaction aux crises d'origine cyber",
+          "description": "Organisation de gestion de crise cyber, distincte de la gestion d'incident courant.",
+          "question": "Disposez-vous d'une organisation de gestion de crise cyber (cellule de crise, procédures, contacts) activable en cas d'attaque majeure ?",
+          "iso27001_refs": [],
+          "iso27001_controls": [],
+          "evidence_examples": ["Plan de gestion de crise cyber", "Liste de contacts d'urgence (ANSSI, assureur, prestataires)"],
+          "remediation": {
+            "quick_win": "Identifier les membres et rôles d'une cellule de crise cyber et documenter les contacts d'urgence.",
+            "full_implementation": "Plan de gestion de crise cyber formalisé et testé, coordination avec les parties prenantes externes (CSIRT, autorités).",
+            "effort": "high"
+          },
+          "applicability": "EI_EE"
+        },
+        {
+          "id": "RECYF-OS15",
+          "title": "Exercices, tests et entrainements",
+          "description": "Tests réguliers des dispositifs de sécurité, de continuité et de gestion de crise (exercices, tests d'intrusion).",
+          "question": "Réalisez-vous des exercices réguliers (simulation de crise, test de restauration, test d'intrusion) pour valider vos dispositifs de sécurité ?",
+          "iso27001_refs": [],
+          "iso27001_controls": [],
+          "evidence_examples": ["Compte-rendu d'exercice de crise", "Rapport de test de restauration"],
+          "remediation": {
+            "quick_win": "Réaliser un exercice de simulation d'incident ou de restauration de sauvegarde au moins une fois par an.",
+            "full_implementation": "Programme d'exercices régulier (crise, technique, sensibilisation) avec plan d'action sur les enseignements tirés.",
+            "effort": "medium"
+          },
+          "applicability": "EI_EE"
+        }
+      ]
+    }
+  ]
+}

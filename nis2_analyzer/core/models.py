@@ -108,8 +108,14 @@ class SubRequirement:
     remediation: Remediation
     dora_refs: list[str] = field(default_factory=list)
     dora_pillar: str = ""
+    applicability: str = "EI_EE"  # "EI_EE" (toutes entités) ou "EE" (essentielles uniquement)
     maturity: Optional[MaturityLevel] = None
     notes: str = ""
+
+    @property
+    def is_essential_only(self) -> bool:
+        """True si cette exigence ne s'applique qu'aux Entités Essentielles (ex. ReCyF OS16-20)."""
+        return self.applicability == "EE"
 
     @property
     def is_assessed(self) -> bool:
@@ -327,6 +333,7 @@ def load_framework(path: str = None) -> list[Domain]:
                 ),
                 dora_refs=r.get("dora_refs", []),
                 dora_pillar=r.get("dora_pillar", ""),
+                applicability=r.get("applicability", "EI_EE"),
             ))
         domains.append(Domain(
             id=d["id"],

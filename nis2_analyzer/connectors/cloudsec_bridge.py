@@ -80,6 +80,7 @@ MAPPING_CLOUDSEC_TO_NIS2 = {
     
     "IDN-001": {
         "nis2_requirement_ids": ["NIS2-D10-R01"],
+        "recyf_objective_ids": ["RECYF-OS10"],
         "description": "Vérification du déploiement MFA sur les comptes utilisateurs",
         "maturity_logic": {
             "pass": {
@@ -100,6 +101,7 @@ MAPPING_CLOUDSEC_TO_NIS2 = {
     
     "IDN-002": {
         "nis2_requirement_ids": ["NIS2-D10-R01", "NIS2-D09-R03"],
+        "recyf_objective_ids": ["RECYF-OS10", "RECYF-OS11"],
         "description": "Vérification du MFA sur les comptes administrateurs",
         "maturity_logic": {
             "pass": {
@@ -120,6 +122,7 @@ MAPPING_CLOUDSEC_TO_NIS2 = {
     
     "IDN-003": {
         "nis2_requirement_ids": ["NIS2-D09-R01"],
+        "recyf_objective_ids": ["RECYF-OS10"],
         "description": "Vérification des privilèges des comptes invités",
         "maturity_logic": {
             "pass": {
@@ -140,6 +143,7 @@ MAPPING_CLOUDSEC_TO_NIS2 = {
     
     "IDN-004": {
         "nis2_requirement_ids": ["NIS2-D09-R02"],
+        "recyf_objective_ids": ["RECYF-OS10"],
         "description": "Détection des comptes inactifs (>90 jours)",
         "maturity_logic": {
             "pass": {
@@ -160,6 +164,7 @@ MAPPING_CLOUDSEC_TO_NIS2 = {
     
     "IDN-005": {
         "nis2_requirement_ids": ["NIS2-D09-R01"],
+        "recyf_objective_ids": ["RECYF-OS10"],
         "description": "Vérification de la politique de mots de passe",
         "maturity_logic": {
             "pass": {
@@ -182,6 +187,7 @@ MAPPING_CLOUDSEC_TO_NIS2 = {
     
     "ROL-001": {
         "nis2_requirement_ids": ["NIS2-D09-R03"],
+        "recyf_objective_ids": ["RECYF-OS11"],
         "description": "Nombre de Global Administrators",
         "maturity_logic": {
             "pass": {
@@ -202,6 +208,7 @@ MAPPING_CLOUDSEC_TO_NIS2 = {
     
     "ROL-002": {
         "nis2_requirement_ids": ["NIS2-D09-R03"],
+        "recyf_objective_ids": ["RECYF-OS11"],
         "description": "Assignations de rôles privilégiés permanentes",
         "maturity_logic": {
             "pass": {
@@ -222,6 +229,7 @@ MAPPING_CLOUDSEC_TO_NIS2 = {
     
     "ROL-003": {
         "nis2_requirement_ids": ["NIS2-D09-R01"],
+        "recyf_objective_ids": ["RECYF-OS11"],
         "description": "Utilisateurs avec rôles multiples",
         "maturity_logic": {
             "pass": {
@@ -242,6 +250,7 @@ MAPPING_CLOUDSEC_TO_NIS2 = {
     
     "ROL-004": {
         "nis2_requirement_ids": ["NIS2-D09-R03"],
+        "recyf_objective_ids": ["RECYF-OS11"],
         "description": "Service principals avec rôles d'annuaire",
         "maturity_logic": {
             "pass": {
@@ -264,6 +273,7 @@ MAPPING_CLOUDSEC_TO_NIS2 = {
     
     "CAP-001": {
         "nis2_requirement_ids": ["NIS2-D01-R01"],
+        "recyf_objective_ids": ["RECYF-OS08"],
         "description": "Présence de politiques d'accès conditionnel",
         "maturity_logic": {
             "pass": {
@@ -284,6 +294,7 @@ MAPPING_CLOUDSEC_TO_NIS2 = {
     
     "CAP-002": {
         "nis2_requirement_ids": ["NIS2-D10-R01"],
+        "recyf_objective_ids": ["RECYF-OS08"],
         "description": "Blocage de l'authentification legacy",
         "maturity_logic": {
             "pass": {
@@ -304,6 +315,7 @@ MAPPING_CLOUDSEC_TO_NIS2 = {
     
     "CAP-003": {
         "nis2_requirement_ids": ["NIS2-D10-R01", "NIS2-D09-R03"],
+        "recyf_objective_ids": ["RECYF-OS08", "RECYF-OS11"],
         "description": "Politique MFA pour les administrateurs",
         "maturity_logic": {
             "pass": {
@@ -324,6 +336,7 @@ MAPPING_CLOUDSEC_TO_NIS2 = {
     
     "CAP-004": {
         "nis2_requirement_ids": ["NIS2-D02-R02"],
+        "recyf_objective_ids": ["RECYF-OS12"],
         "description": "Politique de blocage des connexions à risque",
         "maturity_logic": {
             "pass": {
@@ -346,6 +359,7 @@ MAPPING_CLOUDSEC_TO_NIS2 = {
     
     "TNT-001": {
         "nis2_requirement_ids": ["NIS2-D07-R03"],
+        "recyf_objective_ids": ["RECYF-OS10"],
         "description": "Configuration du self-service password reset",
         "maturity_logic": {
             "pass": {
@@ -366,6 +380,7 @@ MAPPING_CLOUDSEC_TO_NIS2 = {
     
     "TNT-002": {
         "nis2_requirement_ids": ["NIS2-D09-R01"],
+        "recyf_objective_ids": ["RECYF-OS09"],
         "description": "Restriction du consentement utilisateur aux applications",
         "maturity_logic": {
             "pass": {
@@ -386,6 +401,7 @@ MAPPING_CLOUDSEC_TO_NIS2 = {
     
     "TNT-003": {
         "nis2_requirement_ids": ["NIS2-D04-R01"],
+        "recyf_objective_ids": ["RECYF-OS03"],
         "description": "Contrôle de la collaboration externe",
         "maturity_logic": {
             "pass": {
@@ -406,6 +422,7 @@ MAPPING_CLOUDSEC_TO_NIS2 = {
     
     "TNT-004": {
         "nis2_requirement_ids": ["NIS2-D01-R01"],
+        "recyf_objective_ids": ["RECYF-OS07"],
         "description": "Security Defaults ou Conditional Access actifs",
         "maturity_logic": {
             "pass": {
@@ -428,6 +445,7 @@ MAPPING_CLOUDSEC_TO_NIS2 = {
     
     "APP-001": {
         "nis2_requirement_ids": ["NIS2-D05-R02"],
+        "recyf_objective_ids": ["RECYF-OS09"],
         "description": "Permissions MS Graph excessives des applications",
         "maturity_logic": {
             "pass": {
@@ -448,6 +466,7 @@ MAPPING_CLOUDSEC_TO_NIS2 = {
     
     "APP-002": {
         "nis2_requirement_ids": ["NIS2-D08-R01"],
+        "recyf_objective_ids": ["RECYF-OS07"],
         "description": "Credentials d'applications expirant sous 30 jours",
         "maturity_logic": {
             "pass": {
@@ -468,6 +487,7 @@ MAPPING_CLOUDSEC_TO_NIS2 = {
     
     "APP-003": {
         "nis2_requirement_ids": ["NIS2-D09-R04"],
+        "recyf_objective_ids": ["RECYF-OS11"],
         "description": "Applications sans propriétaire assigné",
         "maturity_logic": {
             "pass": {
@@ -678,20 +698,26 @@ class CloudSecBridge:
         self.total_mapped = len(self.evidence_items)
         return self.evidence_items
     
-    def apply_to_framework(self, domains: list[Domain]) -> dict:
+    def apply_to_framework(self, domains: list[Domain], id_key: str = "nis2_requirement_ids") -> dict:
         """
-        Injecte les résultats mappés dans le framework NIS 2.
-        
+        Injecte les résultats mappés dans un framework (Article 21 ou ReCyF).
+
         Pour chaque preuve CloudSec :
-        1. Trouve la sous-exigence NIS 2 correspondante
+        1. Trouve la sous-exigence correspondante dans `domains`
         2. Calcule le niveau de maturité
         3. Met à jour la sous-exigence avec le niveau et la preuve
         4. Marque la question comme "auto-remplie"
-        
+
         Retourne un résumé de ce qui a été pré-rempli.
-        
+
         Les questions non couvertes par CloudSec restent à remplir
         manuellement par l'utilisateur (questions organisationnelles).
+
+        `id_key` sélectionne quel jeu d'identifiants utiliser dans
+        MAPPING_CLOUDSEC_TO_NIS2 pour chaque check : "nis2_requirement_ids"
+        (Article 21, par défaut) ou "recyf_objective_ids" (ReCyF) — voir
+        apply_to_recyf_framework(). Les deux jeux d'identifiants coexistent
+        sur chaque check, ils ne sont pas mutuellement exclusifs.
         """
         if not self.evidence_items:
             self.map_to_nis2()
@@ -718,8 +744,8 @@ class CloudSecBridge:
             if maturity is None:
                 continue
             
-            # Appliquer à chaque requirement NIS 2 mappé
-            for req_id in mapping["nis2_requirement_ids"]:
+            # Appliquer à chaque exigence mappée (Art. 21 ou ReCyF selon id_key)
+            for req_id in mapping.get(id_key, []):
                 if req_id in req_index:
                     req = req_index[req_id]
                     
@@ -746,10 +772,15 @@ class CloudSecBridge:
             "total_requirements": total_reqs,
             "auto_filled": len(auto_filled),
             "remaining_manual": remaining,
-            "coverage_pct": round(len(auto_filled) / total_reqs * 100, 1),
+            "coverage_pct": round(len(auto_filled) / total_reqs * 100, 1) if total_reqs else 0.0,
             "details": auto_filled,
         }
-    
+
+    def apply_to_recyf_framework(self, domains: list[Domain]) -> dict:
+        """Comme apply_to_framework(), mais cible les objectifs ReCyF (RECYF-OSxx)."""
+        return self.apply_to_framework(domains, id_key="recyf_objective_ids")
+
+
     def get_evidence_report(self) -> list[dict]:
         """
         Génère le rapport de preuves techniques pour l'audit.
