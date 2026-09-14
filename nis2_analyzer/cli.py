@@ -5,8 +5,9 @@ Usage : python -m nis2_analyzer [options]
 Modes disponibles :
 1. Interactif     : python -m nis2_analyzer
 2. Demo           : python -m nis2_analyzer --demo
-3. Bridge + Inter : python -m nis2_analyzer --bridge rapport_cloudsec.json
-4. Complet        : python -m nis2_analyzer --demo --bridge rapport.json --report reports/rapport.html
+3. Demo ReCyF     : python -m nis2_analyzer --demo --recyf
+4. Bridge + Inter : python -m nis2_analyzer --bridge rapport_cloudsec.json
+5. Complet        : python -m nis2_analyzer --demo --bridge rapport.json --report reports/rapport.html
 """
 
 import argparse
@@ -84,6 +85,67 @@ def run_demo_mode(with_bridge=False, report_path=None, no_save=False):
         _generate_report(domains, org_name, bridge_result, report_path)
 
     _save_assessment(domains, org_name, skip=no_save)
+    return domains, org_name
+
+
+def run_recyf_demo_mode(no_save=False):
+    """
+    Mode demo sur le referentiel ReCyF (20 objectifs, 4 piliers).
+
+    Version volontairement plus simple que run_demo_mode() : pas de bridge
+    CloudSec ni de rapport HTML pour l'instant (le rapport reste specifique
+    a l'Article 21 — a generaliser en meme temps que l'interface web).
+    """
+    from nis2_analyzer.assessment.interactive import display_banner
+    from nis2_analyzer.core.recyf import load_recyf_framework, coverage_summary
+
+    display_banner(subtitle="ReCyF — Assessment interactif")
+    print(f"  {YELLOW}{BOLD}MODE DEMO — REFERENTIEL RECYF{RESET}")
+    print(f"  {DIM}Simulation d'une evaluation sur les 20 objectifs de securite.{RESET}")
+    print()
+
+    domains = load_recyf_framework()
+    org_name = "IndustrieCorp SA"
+
+    demo_answers = {
+        "RECYF-OS01": 2, "RECYF-OS02": 2, "RECYF-OS03": 1, "RECYF-OS04": 2, "RECYF-OS05": 1,
+        "RECYF-OS06": 1, "RECYF-OS07": 2, "RECYF-OS08": 2, "RECYF-OS09": 1, "RECYF-OS10": 2,
+        "RECYF-OS11": 2, "RECYF-OS12": 1, "RECYF-OS13": 1, "RECYF-OS14": 0, "RECYF-OS15": 1,
+        "RECYF-OS16": 1, "RECYF-OS17": 0, "RECYF-OS18": 1, "RECYF-OS19": 0, "RECYF-OS20": 1,
+    }
+    for domain in domains:
+        for req in domain.sub_requirements:
+            if req.id in demo_answers:
+                req.maturity = MaturityLevel(demo_answers[req.id])
+
+    print(f"  {WHITE}{BOLD}Resultats par pilier :{RESET}")
+    print()
+    for domain in domains:
+        ds = domain.score
+        dc = GREEN if ds >= 66 else YELLOW if ds >= 33 else RED
+        filled = int(ds / 10)
+        bar = f"{dc}{'█' * filled}{'░' * (10 - filled)}{RESET}"
+        print(f"  {DIM}{domain.title:<14}{RESET}  {bar}  {dc}{ds:5.1f}%{RESET}")
+    print()
+
+    engine = ScoringEngine()
+    analysis = engine.full_analysis(domains, org_name, framework_label="ReCyF — Référentiel Cyber France v2.5")
+    overall = analysis["scores"]["overall_score"]
+    grade = analysis["scores"]["grade"]
+    gc = {"A": GREEN, "B": BLUE, "C": YELLOW, "D": RED, "F": RED}.get(grade, WHITE)
+
+    print(f"  {CYAN}{'═' * 56}{RESET}")
+    print(f"  {WHITE}Score global :{RESET}  {gc}{BOLD}{overall}%{RESET}  |  {WHITE}Grade :{RESET}  {gc}{BOLD}{grade}{RESET}")
+    print(f"  {CYAN}{'═' * 56}{RESET}")
+    print()
+
+    cov = coverage_summary(domains)
+    print(f"  {WHITE}{BOLD}Couverture par la preuve :{RESET}")
+    print(f"    {GREEN}{cov['covered']}{RESET} objectifs couverts (technique ou module dedie) sur {cov['total_objectives']}")
+    print(f"    {YELLOW}{cov['declarative_only']}{RESET} objectifs encore purement declaratifs")
+    print()
+
+    _save_assessment(domains, org_name, skip=no_save, framework_label="ReCyF — Référentiel Cyber France v2.5")
     return domains, org_name
 
 
@@ -272,7 +334,7 @@ def _generate_report(domains, org_name, bridge_result, report_path):
     print()
 
 
-def _save_assessment(domains, org_name, skip=False):
+def _save_assessment(domains, org_name, skip=False, framework_label=None):
     """Sauvegarde un assessment dans l'historique SQLite."""
     if skip:
         return None
@@ -280,7 +342,8 @@ def _save_assessment(domains, org_name, skip=False):
         from nis2_analyzer.core.database import save_assessment
         from nis2_analyzer.core.scoring import ScoringEngine
         engine = ScoringEngine()
-        analysis = engine.full_analysis(domains, org_name)
+        kwargs = {"framework_label": framework_label} if framework_label else {}
+        analysis = engine.full_analysis(domains, org_name, **kwargs)
         assessment_id = save_assessment(analysis)
         print(f"  {DIM}Assessment #{assessment_id} sauvegarde dans l'historique.{RESET}")
         print(f"  {DIM}Consultez avec : python -m nis2_analyzer --history{RESET}")
@@ -502,6 +565,9 @@ Exemples :
 
     parser.add_argument("--demo", action="store_true",
                         help="Mode demonstration avec reponses simulees")
+    parser.add_argument("--recyf", action="store_true",
+                        help="Evalue sur le referentiel ReCyF (20 objectifs) au lieu de "
+                             "l'Article 21. Disponible uniquement avec --demo pour l'instant.")
     parser.add_argument("--bridge", "-b", default=None,
                         help="Chemin du rapport CloudSec Audit Toolkit (JSON)")
     parser.add_argument("--report", "-r", default=None,
@@ -554,10 +620,21 @@ Exemples :
         _cmd_compare(args.compare[0], args.compare[1])
         return
 
+    if args.recyf and not args.demo:
+        print(f"\n  {YELLOW}--recyf n'est disponible qu'avec --demo pour l'instant.{RESET}")
+        print(f"  {DIM}python -m nis2_analyzer --demo --recyf{RESET}\n")
+        return
+
     try:
         domains, org_name = None, None
 
-        if args.demo:
+        if args.demo and args.recyf:
+            domains, org_name = run_recyf_demo_mode(no_save=args.no_save)
+            if args.report:
+                print(f"\n  {YELLOW}Le rapport HTML ReCyF n'est pas encore disponible "
+                      f"(--report ignore pour --recyf).{RESET}\n")
+
+        elif args.demo:
             domains, org_name = run_demo_mode(
                 with_bridge=args.bridge,
                 report_path=args.report,

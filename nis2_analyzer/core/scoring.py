@@ -201,8 +201,18 @@ class ScoringEngine:
             })
         return summary
 
-    def full_analysis(self, domains: list[Domain], org_name: str = "Organisation") -> dict:
-        """Run complete analysis and return all results as a dict."""
+    def full_analysis(
+        self,
+        domains: list[Domain],
+        org_name: str = "Organisation",
+        framework_label: str = "NIS 2 Directive — Article 21",
+    ) -> dict:
+        """Run complete analysis and return all results as a dict.
+
+        `framework_label` identifie le référentiel évalué (Article 21, ReCyF...)
+        dans les métadonnées — sert notamment à l'historique et aux comparaisons
+        pour ne pas confondre deux référentiels différents.
+        """
         result = self.calculate(domains, org_name)
         gaps = self.generate_gap_analysis(result)
         action_plan = self.generate_action_plan(gaps)
@@ -215,7 +225,7 @@ class ScoringEngine:
                 "version": __version__,
                 "timestamp": result.timestamp,
                 "organization": org_name,
-                "framework": "NIS 2 Directive — Article 21",
+                "framework": framework_label,
             },
             "scores": {
                 "overall_score": round(result.overall_score, 1),

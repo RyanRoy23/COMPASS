@@ -44,7 +44,7 @@ def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
 
 
-def display_banner():
+def display_banner(subtitle: str = "Article 21 — Assessment interactif"):
     """
     Affiche la bannière de l'outil au lancement.
     C'est la première chose que l'utilisateur voit.
@@ -53,7 +53,7 @@ def display_banner():
     print()
     print(f"  {CYAN}{'=' * 56}{RESET}")
     print(f"  {CYAN}||{RESET}  {WHITE}{BOLD}COMPASS{RESET}             {CYAN}||{RESET}")
-    print(f"  {CYAN}||{RESET}  {DIM}Article 21 — Assessment interactif{RESET}        {CYAN}||{RESET}")
+    print(f"  {CYAN}||{RESET}  {DIM}{subtitle}{RESET}    {CYAN}||{RESET}")
     print(f"  {CYAN}{'=' * 56}{RESET}")
     print()
 

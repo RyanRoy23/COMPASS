@@ -336,3 +336,101 @@ class TestQualifyEndpoint:
 class TestCompareEndpoint:
     def test_unknown_ids_return_404(self):
         assert client.get("/api/compare/999998/999999").status_code == 404
+
+
+class TestRecyfEndpoints:
+    _all_managed = {f"RECYF-OS{i:02d}": 3 for i in range(1, 21)}
+
+    def test_framework_returns_4_pillars_and_20_objectives(self):
+        res = client.get("/api/recyf/framework")
+        assert res.status_code == 200
+        data = res.json()
+        assert len(data["pillars"]) == 4
+        total = sum(len(p["objectives"]) for p in data["pillars"])
+        assert total == 20
+
+    def test_framework_flags_essential_only_objectives(self):
+        data = client.get("/api/recyf/framework").json()
+        objectives = {o["id"]: o for p in data["pillars"] for o in p["objectives"]}
+        assert objectives["RECYF-OS16"]["applicability"] == "EE"
+        assert objectives["RECYF-OS01"]["applicability"] == "EI_EE"
+
+    def test_assess_returns_201_with_score_and_coverage(self):
+        res = client.post("/api/recyf/assess", json={
+            "org_name": "TT Corporation",
+            "responses": self._all_managed,
+            "entity_category": "essentielle",
+        })
+        assert res.status_code == 201
+        data = res.json()
+        assert data["scores"]["overall_score"] == 100.0
+        assert data["metadata"]["framework"].startswith("ReCyF")
+        assert data["recyf_coverage"]["total_objectives"] == 20
+        assert data["recyf_coverage"]["covered"] == 8
+
+    def test_important_entity_ignores_essential_only_responses(self):
+        res = client.post("/api/recyf/assess", json={
+            "org_name": "PME Corp",
+            "responses": self._all_managed,
+            "entity_category": "importante",
+        })
+        assert res.status_code == 201
+        data = res.json()
+        assert data["scores"]["total_requirements"] == 15
+
+    def test_default_entity_category_is_importante(self):
+        res = client.post("/api/recyf/assess", json={
+            "org_name": "PME Corp",
+            "responses": self._all_managed,
+        })
+        assert res.json()["scores"]["total_requirements"] == 15
+
+    def test_invalid_entity_category_returns_422(self):
+        res = client.post("/api/recyf/assess", json={
+            "org_name": "Test",
+            "responses": self._all_managed,
+            "entity_category": "inconnu",
+        })
+        assert res.status_code == 422
+
+    def test_invalid_maturity_returns_422(self):
+        res = client.post("/api/recyf/assess", json={
+            "org_name": "Test",
+            "responses": {"RECYF-OS01": 9},
+        })
+        assert res.status_code == 422
+
+    def test_empty_responses_returns_422(self):
+        res = client.post("/api/recyf/assess", json={
+            "org_name": "Test",
+            "responses": {},
+        })
+        assert res.status_code == 422
+
+    def test_xss_in_org_name_is_escaped(self):
+        res = client.post("/api/recyf/assess", json={
+            "org_name": '<script>alert("xss")</script>',
+            "responses": {"RECYF-OS01": 2},
+        })
+        assert res.status_code == 201
+        assert "<script>" not in res.json()["metadata"]["organization"]
+
+    def test_assessment_is_retrievable_from_history(self):
+        create = client.post("/api/recyf/assess", json={
+            "org_name": "Historique ReCyF",
+            "responses": self._all_managed,
+            "entity_category": "essentielle",
+        })
+        assessment_id = create.json()["assessment_id"]
+        detail = client.get(f"/api/history/{assessment_id}")
+        assert detail.status_code == 200
+        assert detail.json()["payload"]["metadata"]["framework"].startswith("ReCyF")
+
+    def test_cloudsec_audit_returns_recyf_mapping_alongside_art21(self):
+        res = client.post("/api/cloudsec-audit", json={"demo_mode": True})
+        assert res.status_code == 200
+        data = res.json()
+        assert "mapping_summary" in data          # Article 21, rétro-compatible
+        assert "recyf" in data
+        assert data["recyf"]["coverage"]["total_objectives"] == 20
+        assert data["recyf"]["mapping_summary"]["auto_filled"] > 0

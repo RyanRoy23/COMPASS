@@ -11,6 +11,10 @@ Endpoints :
   POST /api/assess         → soumet les réponses, retourne le scoring complet
   POST /api/qualify        → qualification NIS 2 Art. 3 (EE/EI/hors champ)
   POST /api/cloudsec-audit → bridge CloudSec Audit Toolkit (Azure/Entra ID) → preuves NIS 2
+                              (Article 21 ET ReCyF)
+  GET  /api/recyf/framework → 20 objectifs ReCyF, regroupés par pilier
+  POST /api/recyf/assess    → soumet les réponses ReCyF, retourne le scoring +
+                              l'état de couverture (preuve technique / déclaratif)
   GET  /api/history        → historique des assessments
   GET  /api/history/{id}   → détail d'un assessment
   GET  /api/compare/{a}/{b}→ comparaison de deux assessments
@@ -55,6 +59,9 @@ from nis2_analyzer.core.supply_chain import (
     SupplierProfile, AccessLevel, DataSensitivity,
 )
 from nis2_analyzer.connectors.cloudsec_bridge import CloudSecBridge
+from nis2_analyzer.core.recyf import (
+    load_recyf_framework, filter_by_applicability, coverage_summary,
+)
 
 app = FastAPI(
     title="COMPASS",
@@ -79,6 +86,18 @@ class AssessmentRequest(BaseModel):
     responses: dict[str, int] = Field(
         ...,
         description="Mapping requirement_id → maturity (0-3)",
+    )
+
+
+class RecyfAssessmentRequest(BaseModel):
+    org_name: str = Field(..., min_length=1, max_length=200)
+    responses: dict[str, int] = Field(
+        ...,
+        description="Mapping objective_id (RECYF-OS01 à RECYF-OS20) → maturity (0-3)",
+    )
+    entity_category: str = Field(
+        "importante",
+        description="'essentielle' (20 objectifs) | 'importante' ou 'hors_champ' (15 objectifs, OS16-20 exclus)",
     )
 
 
@@ -239,6 +258,38 @@ def get_framework():
                         "title": r.title,
                         "question": r.question,
                         "iso27001_refs": r.iso27001_refs,
+                    }
+                    for r in d.sub_requirements
+                ],
+            }
+            for d in domains
+        ]
+    }
+
+
+@app.get("/api/recyf/framework")
+def get_recyf_framework():
+    """
+    Retourne les 20 objectifs de sécurité ReCyF, regroupés par pilier.
+
+    Chaque objectif porte son applicabilité ("EI_EE" ou "EE") : à l'appelant
+    de décider s'il affiche ou masque les objectifs réservés aux entités
+    essentielles (OS16-20) selon la catégorie de l'entité évaluée.
+    """
+    domains = load_recyf_framework()
+    return {
+        "pillars": [
+            {
+                "id": d.id,
+                "title": d.title,
+                "description": d.description,
+                "objectives": [
+                    {
+                        "id": r.id,
+                        "title": r.title,
+                        "description": r.description,
+                        "question": r.question,
+                        "applicability": r.applicability,
                     }
                     for r in d.sub_requirements
                 ],
@@ -467,6 +518,61 @@ def run_assessment(body: AssessmentRequest, tenant: dict = Depends(_resolve_tena
     return analysis
 
 
+@app.post("/api/recyf/assess", status_code=201, dependencies=[Depends(_rate_limit)])
+def run_recyf_assessment(body: RecyfAssessmentRequest, tenant: dict = Depends(_resolve_tenant)):
+    """
+    Soumet les réponses au référentiel ReCyF et retourne le scoring complet,
+    accompagné de l'état de couverture (preuve technique / module dédié /
+    déclaratif) pour chacun des objectifs évalués.
+
+    Sauvegarde automatiquement dans l'historique du tenant, au même titre
+    qu'un assessment Article 21 (les deux référentiels partagent le même
+    historique, distingués par `metadata.framework`).
+    """
+    allowed_categories = ("essentielle", "importante", "hors_champ")
+    if body.entity_category not in allowed_categories:
+        raise HTTPException(
+            status_code=422,
+            detail=f"entity_category invalide. Valeurs : {allowed_categories}",
+        )
+
+    org_name = html.escape(body.org_name.strip())
+
+    for req_id, value in body.responses.items():
+        if value not in (0, 1, 2, 3):
+            raise HTTPException(
+                status_code=422,
+                detail=f"Maturité invalide pour {req_id} : {value}. Valeurs acceptées : 0, 1, 2, 3."
+            )
+
+    domains = load_recyf_framework()
+    filter_by_applicability(domains, body.entity_category)
+
+    answered = 0
+    for domain in domains:
+        for req in domain.sub_requirements:
+            if req.id in body.responses:
+                req.maturity = MaturityLevel(body.responses[req.id])
+                answered += 1
+
+    if answered == 0:
+        raise HTTPException(
+            status_code=422,
+            detail="Aucune réponse valide fournie. Vérifiez les identifiants d'objectifs (RECYF-OS01 à RECYF-OS20)."
+        )
+
+    engine = ScoringEngine()
+    analysis = engine.full_analysis(
+        domains, org_name, framework_label="ReCyF — Référentiel Cyber France v2.5"
+    )
+    analysis["recyf_coverage"] = coverage_summary(domains)
+
+    assessment_id = save_assessment(analysis, tenant_id=tenant["id"])
+    analysis["assessment_id"] = assessment_id
+
+    return analysis
+
+
 @app.post("/api/cloudsec-audit", status_code=200, dependencies=[Depends(_rate_limit)])
 def run_cloudsec_audit(body: CloudSecAuditRequest):
     """
@@ -499,6 +605,9 @@ def run_cloudsec_audit(body: CloudSecAuditRequest):
     domains = load_framework()
     mapping_summary = bridge.apply_to_framework(domains)
 
+    recyf_domains = load_recyf_framework()
+    recyf_mapping_summary = bridge.apply_to_recyf_framework(recyf_domains)
+
     return {
         "summary": {
             "total_controls": bridge.total_mapped,
@@ -507,7 +616,11 @@ def run_cloudsec_audit(body: CloudSecAuditRequest):
             "pass_rate": round(passed / max(bridge.total_mapped, 1) * 100, 1),
         },
         "evidence": evidence,
-        "mapping_summary": mapping_summary,
+        "mapping_summary": mapping_summary,  # Article 21 — conservé pour compatibilité
+        "recyf": {
+            "mapping_summary": recyf_mapping_summary,
+            "coverage": coverage_summary(recyf_domains),
+        },
     }
 
 
