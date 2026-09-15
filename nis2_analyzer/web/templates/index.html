@@ -152,6 +152,7 @@
   <button class="active" data-page="assessment" onclick="showPage('assessment')">Évaluation</button>
   <button data-page="results" onclick="showPage('results')">Résultats</button>
   <button data-page="cloudsec-audit" onclick="showPage('cloudsec-audit')">Audit CloudSec (Azure)</button>
+  <button data-page="recyf" onclick="showPage('recyf'); loadRecyfFramework()">ReCyF</button>
   <button data-page="governance" onclick="showPage('governance'); loadGovernance()">Gouvernance</button>
   <button data-page="incident" onclick="showPage('incident')">Incidents</button>
   <button data-page="supply-chain" onclick="showPage('supply-chain')">Supply Chain</button>
@@ -208,6 +209,34 @@
       <div id="cloudsec-mapping" style="margin-bottom:1.5rem;"></div>
       <div id="cloudsec-evidence"></div>
     </div>
+  </div>
+
+  <!-- ── PAGE : RECYF ── -->
+  <div id="page-recyf" class="page">
+    <div class="form-header">
+      <h2>ReCyF — Référentiel Cyber France</h2>
+      <p style="color:var(--muted);font-size:0.9rem;">20 objectifs de sécurité, répartis en 4 piliers (Gouvernance, Protection, Défense, Résilience). OS16 à OS20 sont réservés aux entités essentielles.</p>
+    </div>
+
+    <div style="display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;">
+      <input id="recyf-org-name" class="org-input" style="margin-bottom:0;flex:1;min-width:220px;" placeholder="Nom de l'organisation">
+      <div style="display:flex;gap:0.6rem;align-items:center;">
+        <label style="font-size:0.85rem;color:var(--muted);white-space:nowrap;">Catégorie d'entité :</label>
+        <select id="recyf-category" onchange="_updateRecyfApplicability()" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:0.5rem 0.8rem;border-radius:var(--radius);font-size:0.85rem;">
+          <option value="essentielle">Entité Essentielle (20 objectifs)</option>
+          <option value="importante" selected>Entité Importante (15 objectifs)</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="recyf-questions-container"><p style="color:var(--muted)">Chargement du référentiel…</p></div>
+
+    <div class="submit-row">
+      <button class="btn" id="recyf-submit-btn" onclick="submitRecyfAssessment()" disabled>Évaluer</button>
+      <span id="recyf-form-status" style="font-size:0.85rem;color:var(--muted);"></span>
+    </div>
+
+    <div id="recyf-results" style="margin-top:1.5rem;"></div>
   </div>
 
   <!-- ── PAGE : HISTORIQUE ── -->
@@ -908,6 +937,162 @@
 
   // ── Init ──────────────────────────────────────────────────────────────────
   loadFramework();
+
+  // ── ReCyF (20 objectifs, 4 piliers) ──────────────────────────────────────
+  let _recyfPillars = [];
+
+  async function loadRecyfFramework() {
+    if (_recyfPillars.length) return; // déjà chargé, on garde les réponses en cours
+    const res = await fetch('/api/recyf/framework');
+    const data = await res.json();
+    _recyfPillars = data.pillars;
+    renderRecyfForm();
+    document.getElementById('recyf-submit-btn').disabled = false;
+  }
+
+  function renderRecyfForm() {
+    const container = document.getElementById('recyf-questions-container');
+    container.innerHTML = _recyfPillars.map(p => `
+      <div class="domain-card">
+        <div class="domain-header">${esc(p.title)}</div>
+        ${p.objectives.map(o => `
+          <div class="req-row recyf-objective" data-applicability="${o.applicability}" style="align-items:flex-start;flex-direction:column;gap:0.6rem;">
+            <div style="display:flex;align-items:center;gap:0.5rem;width:100%;">
+              <div class="req-question" style="flex:1;">
+                <span style="font-family:var(--font-mono);color:var(--muted);font-size:0.75rem;margin-right:0.4rem;">${o.id.replace('RECYF-', '')}</span>
+                ${esc(o.question)}
+              </div>
+              ${o.applicability === 'EE' ? '<span class="badge" style="background:var(--surface-2);color:var(--text-secondary);white-space:nowrap;">EE uniquement</span>' : ''}
+            </div>
+            <div style="display:flex;gap:6px;">
+              ${[0,1,2,3].map(v => `
+                <label style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--muted);cursor:pointer;">
+                  <input type="radio" name="${o.id}" value="${v}"> ${v === 0 ? 'Non' : v === 1 ? 'Partiel' : v === 2 ? 'Implémenté' : 'Optimisé'}
+                </label>`).join('')}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `).join('');
+    _updateRecyfApplicability();
+  }
+
+  function _updateRecyfApplicability() {
+    const category = document.getElementById('recyf-category').value;
+    document.querySelectorAll('.recyf-objective').forEach(el => {
+      const essentialOnly = el.dataset.applicability === 'EE';
+      el.style.opacity = (essentialOnly && category !== 'essentielle') ? '0.4' : '1';
+    });
+  }
+
+  async function submitRecyfAssessment() {
+    const orgName = document.getElementById('recyf-org-name').value.trim();
+    const status = document.getElementById('recyf-form-status');
+    if (!orgName) {
+      status.textContent = "Veuillez saisir le nom de l'organisation.";
+      status.style.color = 'var(--red)';
+      return;
+    }
+    const category = document.getElementById('recyf-category').value;
+    const responses = {};
+    document.querySelectorAll('#recyf-questions-container input:checked').forEach(input => {
+      responses[input.name] = parseInt(input.value);
+    });
+    if (!Object.keys(responses).length) {
+      status.textContent = 'Répondez à au moins un objectif.';
+      status.style.color = 'var(--red)';
+      return;
+    }
+
+    const btn = document.getElementById('recyf-submit-btn');
+    btn.disabled = true;
+    btn.textContent = 'Calcul en cours…';
+    status.textContent = '';
+
+    try {
+      const res = await fetch('/api/recyf/assess', {
+        method: 'POST', headers: apiHeaders(),
+        body: JSON.stringify({ org_name: orgName, responses, entity_category: category }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Erreur serveur');
+      renderRecyfResults(data);
+      status.textContent = '';
+    } catch (e) {
+      status.textContent = 'Erreur : ' + e.message;
+      status.style.color = 'var(--red)';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Évaluer';
+    }
+  }
+
+  function renderRecyfResults(data) {
+    const s = data.scores;
+    const cov = data.recyf_coverage;
+    const gradeColor = { A:'var(--green)', B:'var(--accent)', C:'var(--yellow)', D:'var(--orange)', F:'var(--red)' };
+    const color = gradeColor[s.grade] || 'var(--muted)';
+
+    const pillarRows = (data.domains || []).map(d => {
+      const pct = d.score;
+      const barColor = pct >= 66 ? 'var(--green)' : pct >= 33 ? 'var(--yellow)' : 'var(--red)';
+      return `
+        <div class="domain-result">
+          <div class="name">${esc(d.title)}</div>
+          <div class="bar-wrap"><div class="bar" style="width:${pct}%;background:${barColor};"></div></div>
+          <div class="pct">${pct.toFixed(0)}%</div>
+        </div>`;
+    }).join('');
+
+    const sourceLabel = { preuve_technique: 'Preuve technique', module_dedie: 'Module dédié' };
+    const sourceColor = { preuve_technique: 'var(--green)', module_dedie: 'var(--accent)' };
+    const coverageRows = (cov?.details || []).map(o => {
+      const badges = o.sources.length
+        ? o.sources.map(src => `<span class="badge" style="background:var(--surface-2);color:${sourceColor[src]};margin-right:4px;">${sourceLabel[src]}</span>`).join('')
+        : `<span class="badge" style="background:var(--surface-2);color:var(--muted);">Déclaratif</span>`;
+      return `
+        <div style="display:flex;align-items:center;gap:0.8rem;padding:0.5rem 0.9rem;border-top:1px solid var(--border);font-size:0.82rem;">
+          <span style="font-family:var(--font-mono);color:var(--muted);width:60px;flex-shrink:0;">${o.id.replace('RECYF-', '')}</span>
+          <span style="flex:1;">${esc(o.title)}</span>
+          <span style="white-space:nowrap;">${badges}</span>
+        </div>`;
+    }).join('');
+
+    document.getElementById('recyf-results').innerHTML = `
+      <div class="score-grid">
+        <div class="score-card">
+          <div class="label">Score global</div>
+          <div class="value" style="color:${color}">${s.overall_score}%</div>
+          <div class="sub">sur 100%</div>
+        </div>
+        <div class="score-card">
+          <div class="label">Grade</div>
+          <div class="value" style="color:${color}">${s.grade}</div>
+          <div class="sub">${(s.grade_description || '').slice(0, 40)}</div>
+        </div>
+        <div class="score-card">
+          <div class="label">Couverture par la preuve</div>
+          <div class="value">${cov ? cov.covered : '—'}<span style="font-size:1rem;color:var(--muted);">/${cov ? cov.total_objectives : 20}</span></div>
+          <div class="sub">objectifs prouvés ou dédiés</div>
+        </div>
+        <div class="score-card">
+          <div class="label">Évalués</div>
+          <div class="value">${s.total_assessed}</div>
+          <div class="sub">sur ${s.total_requirements} objectifs</div>
+        </div>
+      </div>
+      <section>
+        <h3>Score par pilier</h3>
+        <div class="domain-results">${pillarRows}</div>
+      </section>
+      <section style="margin-top:1.5rem;">
+        <h3>Ce qui est prouvé, ce qui reste déclaratif</h3>
+        <div class="domain-card">${coverageRows}</div>
+      </section>
+      ${renderSmartPlan(data.gaps)}
+    `;
+    document.getElementById('recyf-results').scrollIntoView({ behavior: 'smooth' });
+  }
 
   // ── Gouvernance Art. 20 ───────────────────────────────────────────────────
   let _govQuestions = [];
