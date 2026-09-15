@@ -575,7 +575,7 @@
         <div class="score-card">
           <div class="label">Grade</div>
           <div class="value" style="color:${color}">${s.grade}</div>
-          <div class="sub">${s.grade_description?.slice(0,40) || ''}</div>
+          <div class="sub">${s.grade_description || ''}</div>
         </div>
         <div class="score-card">
           <div class="label">Gaps identifiés</div>
@@ -1112,7 +1112,7 @@
         <div class="score-card">
           <div class="label">Grade</div>
           <div class="value" style="color:${color}">${s.grade}</div>
-          <div class="sub">${(s.grade_description || '').slice(0, 40)}</div>
+          <div class="sub">${s.grade_description || ''}</div>
         </div>
         <div class="score-card">
           <div class="label">Couverture par la preuve</div>
