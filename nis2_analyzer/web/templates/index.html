@@ -4,22 +4,44 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>COMPASS — Compliance Posture Assessment System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0A0E1A;
-      --surface: #111827;
-      --border: #1F2937;
-      --accent: #3B82F6;
-      --accent-light: #60A5FA;
-      --green: #10B981;
-      --yellow: #F59E0B;
-      --red: #EF4444;
-      --text: #F9FAFB;
-      --muted: #6B7280;
-      --radius: 8px;
+      /* Fond neutre, sans dominante bleutée — plus calme qu'un navy saturé */
+      --bg: #0B0C0F;
+      --surface: #16171C;
+      --surface-2: #1D1E24;
+      --border: #24252C;
+      --border-strong: #34353D;
+
+      /* Accent unique, sobre — utilisé avec parcimonie, jamais en aplat sur de grandes surfaces */
+      --accent: #7C86E8;
+      --accent-light: #9AA2EE;
+      --accent-dim: #7C86E826;
+
+      /* États — lisibles mais désaturés, pas de couleurs "feu tricolore" */
+      --green: #6FA37E;
+      --yellow: #C9A25F;
+      --orange: #C4875D;
+      --red: #C97575;
+      --green-dim: #17211B;
+      --yellow-dim: #241D14;
+      --red-dim: #251717;
+
+      --text: #ECEDF0;
+      --text-secondary: #9EA0A8;
+      --muted: #6C6D76;
+
+      --radius: 10px;
+      --radius-sm: 6px;
+
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+    body { background: var(--bg); color: var(--text); font-family: var(--font-sans); min-height: 100vh; -webkit-font-smoothing: antialiased; }
 
     header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; align-items: center; gap: 1rem; }
     header h1 { font-size: 1.2rem; font-weight: 600; }
@@ -43,7 +65,7 @@
     .org-input:focus { border-color: var(--accent); }
 
     .domain-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 1rem; overflow: hidden; }
-    .domain-header { padding: 0.8rem 1rem; background: #161D2E; font-weight: 600; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; }
+    .domain-header { padding: 0.8rem 1rem; background: var(--surface-2); font-weight: 600; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; }
     .domain-weight { color: var(--muted); font-size: 0.75rem; font-weight: 400; }
     .req-row { padding: 0.7rem 1rem; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 1rem; }
     .req-question { flex: 1; font-size: 0.85rem; color: #D1D5DB; }
@@ -65,7 +87,7 @@
     .score-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
     .score-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; text-align: center; }
     .score-card .label { font-size: 0.75rem; color: var(--muted); margin-bottom: 0.3rem; }
-    .score-card .value { font-size: 2rem; font-weight: 700; }
+    .score-card .value { font-size: 2rem; font-weight: 700; font-family: var(--font-mono); letter-spacing: -0.02em; }
     .score-card .sub { font-size: 0.8rem; color: var(--muted); }
 
     .domain-results { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.5rem; }
@@ -73,7 +95,7 @@
     .domain-result .name { flex: 1; font-size: 0.85rem; }
     .domain-result .bar-wrap { width: 140px; height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; }
     .domain-result .bar { height: 100%; border-radius: 99px; transition: width .3s; }
-    .domain-result .pct { width: 40px; text-align: right; font-size: 0.8rem; font-weight: 600; }
+    .domain-result .pct { width: 40px; text-align: right; font-size: 0.8rem; font-weight: 600; font-family: var(--font-mono); }
 
     .gaps-list { display: flex; flex-direction: column; gap: 0.5rem; }
     .gap-item { background: var(--surface); border-left: 3px solid var(--red); border-radius: 0 var(--radius) var(--radius) 0; padding: 0.6rem 1rem; font-size: 0.82rem; }
@@ -90,80 +112,26 @@
     .history-table td { padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--border); }
     .history-table tr:hover td { background: var(--surface); }
     .badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 0.75rem; font-weight: 600; }
-    .badge-A { background: #064E3B; color: #34D399; }
-    .badge-B { background: #1E3A5F; color: #60A5FA; }
-    .badge-C { background: #3B2C00; color: #FCD34D; }
-    .badge-D, .badge-E, .badge-F { background: #3B1212; color: #FCA5A5; }
+    .badge-A { background: var(--green-dim); color: var(--green); }
+    .badge-B { background: var(--surface-2); color: var(--accent-light); }
+    .badge-C { background: var(--yellow-dim); color: var(--yellow); }
+    .badge-D, .badge-F { background: var(--red-dim); color: var(--red); }
 
     .empty-state { text-align: center; padding: 3rem; color: var(--muted); }
     .empty-state p { margin-bottom: 1rem; }
 
-    .error-msg { background: #3B1212; border: 1px solid var(--red); color: #FCA5A5; padding: 0.7rem 1rem; border-radius: var(--radius); font-size: 0.85rem; margin-top: 1rem; }
+    .error-msg { background: var(--red-dim); border: 1px solid var(--red); color: var(--red); padding: 0.7rem 1rem; border-radius: var(--radius); font-size: 0.85rem; margin-top: 1rem; }
 
     /* ── Monte Carlo ── */
-    .mc-banner { background: linear-gradient(135deg, #1E2A45 0%, #111827 100%); border: 1px solid #2D3F60; border-radius: var(--radius); padding: 1.2rem 1.5rem; margin-bottom: 1.5rem; }
+    .mc-banner { background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 1.2rem 1.5rem; margin-bottom: 1.5rem; }
     .mc-banner h3 { font-size: 1rem; font-weight: 600; color: var(--accent-light); margin-bottom: 0.3rem; }
     .mc-banner p { font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
-
-    .mc-config { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
-    .mc-field label { display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 0.3rem; }
-    .mc-field select, .mc-field input[type=number] {
-      width: 100%; background: var(--surface); border: 1px solid var(--border);
-      color: var(--text); padding: 0.5rem 0.7rem; border-radius: var(--radius);
-      font-size: 0.85rem; outline: none;
-    }
-    .mc-field select:focus, .mc-field input[type=number]:focus { border-color: var(--accent); }
 
     .mc-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
     .mc-kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; text-align: center; }
     .mc-kpi .kpi-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.4rem; }
-    .mc-kpi .kpi-value { font-size: 1.6rem; font-weight: 700; }
+    .mc-kpi .kpi-value { font-size: 1.6rem; font-weight: 700; font-family: var(--font-mono); }
     .mc-kpi .kpi-sub { font-size: 0.75rem; color: var(--muted); margin-top: 0.2rem; }
-    .kpi-p10 .kpi-value { color: var(--green); }
-    .kpi-p50 .kpi-value { color: var(--yellow); }
-    .kpi-p90 .kpi-value { color: var(--red); }
-
-    .mc-ic { background: #1A1F30; border: 1px solid #2D3F60; border-radius: var(--radius); padding: 0.8rem 1.2rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
-    .mc-ic .ic-label { font-size: 0.8rem; color: var(--muted); }
-    .mc-ic .ic-range { font-size: 0.95rem; font-weight: 600; color: var(--accent-light); }
-    .mc-ic .ic-note { font-size: 0.75rem; color: var(--muted); font-style: italic; }
-
-    .mc-histogram-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.2rem; margin-bottom: 1.5rem; }
-    .mc-histogram-wrap h4 { font-size: 0.85rem; font-weight: 600; color: var(--accent-light); margin-bottom: 1rem; }
-    .histogram-chart { display: flex; align-items: flex-end; gap: 3px; height: 120px; }
-    .histo-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; position: relative; }
-    .histo-bar { width: 100%; border-radius: 3px 3px 0 0; transition: background .2s; cursor: default; }
-    .histo-bar.p50-zone { background: #F59E0B88; }
-    .histo-bar.tail-right { background: #EF444466; }
-    .histo-bar.tail-left { background: #10B98166; }
-    .histo-bar.normal { background: #3B82F666; }
-    .histo-bar:hover { filter: brightness(1.4); }
-    .histogram-labels { display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--muted); margin-top: 0.4rem; }
-
-    .mc-ale-compare { background: #0F1620; border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.2rem; margin-bottom: 1.5rem; }
-    .mc-ale-compare h4 { font-size: 0.85rem; font-weight: 600; color: var(--muted); margin-bottom: 0.8rem; }
-    .ale-row { display: flex; justify-content: space-between; align-items: center; padding: 0.3rem 0; font-size: 0.82rem; border-bottom: 1px solid var(--border); }
-    .ale-row:last-child { border-bottom: none; }
-    .ale-row .ale-name { color: var(--muted); }
-    .ale-row .ale-val { font-weight: 600; }
-    .ale-mc { color: var(--yellow); }
-    .ale-classic { color: var(--muted); font-size: 0.78rem; }
-
-    .mc-top-risks { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1.5rem; }
-    .mc-top-risks h4 { font-size: 0.85rem; font-weight: 600; color: var(--accent-light); padding: 0.8rem 1rem; background: #161D2E; }
-    .risk-row { display: flex; align-items: center; gap: 1rem; padding: 0.6rem 1rem; border-top: 1px solid var(--border); font-size: 0.82rem; }
-    .risk-row .risk-title { flex: 1; }
-    .risk-row .risk-incident { font-size: 0.72rem; color: var(--muted); }
-    .risk-row .risk-p50 { font-weight: 600; color: var(--yellow); white-space: nowrap; }
-    .risk-row .risk-p90 { font-size: 0.75rem; color: var(--muted); white-space: nowrap; }
-
-    .mc-fine-banner { background: #2D1515; border: 1px solid #7F1D1D; border-radius: var(--radius); padding: 0.8rem 1.2rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem; }
-    .mc-fine-banner .fine-icon { font-size: 1.4rem; }
-    .mc-fine-banner .fine-text { font-size: 0.82rem; color: #FCA5A5; }
-    .mc-fine-banner .fine-amount { font-weight: 700; font-size: 1rem; }
-
-    .mc-empty { text-align: center; padding: 3rem; color: var(--muted); }
-    .mc-spinner { text-align: center; padding: 2rem; color: var(--muted); }
   </style>
 </head>
 <body>
@@ -222,16 +190,16 @@
       <p>Traduit les résultats du CloudSec Audit Toolkit (MFA, rôles privilégiés, accès conditionnel…) en preuves techniques NIS 2 Art. 21.</p>
     </div>
 
-    <div class="mc-banner" style="background:#152a1e;border:1px solid #1f4a2d;padding:1rem 1.2rem;border-radius:8px;margin-bottom:1.5rem;">
+    <div class="mc-banner">
       <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">
         <strong>Mode démonstration activé</strong>
-        <span style="background:#15803d;color:#fff;font-size:0.65rem;padding:2px 6px;border-radius:99px;margin-left:auto;">DÉMO</span>
+        <span style="background:var(--green);color:#12241a;font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:99px;margin-left:auto;">DÉMO</span>
       </div>
-      <p style="color:var(--muted);font-size:0.83rem;">Ce rapport utilise un jeu de résultats CloudSec réaliste préchargé. Pour un audit réel, fournissez le rapport JSON produit par le <code style="background:#0d1424;padding:2px 5px;border-radius:3px;">CloudSec Audit Toolkit</code> via <code style="background:#0d1424;padding:2px 5px;border-radius:3px;">POST /api/cloudsec-audit</code>.</p>
+      <p style="color:var(--muted);font-size:0.83rem;">Ce rapport utilise un jeu de résultats CloudSec réaliste préchargé. Pour un audit réel, fournissez le rapport JSON produit par le <code style="background:var(--surface-2);padding:2px 5px;border-radius:3px;font-family:var(--font-mono);">CloudSec Audit Toolkit</code> via <code style="background:var(--surface-2);padding:2px 5px;border-radius:3px;font-family:var(--font-mono);">POST /api/cloudsec-audit</code>.</p>
     </div>
 
     <div style="display:flex;gap:1rem;margin-bottom:1.5rem;align-items:center;">
-      <button class="btn" onclick="runCloudSecAudit()" style="background:#15803d;">Lancer l'audit</button>
+      <button class="btn" onclick="runCloudSecAudit()">Lancer l'audit</button>
       <span id="cloudsec-loading" style="color:var(--muted);font-size:0.85rem;display:none;">Analyse en cours…</span>
     </div>
 
@@ -528,8 +496,8 @@
   // ── Rendu des résultats ───────────────────────────────────────────────────
   function renderResults(data) {
     const s = data.scores;
-    const gradeColor = { A:'#10B981', B:'#3B82F6', C:'#F59E0B', D:'#F97316', E:'#EF4444', F:'#DC2626' };
-    const color = gradeColor[s.grade] || '#6B7280';
+    const gradeColor = { A:'var(--green)', B:'var(--accent)', C:'var(--yellow)', D:'var(--orange)', F:'var(--red)' };
+    const color = gradeColor[s.grade] || 'var(--muted)';
 
     const domainRows = (data.domains || []).map(d => {
       const pct = d.score || 0;
@@ -552,11 +520,11 @@
     const totalAssessed = s.total_assessed || 0;
     const coveragePct = totalReqs > 0 ? Math.round(totalAssessed / totalReqs * 100) : 0;
     const coverageBanner = coveragePct < 70 ? `
-      <div style="background:#78350F;border:1px solid #92400E;border-radius:var(--radius);padding:0.8rem 1rem;margin-bottom:1.2rem;display:flex;gap:0.7rem;align-items:flex-start;">
-        
+      <div style="background:var(--yellow-dim);border:1px solid var(--yellow);border-radius:var(--radius);padding:0.8rem 1rem;margin-bottom:1.2rem;display:flex;gap:0.7rem;align-items:flex-start;">
+
         <div>
-          <strong style="color:#FCD34D;">Couverture insuffisante (${coveragePct}%)</strong>
-          <div style="font-size:0.83rem;color:#FDE68A;margin-top:2px;">
+          <strong style="color:var(--yellow);">Couverture insuffisante (${coveragePct}%)</strong>
+          <div style="font-size:0.83rem;color:var(--text-secondary);margin-top:2px;">
             Seulement ${totalAssessed} sur ${totalReqs} questions ont été répondues. Le score affiché (${s.overall_score}%) est sous-estimé et ne reflète pas fidèlement votre posture réelle. Répondez à davantage de questions pour un résultat fiable.
           </div>
         </div>
@@ -611,7 +579,7 @@
     const rows = sorted.map(g => {
       const s = g.smart || {};
       const phase = phaseOrder(g);
-      const phaseColors = ['var(--red)', '#F97316', 'var(--yellow)', 'var(--muted)'];
+      const phaseColors = ['var(--red)', 'var(--orange)', 'var(--yellow)', 'var(--muted)'];
       return `
         <tr style="border-top:1px solid var(--border);">
           <td style="padding:0.55rem 0.7rem;font-size:0.8rem;color:${phaseColors[phase]};white-space:nowrap;">${phaseLabel[phase]}</td>
@@ -622,7 +590,7 @@
           <td style="padding:0.55rem 0.7rem;font-size:0.8rem;color:var(--muted);white-space:nowrap;">${s.effort_days_low ?? '?'}–${s.effort_days_high ?? '?'} j</td>
           <td style="padding:0.55rem 0.7rem;font-size:0.8rem;color:var(--muted);white-space:nowrap;">${fmt(s.cost_low ?? 0)} – ${fmt(s.cost_high ?? 0)}</td>
           <td style="padding:0.55rem 0.7rem;font-size:0.8rem;color:var(--muted);">${s.responsible ?? '—'}</td>
-          <td style="padding:0.55rem 0.7rem;font-size:0.78rem;color:#93C5FD;max-width:200px;">${esc(g.quick_win || '—')}</td>
+          <td style="padding:0.55rem 0.7rem;font-size:0.78rem;color:var(--accent-light);max-width:200px;">${esc(g.quick_win || '—')}</td>
         </tr>`;
     }).join('');
     return `
@@ -805,19 +773,19 @@
     // Grilles horizontales
     const gridLines = [0, 30, 50, 70, 85, 100].filter(v => v >= minS && v <= maxS).map(v => {
       const y = yScale(v);
-      const color = v >= 85 ? '#10B981' : v >= 70 ? '#3B82F6' : v >= 50 ? '#F59E0B' : '#EF4444';
+      const color = v >= 85 ? 'var(--green)' : v >= 70 ? 'var(--accent)' : v >= 50 ? 'var(--yellow)' : 'var(--red)';
       return `<line x1="${PAD.left}" y1="${y}" x2="${W - PAD.right}" y2="${y}" stroke="${color}" stroke-width="0.5" stroke-dasharray="4,3" opacity="0.4"/>
-              <text x="${PAD.left - 4}" y="${y + 4}" text-anchor="end" font-size="9" fill="#6B7280">${v}</text>`;
+              <text x="${PAD.left - 4}" y="${y + 4}" text-anchor="end" font-size="9" fill="var(--muted)">${v}</text>`;
     }).join('');
 
     // Points et labels dates
     const dots = sorted.map((r, i) => {
       const x = xScale(i), y = yScale(r.score);
       const date = r.assessed_at.slice(5, 10); // MM-DD
-      const gradeColors = { A:'#10B981', B:'#3B82F6', C:'#F59E0B', D:'#F97316', F:'#EF4444' };
-      const c = gradeColors[r.grade] || '#6B7280';
-      return `<circle cx="${x}" cy="${y}" r="4" fill="${c}" stroke="#0A0E1A" stroke-width="1.5"/>
-              <text x="${x}" y="${H - 6}" text-anchor="middle" font-size="8" fill="#6B7280">${date}</text>`;
+      const gradeColors = { A:'var(--green)', B:'var(--accent)', C:'var(--yellow)', D:'var(--orange)', F:'var(--red)' };
+      const c = gradeColors[r.grade] || 'var(--muted)';
+      return `<circle cx="${x}" cy="${y}" r="4" fill="${c}" stroke="var(--bg)" stroke-width="1.5"/>
+              <text x="${x}" y="${H - 6}" text-anchor="middle" font-size="8" fill="var(--muted)">${date}</text>`;
     }).join('');
 
     return `
@@ -825,16 +793,16 @@
         <div style="font-size:0.85rem;font-weight:600;margin-bottom:0.7rem;">Courbe de progression du score NIS 2</div>
         <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;">
           ${gridLines}
-          <polyline points="${areaPoints}" fill="#3B82F620" stroke="none"/>
-          <polyline points="${points}" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linejoin="round"/>
+          <polyline points="${areaPoints}" fill="var(--accent-dim)" stroke="none"/>
+          <polyline points="${points}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>
           ${dots}
         </svg>
         <div style="display:flex;gap:1rem;margin-top:0.5rem;font-size:0.72rem;color:var(--muted);">
-          <span style="color:#10B981;">● A (≥85%)</span>
-          <span style="color:#3B82F6;">● B (≥70%)</span>
-          <span style="color:#F59E0B;">● C (≥50%)</span>
-          <span style="color:#F97316;">● D (≥30%)</span>
-          <span style="color:#EF4444;">● F (&lt;30%)</span>
+          <span style="color:var(--green);">● A (≥85%)</span>
+          <span style="color:var(--accent);">● B (≥70%)</span>
+          <span style="color:var(--yellow);">● C (≥50%)</span>
+          <span style="color:var(--orange);">● D (≥30%)</span>
+          <span style="color:var(--red);">● F (&lt;30%)</span>
         </div>
       </div>`;
   }
@@ -916,13 +884,13 @@
 
     // Liste des preuves
     const evidenceHtml = data.evidence.map(e => {
-      const statusColor = e.result === 'PASS' ? '#22c55e' : '#ef4444';
+      const statusColor = e.result === 'PASS' ? 'var(--green)' : 'var(--red)';
       const findings = (e.findings_sample || []).slice(0, 3)
         .map(f => `<div style="color:var(--muted);font-size:0.78rem;">→ ${esc(f)}</div>`).join('');
       return `
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.8rem 1.1rem;margin-bottom:0.6rem;">
           <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;">
-            <span style="background:#0d1424;color:${statusColor};font-size:0.7rem;font-weight:700;padding:1px 6px;border-radius:99px;">${esc(e.check_id)}</span>
+            <span style="background:var(--surface-2);color:${statusColor};font-size:0.7rem;font-weight:700;padding:1px 6px;border-radius:99px;">${esc(e.check_id)}</span>
             <strong style="font-size:0.88rem;">${esc(e.check_title)}</strong>
             <span style="margin-left:auto;font-size:0.72rem;font-weight:700;color:${statusColor};">${e.result}</span>
           </div>
@@ -986,7 +954,7 @@
     });
     const data = await res.json();
     if (!res.ok) { document.getElementById('gov-results').innerHTML = `<p style="color:var(--red)">Erreur : ${data.detail}</p>`; return; }
-    const gradeColor = { A: 'var(--green)', B: '#3B82F6', C: 'var(--yellow)', D: 'var(--red)', F: 'var(--red)' };
+    const gradeColor = { A: 'var(--green)', B: 'var(--accent)', C: 'var(--yellow)', D: 'var(--orange)', F: 'var(--red)' };
     const gaps = (data.gaps || []).map(g => `
       <div style="padding:0.6rem 1rem;border-top:1px solid var(--border);font-size:0.83rem;">
         <span style="color:var(--yellow);font-weight:600;">${g.id}</span> — ${g.question}
@@ -1096,7 +1064,7 @@
     });
     const data = await res.json();
     if (!res.ok) { document.getElementById('sc-result').innerHTML = `<p style="color:var(--red)">Erreur : ${data.detail}</p>`; return; }
-    const riskColor = { critical: 'var(--red)', high: '#EF4444', medium: 'var(--yellow)', low: 'var(--green)' };
+    const riskColor = { critical: 'var(--red)', high: 'var(--orange)', medium: 'var(--yellow)', low: 'var(--green)' };
     const color = riskColor[data.risk_level] || 'var(--muted)';
     const actions = (data.required_actions || []).map(a => `<li style="margin-left:1.2rem;font-size:0.83rem;color:var(--muted);margin-bottom:3px;">${a}</li>`).join('');
     document.getElementById('sc-result').innerHTML = `
