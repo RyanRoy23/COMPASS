@@ -206,7 +206,8 @@
 
     <div id="cloudsec-results" style="display:none;">
       <div class="mc-kpis" id="cloudsec-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem;"></div>
-      <div id="cloudsec-mapping" style="margin-bottom:1.5rem;"></div>
+      <div id="cloudsec-mapping" style="margin-bottom:1rem;"></div>
+      <div id="cloudsec-mapping-recyf" style="margin-bottom:1.5rem;"></div>
       <div id="cloudsec-evidence"></div>
     </div>
   </div>
@@ -868,10 +869,36 @@
       }
       const data = await res.json();
       renderCloudSecAudit(data);
+      await applyRecyfAutoFill(data.recyf?.mapping_summary?.details);
     } catch (e) {
       alert('Erreur réseau : ' + e.message);
     } finally {
       document.getElementById('cloudsec-loading').style.display = 'none';
+    }
+  }
+
+  // Pré-remplit le formulaire ReCyF (page séparée) avec les preuves CloudSec —
+  // même logique que le bridge côté CLI (core/cloudsec_bridge.py), côté web.
+  async function applyRecyfAutoFill(details) {
+    if (!details || !Object.keys(details).length) return;
+    await loadRecyfFramework(); // no-op si déjà chargé — garantit que les radios existent
+
+    let count = 0;
+    for (const [reqId, info] of Object.entries(details)) {
+      const input = document.querySelector(`.recyf-objective input[name="${reqId}"][value="${info.level}"]`);
+      if (!input) continue;
+      input.checked = true;
+      count++;
+      const row = input.closest('.recyf-objective');
+      if (row && !row.querySelector('.auto-fill-badge')) {
+        row.querySelector('.req-question').insertAdjacentHTML('beforeend',
+          ` <span class="badge auto-fill-badge" style="background:var(--surface-2);color:var(--accent-light);" title="${esc(info.reason || '')}">Pré-rempli</span>`);
+      }
+    }
+    if (count) {
+      const status = document.getElementById('recyf-form-status');
+      status.style.color = 'var(--accent-light)';
+      status.textContent = `${count} objectif(s) ReCyF pré-rempli(s) par l'audit CloudSec — voir l'onglet ReCyF.`;
     }
   }
 
@@ -910,6 +937,23 @@
         </div>
       </div>
     `;
+
+    // Résumé du mapping ReCyF
+    const rc = data.recyf?.coverage;
+    const rms = data.recyf?.mapping_summary;
+    if (rc && rms) {
+      document.getElementById('cloudsec-mapping-recyf').innerHTML = `
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem 1.2rem;">
+          <div style="font-weight:600;margin-bottom:0.4rem;">Pré-remplissage du référentiel ReCyF</div>
+          <div style="color:var(--muted);font-size:0.85rem;">
+            <span style="color:var(--green);font-weight:600;">${rms.auto_filled}</span> objectif(s) pré-rempli(s) par cet audit —
+            <span style="color:var(--accent-light);font-weight:600;">${rc.covered}</span> objectif(s) sur ${rc.total_objectives}
+            bénéficient au total d'une preuve structurée (technique ou module dédié).
+            <a href="#" onclick="showPage('recyf');return false;" style="color:var(--accent-light);">Voir le formulaire ReCyF →</a>
+          </div>
+        </div>
+      `;
+    }
 
     // Liste des preuves
     const evidenceHtml = data.evidence.map(e => {
