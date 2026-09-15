@@ -57,6 +57,8 @@ def generate_report(
     org_name: str,
     bridge_summary: dict = None,
     output_path: str = "reports/nis2_report.html",
+    framework_label: str = "NIS 2 — Article 21",
+    unit_label: str = "domaine",
 ) -> str:
     """
     Génère le rapport HTML complet.
@@ -66,6 +68,12 @@ def generate_report(
         org_name: nom de l'organisation
         bridge_summary: résumé du bridge CloudSec (optionnel)
         output_path: chemin du fichier HTML de sortie
+        framework_label: badge affiché en en-tête (ex. "ReCyF v2.5" pour un
+            rapport ReCyF plutôt qu'Article 21)
+        unit_label: nom du regroupement de premier niveau dans les libellés
+            ("domaine" pour l'Article 21, "pilier" pour ReCyF) — les données
+            elles-mêmes (Domain.title) restent inchangées, seul le mot générique
+            autour change.
     """
     
     # Calculer les scores
@@ -609,7 +617,7 @@ def generate_report(
     <div class="container">
         <!-- HEADER -->
         <div class="header">
-            <div class="header-badge">NIS 2 — Article 21</div>
+            <div class="header-badge">{_h(framework_label)}</div>
             <h1>Rapport de Conformité & Analyse de Risque</h1>
             <div class="subtitle">{_h(org_name)}</div>
             <div class="meta">Généré le {timestamp} — COMPASS v{__version__}</div>
@@ -686,12 +694,12 @@ def generate_report(
             </div>
         </div>
 """
-    # ── SECTION : Scores par domaine ──
-    html += """
+    # ── SECTION : Scores par domaine/pilier (selon le référentiel) ──
+    html += f"""
         <div class="section">
             <div class="section-title">
                 <div class="icon">◉</div>
-                Scores par domaine
+                Scores par {unit_label}
             </div>
             <div class="domain-grid">
 """
@@ -809,11 +817,11 @@ def generate_report(
     # Table des gaps
     gaps = analysis.get("gaps", [])
     if gaps:
-        html += """
+        html += f"""
             <table class="gap-table">
                 <tr>
                     <th>Exigence</th>
-                    <th>Domaine</th>
+                    <th>{unit_label.capitalize()}</th>
                     <th>Niveau</th>
                     <th>Effort</th>
                     <th>Quick Win</th>
@@ -842,14 +850,16 @@ def generate_report(
         </div>
 """
 
-    # ── SECTION : Couverture ISO 27001 ──
+    # ── SECTION : Couverture ISO 27001 (uniquement si le référentiel évalué
+    #    porte ce mapping — ReCyF ne le renseigne pas encore) ──
     iso_mapping = analysis.get("iso27001_mapping", {})
     iso_details = iso_mapping.get("details", {})
     iso_covered = iso_mapping.get("controls_covered", 0)
     iso_total = iso_mapping.get("total_controls_referenced", 0)
     iso_pct = iso_mapping.get("coverage_pct", 0)
-    
-    html += f"""
+
+    if iso_total > 0:
+        html += f"""
         <div class="section">
             <div class="section-title">
                 <div class="icon">✓</div>
@@ -860,27 +870,24 @@ def generate_report(
             </p>
             <div class="iso-grid">
 """
-    
-    for control, covered in sorted(iso_details.items()):
-        css_class = "covered" if covered else "not-covered"
-        html += f'                <div class="iso-pill {css_class}">{control}</div>\n'
-    
-    html += """
+        for control, covered in sorted(iso_details.items()):
+            css_class = "covered" if covered else "not-covered"
+            html += f'                <div class="iso-pill {css_class}">{control}</div>\n'
+
+        html += """
             </div>
         </div>
 """
-    # ── SECTION : Couverture DORA (mapping) ──
-    # Récupérer la couverture DORA via la nouvelle propriété du modèle
+    # ── SECTION : Couverture DORA (mapping) — même logique, ReCyF n'a pas
+    #    encore de mapping DORA renseigné ──
     from nis2_analyzer.core.models import AssessmentResult
     temp_result = AssessmentResult(domains=domains)
     dora_coverage = temp_result.dora_coverage
-    
-    # Calculer la couverture globale DORA
+
     total_dora_questions = sum(p["total_questions"] for p in dora_coverage.values())
     total_dora_covered = sum(p["covered_questions"] for p in dora_coverage.values())
     dora_global_pct = round(total_dora_covered / total_dora_questions * 100, 1) if total_dora_questions > 0 else 0
-    
-    # Liste de tous les piliers DORA (incluant les non couverts)
+
     all_dora_pillars = [
         "ICT Risk Management",
         "ICT-Related Incident Management",
@@ -888,42 +895,42 @@ def generate_report(
         "ICT Third-Party Risk",
         "Information Sharing",
     ]
-    
-    html += f"""
+
+    if total_dora_questions > 0:
+        html += f"""
         <div class="section">
             <div class="section-title">
                 <div class="icon">⊞</div>
                 Couverture DORA — {dora_global_pct}% (mapping NIS 2 ↔ DORA)
             </div>
             <div class="dora-intro">
-                Cette section reflète un mapping entre les questions NIS 2 de cet outil 
-                et les exigences DORA (Digital Operational Resilience Act). 
-                Ce n'est pas une évaluation DORA complète : certaines exigences DORA 
-                spécifiques (TLPT, registre d'information des prestataires TIC, partage 
-                d'information sur les cybermenaces) ne sont pas évaluées par cet outil 
+                Cette section reflète un mapping entre les questions NIS 2 de cet outil
+                et les exigences DORA (Digital Operational Resilience Act).
+                Ce n'est pas une évaluation DORA complète : certaines exigences DORA
+                spécifiques (TLPT, registre d'information des prestataires TIC, partage
+                d'information sur les cybermenaces) ne sont pas évaluées par cet outil
                 et nécessitent une démarche complémentaire.
             </div>
             <div class="dora-pillars">
 """
-    
-    for pillar_name in all_dora_pillars:
-        pillar_data = dora_coverage.get(pillar_name)
-        
-        if pillar_data:
-            pct = pillar_data["coverage_pct"]
-            covered = pillar_data["covered_questions"]
-            total = pillar_data["total_questions"]
-            articles = ", ".join(pillar_data["dora_articles"])
-            
-            # Couleur selon le pourcentage
-            if pct >= 66:
-                color = "var(--green)"
-            elif pct >= 33:
-                color = "var(--orange)"
-            else:
-                color = "var(--red)"
-            
-            html += f"""
+
+        for pillar_name in all_dora_pillars:
+            pillar_data = dora_coverage.get(pillar_name)
+
+            if pillar_data:
+                pct = pillar_data["coverage_pct"]
+                covered = pillar_data["covered_questions"]
+                total = pillar_data["total_questions"]
+                articles = ", ".join(pillar_data["dora_articles"])
+
+                if pct >= 66:
+                    color = "var(--green)"
+                elif pct >= 33:
+                    color = "var(--orange)"
+                else:
+                    color = "var(--red)"
+
+                html += f"""
                 <div class="dora-pillar-row">
                     <div>
                         <div class="dora-pillar-name">{pillar_name}</div>
@@ -936,9 +943,8 @@ def generate_report(
                     <div class="dora-pillar-count">{covered}/{total} questions</div>
                 </div>
 """
-        else:
-            # Pilier non couvert par l'outil
-            html += f"""
+            else:
+                html += f"""
                 <div class="dora-pillar-row">
                     <div>
                         <div class="dora-pillar-name">{pillar_name}</div>
@@ -951,8 +957,8 @@ def generate_report(
                     <div class="dora-pillar-count" style="color: var(--red)">Audit externe requis</div>
                 </div>
 """
-    
-    html += """
+
+        html += """
             </div>
         </div>
 """

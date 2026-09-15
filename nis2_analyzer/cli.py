@@ -88,13 +88,15 @@ def run_demo_mode(with_bridge=False, report_path=None, no_save=False):
     return domains, org_name
 
 
-def run_recyf_demo_mode(no_save=False):
+RECYF_FRAMEWORK_LABEL = "ReCyF — Référentiel Cyber France v2.5"
+
+
+def run_recyf_demo_mode(report_path=None, no_save=False):
     """
     Mode demo sur le referentiel ReCyF (20 objectifs, 4 piliers).
 
     Version volontairement plus simple que run_demo_mode() : pas de bridge
-    CloudSec ni de rapport HTML pour l'instant (le rapport reste specifique
-    a l'Article 21 — a generaliser en meme temps que l'interface web).
+    CloudSec pour l'instant (a brancher en meme temps que l'interactif ReCyF).
     """
     from nis2_analyzer.assessment.interactive import display_banner
     from nis2_analyzer.core.recyf import load_recyf_framework, coverage_summary
@@ -129,7 +131,7 @@ def run_recyf_demo_mode(no_save=False):
     print()
 
     engine = ScoringEngine()
-    analysis = engine.full_analysis(domains, org_name, framework_label="ReCyF — Référentiel Cyber France v2.5")
+    analysis = engine.full_analysis(domains, org_name, framework_label=RECYF_FRAMEWORK_LABEL)
     overall = analysis["scores"]["overall_score"]
     grade = analysis["scores"]["grade"]
     gc = {"A": GREEN, "B": BLUE, "C": YELLOW, "D": RED, "F": RED}.get(grade, WHITE)
@@ -145,7 +147,11 @@ def run_recyf_demo_mode(no_save=False):
     print(f"    {YELLOW}{cov['declarative_only']}{RESET} objectifs encore purement declaratifs")
     print()
 
-    _save_assessment(domains, org_name, skip=no_save, framework_label="ReCyF — Référentiel Cyber France v2.5")
+    if report_path:
+        _generate_report(domains, org_name, None, report_path,
+                          framework_label=RECYF_FRAMEWORK_LABEL, unit_label="pilier")
+
+    _save_assessment(domains, org_name, skip=no_save, framework_label=RECYF_FRAMEWORK_LABEL)
     return domains, org_name
 
 
@@ -320,7 +326,8 @@ def _display_results(domains, org_name):
     print()
 
 
-def _generate_report(domains, org_name, bridge_result, report_path):
+def _generate_report(domains, org_name, bridge_result, report_path,
+                      framework_label="NIS 2 — Article 21", unit_label="domaine"):
     """Genere le rapport HTML unifie."""
     from nis2_analyzer.reporting.html_report import generate_report
     path = generate_report(
@@ -328,6 +335,8 @@ def _generate_report(domains, org_name, bridge_result, report_path):
         org_name=org_name,
         bridge_summary=bridge_result,
         output_path=report_path,
+        framework_label=framework_label,
+        unit_label=unit_label,
     )
     print(f"  {GREEN}{BOLD}Rapport HTML genere : {path}{RESET}")
     print(f"  {DIM}Ouvrez ce fichier dans votre navigateur.{RESET}")
@@ -629,10 +638,10 @@ Exemples :
         domains, org_name = None, None
 
         if args.demo and args.recyf:
-            domains, org_name = run_recyf_demo_mode(no_save=args.no_save)
-            if args.report:
-                print(f"\n  {YELLOW}Le rapport HTML ReCyF n'est pas encore disponible "
-                      f"(--report ignore pour --recyf).{RESET}\n")
+            domains, org_name = run_recyf_demo_mode(
+                report_path=args.report,
+                no_save=args.no_save,
+            )
 
         elif args.demo:
             domains, org_name = run_demo_mode(
