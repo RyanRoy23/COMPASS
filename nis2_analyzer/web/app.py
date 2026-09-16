@@ -47,6 +47,9 @@ from nis2_analyzer.core.entity_qualification import (
 from nis2_analyzer.core.governance import (
     assess_governance, get_questions_schema
 )
+from nis2_analyzer.core.resilience import (
+    assess_resilience, get_questions_schema as get_resilience_questions_schema
+)
 from nis2_analyzer.reporting.evidence_package import build_evidence_package
 from nis2_analyzer.core.incident_notification import (
     classify_incident, compute_deadlines,
@@ -152,6 +155,12 @@ class GovernanceRequest(BaseModel):
     entity_category: str = Field(
         "importante",
         description="'essentielle' | 'importante' | 'hors_champ'"
+    )
+
+
+class ResilienceRequest(BaseModel):
+    responses: dict[str, int] = Field(
+        ..., description="Mapping question_id (RES01-RES08) → maturity (0-3)"
     )
 
 
@@ -422,6 +431,25 @@ def api_governance(body: GovernanceRequest):
         )
     try:
         result = assess_governance(body.responses, entity_category=body.entity_category)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    return result.to_dict()
+
+
+@app.get("/api/resilience/questions")
+def get_resilience_questions():
+    """Retourne les 8 questions de résilience ReCyF (OS13-15 : continuité, crise, exercices)."""
+    return {"questions": get_resilience_questions_schema()}
+
+
+@app.post("/api/resilience")
+def api_resilience(body: ResilienceRequest):
+    """
+    Évalue la résilience (OS13-15) et retourne score, grade, gaps et la maturité
+    par objectif ReCyF — à utiliser pour pré-remplir le formulaire ReCyF.
+    """
+    try:
+        result = assess_resilience(body.responses)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     return result.to_dict()

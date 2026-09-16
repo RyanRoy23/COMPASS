@@ -154,6 +154,7 @@
   <button data-page="cloudsec-audit" onclick="showPage('cloudsec-audit')">Audit CloudSec (Azure)</button>
   <button data-page="recyf" onclick="showPage('recyf'); loadRecyfFramework()">ReCyF</button>
   <button data-page="governance" onclick="showPage('governance'); loadGovernance()">Gouvernance</button>
+  <button data-page="resilience" onclick="showPage('resilience'); loadResilience()">Résilience</button>
   <button data-page="incident" onclick="showPage('incident')">Incidents</button>
   <button data-page="supply-chain" onclick="showPage('supply-chain')">Supply Chain</button>
   <button data-page="history" onclick="showPage('history'); loadHistory()">Historique</button>
@@ -262,6 +263,20 @@
     <div id="gov-questions-container"><p style="color:var(--muted)">Chargement des questions…</p></div>
     <button class="btn" style="margin-top:1.2rem;" onclick="submitGovernance()">Évaluer la gouvernance</button>
     <div id="gov-results" style="margin-top:1.5rem;"></div>
+  </div>
+
+  <!-- ── Résilience (ReCyF OS13-15) ── -->
+  <div id="page-resilience" class="page">
+    <div class="form-header">
+      <h2>Résilience — ReCyF OS13-15</h2>
+      <p style="color:var(--muted);font-size:0.9rem;">Continuité d'activité, gestion de crise et
+      exercices : des capacités organisationnelles qu'un audit technique ne peut pas vérifier —
+      ce questionnaire structure la réponse au lieu de la laisser sans contexte. Le résultat met
+      à jour les objectifs correspondants dans l'onglet ReCyF.</p>
+    </div>
+    <div id="res-questions-container"><p style="color:var(--muted)">Chargement des questions…</p></div>
+    <button class="btn" style="margin-top:1.2rem;" onclick="submitResilience()">Évaluer la résilience</button>
+    <div id="res-results" style="margin-top:1.5rem;"></div>
   </div>
 
   <!-- ── Incidents Art. 23 ── -->
@@ -879,26 +894,109 @@
 
   // Pré-remplit le formulaire ReCyF (page séparée) avec les preuves CloudSec —
   // même logique que le bridge côté CLI (core/cloudsec_bridge.py), côté web.
+  // Coche la radio d'un objectif ReCyF et marque la question d'un badge — utilisé
+  // à la fois par le bridge CloudSec et par le module Résilience. Retourne true
+  // si l'objectif a bien été trouvé dans le formulaire (donc compté).
+  function _markRecyfAutoFilled(reqId, level, reasonText) {
+    if (level === null || level === undefined) return false;
+    const input = document.querySelector(`.recyf-objective input[name="${reqId}"][value="${level}"]`);
+    if (!input) return false;
+    input.checked = true;
+    const row = input.closest('.recyf-objective');
+    if (row && !row.querySelector('.auto-fill-badge')) {
+      row.querySelector('.req-question').insertAdjacentHTML('beforeend',
+        ` <span class="badge auto-fill-badge" style="background:var(--surface-2);color:var(--accent-light);" title="${esc(reasonText || '')}">Pré-rempli</span>`);
+    }
+    return true;
+  }
+
   async function applyRecyfAutoFill(details) {
     if (!details || !Object.keys(details).length) return;
     await loadRecyfFramework(); // no-op si déjà chargé — garantit que les radios existent
 
     let count = 0;
     for (const [reqId, info] of Object.entries(details)) {
-      const input = document.querySelector(`.recyf-objective input[name="${reqId}"][value="${info.level}"]`);
-      if (!input) continue;
-      input.checked = true;
-      count++;
-      const row = input.closest('.recyf-objective');
-      if (row && !row.querySelector('.auto-fill-badge')) {
-        row.querySelector('.req-question').insertAdjacentHTML('beforeend',
-          ` <span class="badge auto-fill-badge" style="background:var(--surface-2);color:var(--accent-light);" title="${esc(info.reason || '')}">Pré-rempli</span>`);
-      }
+      if (_markRecyfAutoFilled(reqId, info.level, info.reason)) count++;
     }
     if (count) {
       const status = document.getElementById('recyf-form-status');
       status.style.color = 'var(--accent-light)';
       status.textContent = `${count} objectif(s) ReCyF pré-rempli(s) par l'audit CloudSec — voir l'onglet ReCyF.`;
+    }
+  }
+
+  // ── Résilience (ReCyF OS13-15) ───────────────────────────────────────────
+  let _resQuestions = [];
+
+  async function loadResilience() {
+    if (_resQuestions.length) return;
+    const res = await fetch('/api/resilience/questions');
+    const data = await res.json();
+    _resQuestions = data.questions;
+    renderResilienceQuestions();
+  }
+
+  function renderResilienceQuestions() {
+    const container = document.getElementById('res-questions-container');
+    container.innerHTML = _resQuestions.map(q => `
+      <div class="domain-card" style="margin-bottom:0.7rem;">
+        <div class="domain-header" style="font-size:0.8rem;">
+          ${esc(q.pillar)}
+          <span class="domain-weight">${q.recyf_objective.replace('RECYF-', '')}</span>
+        </div>
+        <div style="padding:0.8rem 1rem;">
+          <div style="font-size:0.85rem;margin-bottom:0.6rem;">${esc(q.question)}</div>
+          <div style="display:flex;gap:6px;">
+            ${[0,1,2,3].map(v => `
+              <label style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--muted);cursor:pointer;">
+                <input type="radio" name="res-${q.id}" value="${v}"> ${v === 0 ? 'Non' : v === 1 ? 'Partiel' : v === 2 ? 'Formalisé' : 'Testé'}
+              </label>`).join('')}
+          </div>
+        </div>
+      </div>`).join('');
+  }
+
+  async function submitResilience() {
+    const responses = {};
+    _resQuestions.forEach(q => {
+      const checked = document.querySelector(`input[name="res-${q.id}"]:checked`);
+      if (checked) responses[q.id] = parseInt(checked.value);
+    });
+    if (!Object.keys(responses).length) {
+      document.getElementById('res-results').innerHTML = '<p style="color:var(--red)">Répondez à au moins une question.</p>';
+      return;
+    }
+    const res = await fetch('/api/resilience', {
+      method: 'POST', headers: apiHeaders(),
+      body: JSON.stringify({ responses }),
+    });
+    const data = await res.json();
+    if (!res.ok) { document.getElementById('res-results').innerHTML = `<p style="color:var(--red)">Erreur : ${data.detail}</p>`; return; }
+
+    const gradeColor = { A:'var(--green)', B:'var(--accent)', C:'var(--yellow)', D:'var(--orange)', F:'var(--red)' };
+    document.getElementById('res-results').innerHTML = `
+      <div class="domain-card">
+        <div class="domain-header" style="justify-content:flex-start;gap:1rem;">
+          <span style="font-size:1.4rem;font-weight:700;color:${gradeColor[data.grade] || 'var(--accent)'};">${data.grade}</span>
+          <span>Score : ${Math.round(data.overall_score)}%</span>
+          <span style="color:var(--muted);font-size:0.8rem;">${data.total_gaps} gap(s) identifié(s)</span>
+        </div>
+      </div>`;
+
+    await applyResilienceAutoFill(data.maturity_by_objective);
+  }
+
+  async function applyResilienceAutoFill(maturityByObjective) {
+    await loadRecyfFramework();
+    let count = 0;
+    for (const [objective, level] of Object.entries(maturityByObjective || {})) {
+      const reason = "Dérivé du questionnaire Résilience — niveau le plus bas parmi ses sous-questions répondues.";
+      if (_markRecyfAutoFilled(objective, level, reason)) count++;
+    }
+    if (count) {
+      const status = document.getElementById('recyf-form-status');
+      status.style.color = 'var(--accent-light)';
+      status.textContent = `${count} objectif(s) de résilience mis à jour depuis le questionnaire dédié — voir l'onglet ReCyF.`;
     }
   }
 

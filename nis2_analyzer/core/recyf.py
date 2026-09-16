@@ -22,10 +22,16 @@ _RECYF_DATA_PATH = os.path.join(
 # - governance.py          (Art. 20)      -> cadre de gouvernance
 # - incident_notification.py (Art. 23)    -> détection/réaction aux incidents
 # - supply_chain.py        (Art. 21(d))   -> maîtrise de l'écosystème fournisseurs
+# - resilience.py          (OS13-15)      -> continuité, gestion de crise, exercices
+#   (questionnaire structuré, PAS une preuve technique — la résilience est une
+#   capacité organisationnelle qu'aucune API ne peut vérifier par nature)
 MODULE_COVERED_OBJECTIVES: dict[str, str] = {
     "RECYF-OS02": "core/governance.py",
     "RECYF-OS03": "core/supply_chain.py",
     "RECYF-OS12": "core/incident_notification.py",
+    "RECYF-OS13": "core/resilience.py",
+    "RECYF-OS14": "core/resilience.py",
+    "RECYF-OS15": "core/resilience.py",
 }
 
 

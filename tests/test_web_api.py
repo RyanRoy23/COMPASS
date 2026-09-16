@@ -292,6 +292,35 @@ class TestGovernanceEndpoint:
         assert res.json()["liability_risk"] == "ÉLEVÉ"
 
 
+class TestResilienceEndpoint:
+    def test_questions_endpoint(self):
+        res = client.get("/api/resilience/questions")
+        assert res.status_code == 200
+        assert len(res.json()["questions"]) == 8
+
+    def test_full_resilience_score(self):
+        responses = {f"RES0{i}": 3 for i in range(1, 9)}
+        res = client.post("/api/resilience", json={"responses": responses})
+        assert res.status_code == 200
+        assert res.json()["grade"] == "A"
+
+    def test_empty_responses_zero_score(self):
+        res = client.post("/api/resilience", json={"responses": {}})
+        assert res.status_code == 200
+        assert res.json()["overall_score"] == 0.0
+
+    def test_invalid_maturity_422(self):
+        res = client.post("/api/resilience", json={"responses": {"RES01": 5}})
+        assert res.status_code == 422
+
+    def test_maturity_by_objective_present(self):
+        res = client.post("/api/resilience", json={"responses": {"RES01": 2, "RES04": 1, "RES07": 3}})
+        m = res.json()["maturity_by_objective"]
+        assert m["RECYF-OS13"] == 2
+        assert m["RECYF-OS14"] == 1
+        assert m["RECYF-OS15"] == 3
+
+
 class TestQualifyEndpoint:
     def _qualify(self, **kwargs):
         defaults = {"sector": "energie", "employees": 300, "annual_revenue_eur": 60_000_000, "org_name": "TestOrg"}
@@ -366,7 +395,7 @@ class TestRecyfEndpoints:
         assert data["scores"]["overall_score"] == 100.0
         assert data["metadata"]["framework"].startswith("ReCyF")
         assert data["recyf_coverage"]["total_objectives"] == 20
-        assert data["recyf_coverage"]["covered"] == 8
+        assert data["recyf_coverage"]["covered"] == 11  # +3 depuis le module resilience.py (OS13-15)
 
     def test_important_entity_ignores_essential_only_responses(self):
         res = client.post("/api/recyf/assess", json={
