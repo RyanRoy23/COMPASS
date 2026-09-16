@@ -5,12 +5,14 @@ technique (bridge Entra ID / Azure), ce qui est **déclaré** par questionnaire,
 **pas couvert**. La plupart des outils demandent « avez-vous le MFA ? » et l'utilisateur coche
 « oui » — personne ne vérifie, personne ne dit ce qui n'a pas été évalué.
 
-> ** Refonte en cours (v2.0-dev).** Le référentiel bascule de l'Article 21 + ISO 27001 vers
-> **ReCyF** (Référentiel Cyber France, ANSSI). Le périmètre technique se recentre sur **Entra
-> ID / Azure**. Les modules quantification financière, Monte Carlo, connecteurs AWS/M365 et
-> mode PME ont été retirés — récupérables au tag `archive/v1.2-full`. Le référentiel ReCyF (20
-> objectifs, 4 piliers) est modélisé (`docs/recyf-referentiel.md`) mais pas encore branché sur
-> l'API ni l'interface, qui reflètent aujourd'hui la grille Article 21.
+> **v2.0 — ReCyF disponible.** L'outil évalue désormais **les deux référentiels** : l'Article 21
+> historique (35 sous-exigences, 10 domaines) et le **ReCyF** de l'ANSSI (20 objectifs, 4 piliers
+> — voir `docs/recyf-referentiel.md`), accessibles depuis l'API, l'interface web et le rapport
+> HTML. Le périmètre technique est recentré sur **Entra ID / Azure** ; les modules quantification
+> financière, Monte Carlo, connecteurs AWS/M365 et mode PME ont été retirés — récupérables au tag
+> `archive/v1.2-full`. Reste à faire : approfondir la preuve sur les objectifs de résilience
+> (continuité, crise, exercices) et décider si ReCyF remplace l'Article 21 par défaut — voir
+> [Roadmap](#roadmap).
 
 ---
 
@@ -20,7 +22,7 @@ COMPASS évalue la conformité NIS 2 en combinant :
 
 | Couche | Description |
 |--------|-------------|
-| **Conformité structurée** | 35 questions, 10 domaines, scoring pondéré A-F, plan de remédiation priorisé (bascule ReCyF en cours) |
+| **Conformité structurée** | Article 21 (35 questions, 10 domaines) **ou** ReCyF (20 objectifs, 4 piliers) — scoring pondéré A-F, plan de remédiation priorisé |
 | **Bridge technique** | Audit Entra ID / Azure via CloudSec Toolkit — pré-remplit les réponses avec des preuves techniques horodatées |
 | **Transparence du périmètre** | Chaque rapport distingue **prouvé** / **déclaré** / **non couvert** |
 | **Volets réglementaires** | Qualification Art. 3, gouvernance Art. 20, notification Art. 23, supply chain Art. 21(d) |
@@ -90,24 +92,29 @@ python serve.py
 ```
 
 **Fonctionnalités :**
-- Formulaire d'évaluation avec curseurs de maturité (0-3) par exigence
+- Deux onglets d'évaluation structurée : **Article 21** (35 questions, 10 domaines) et **ReCyF**
+  (20 objectifs, 4 piliers, avec sélecteur d'entité essentielle/importante)
 - Bouton **Mode démo** pour pré-remplir en un clic et voir un exemple de résultat
-- Vue résultats : score global, grade, barres par domaine, liste des gaps
+- Audit CloudSec (Entra ID) qui pré-remplit **les deux référentiels** avec preuve horodatée
+- Vue résultats : score global, grade, barres par domaine/pilier, liste des gaps — et pour ReCyF,
+  le détail objectif par objectif : preuve technique / module dédié / déclaratif
 - Vue historique : tableau de tous les assessments avec badges de grade colorés
 
 **API REST disponible :**
 
 | Endpoint | Description |
 |----------|-------------|
-| `GET /api/framework` | Liste des 10 domaines et 35 questions |
-| `POST /api/assess` | Soumet les réponses, retourne le scoring + sauvegarde |
-| `POST /api/cloudsec-audit` | Traduit un rapport CloudSec (Entra ID) en preuves NIS 2 |
+| `GET /api/framework` | Liste des 10 domaines et 35 questions (Article 21) |
+| `POST /api/assess` | Soumet les réponses Article 21, retourne le scoring + sauvegarde |
+| `GET /api/recyf/framework` | Liste des 20 objectifs ReCyF, regroupés par pilier |
+| `POST /api/recyf/assess` | Soumet les réponses ReCyF, retourne le scoring + l'état de couverture par la preuve |
+| `POST /api/cloudsec-audit` | Traduit un rapport CloudSec (Entra ID) en preuves — Article 21 **et** ReCyF |
 | `POST /api/qualify` | Qualification NIS 2 Art. 3 (essentielle / importante / hors champ) |
 | `POST /api/governance` | Gouvernance Art. 20 |
 | `POST /api/incident/*` | Notification d'incident Art. 23 (classification, deadlines, maturité) |
 | `POST /api/supply-chain/*` | Fournisseurs et maturité supply chain Art. 21(d) |
 | `POST /api/evidence-package` | Dossier de preuves ZIP |
-| `GET /api/history` · `GET /api/compare/{a}/{b}` | Historique et delta entre assessments |
+| `GET /api/history` · `GET /api/compare/{a}/{b}` | Historique et delta entre assessments (tous référentiels confondus) |
 
 > L'ensemble des routes est documenté sur `http://localhost:8000/docs` (OpenAPI).
 
@@ -153,6 +160,7 @@ Evolution par domaine :
 | Option | Description |
 |--------|-------------|
 | `--demo` | Mode démonstration avec réponses simulées |
+| `--recyf` | Évalue sur le référentiel ReCyF (20 objectifs) — uniquement avec `--demo` pour l'instant |
 | `--bridge`, `-b` | Rapport CloudSec Audit Toolkit (JSON) |
 | `--report`, `-r` | Rapport HTML de sortie |
 | `--output`, `-o` | Export JSON des résultats |
@@ -187,11 +195,13 @@ Les rapports HTML générés par le CLI sont disponibles dans `./reports/`.
 
 ```
 COMPASS/
+├── .devcontainer/devcontainer.json  # Essayer sans installer (GitHub Codespaces)
 ├── nis2_analyzer/
 │   ├── __init__.py                  # __version__ (source unique)
 │   ├── core/
-│   │   ├── models.py                # Domain, MaturityLevel, ComplianceGrade
-│   │   ├── scoring.py               # Scoring pondéré + gap analysis + plan SMART
+│   │   ├── models.py                # Domain, MaturityLevel, ComplianceGrade (générique aux 2 référentiels)
+│   │   ├── scoring.py                # Scoring pondéré + gap analysis + plan SMART
+│   │   ├── recyf.py                 # Chargement ReCyF, filtre EI/EE, état de couverture par la preuve
 │   │   ├── database.py              # Persistance SQLite (historique, multi-tenant)
 │   │   ├── integrity.py             # Empreinte SHA-256 des rapports
 │   │   ├── entity_qualification.py  # Qualification Art. 3
@@ -200,16 +210,19 @@ COMPASS/
 │   │   └── supply_chain.py          # Supply chain Art. 21(d)
 │   ├── assessment/                  # Questionnaire CLI interactif + export JSON
 │   ├── connectors/
-│   │   └── cloudsec_bridge.py       # Bridge CloudSec (Entra ID) → preuves NIS 2
+│   │   └── cloudsec_bridge.py       # Bridge CloudSec (Entra ID) → preuves Article 21 et ReCyF
 │   ├── reporting/
-│   │   ├── html_report.py           # Rapport HTML autonome
+│   │   ├── html_report.py           # Rapport HTML autonome (Article 21 et ReCyF)
 │   │   └── evidence_package.py      # Dossier de preuves ZIP
 │   ├── web/
 │   │   ├── app.py                   # API FastAPI
 │   │   └── templates/index.html     # Interface web (vanilla JS)
-│   ├── data/nis2_framework.json     # Référentiel (bascule ReCyF en cours)
+│   ├── data/
+│   │   ├── nis2_framework.json      # Référentiel Article 21 (35 sous-exigences)
+│   │   └── recyf_framework.json     # Référentiel ReCyF (20 objectifs, 4 piliers)
 │   └── cli.py                       # Orchestration CLI
-├── tests/                           # 260 tests unitaires
+├── docs/recyf-referentiel.md        # Source ANSSI du ReCyF, méthodologie de modélisation
+├── tests/                           # 288 tests unitaires
 ├── Dockerfile · docker-compose.yml · Makefile
 ├── serve.py                         # Lancement interface web
 └── requirements-web.txt             # Dépendances web uniquement
@@ -217,7 +230,9 @@ COMPASS/
 
 ---
 
-## Le référentiel NIS 2
+## Les référentiels
+
+### Article 21 (historique)
 
 | # | Domaine | Sous-exigences | Poids |
 |---|---------|:--------------:|:-----:|
@@ -233,6 +248,24 @@ COMPASS/
 | 10 | Authentification multifacteur et communications sécurisées | 3 | 1.0× |
 
 **Total : 35 sous-exigences, 43 contrôles ISO 27001:2022 Annex A mappés.**
+
+### ReCyF (référentiel natif recommandé)
+
+Référentiel de l'ANSSI (document de travail v2.5 du 17/03/2026) — détail complet et sources
+dans [`docs/recyf-referentiel.md`](docs/recyf-referentiel.md).
+
+| Pilier | Objectifs | Applicabilité |
+|--------|:---------:|---------------|
+| Gouvernance | 7 (OS01-05, OS16-17) | OS16-17 réservés aux entités essentielles |
+| Protection | 8 (OS06-11, OS18-19) | OS18-19 réservés aux entités essentielles |
+| Défense | 2 (OS12, OS20) | OS20 réservé aux entités essentielles |
+| Résilience | 3 (OS13-15) | Toutes entités |
+
+**20 objectifs au total, 15 communs aux entités importantes et essentielles, 5 réservés aux
+entités essentielles.** État de couverture par la preuve à date : 8 objectifs disposent d'une
+preuve structurée (bridge technique et/ou module dédié), 12 restent déclaratifs — dont les 3
+objectifs de résilience, qui ne se prêtent pas à une vérification automatisée par nature
+(capacité organisationnelle, pas configuration technique).
 
 ---
 
@@ -268,7 +301,7 @@ python -m pytest tests/ -q
 python -m pytest tests/ --cov=nis2_analyzer --cov-report=term-missing
 ```
 
-**État actuel : 260 tests, CI GitHub Actions verte (Python 3.11 et 3.12).**
+**État actuel : 288 tests, CI GitHub Actions verte (Python 3.11 et 3.12).**
 
 ---
 
@@ -284,15 +317,20 @@ python -m pytest tests/ --cov=nis2_analyzer --cov-report=term-missing
 
 ## Roadmap
 
-### En cours (v2.0)
-- **Bascule vers ReCyF** (Référentiel Cyber France, ANSSI) : 20 objectifs / 4 piliers, en remplacement de la grille Article 21 + ISO 27001
-- Gradation de chaque objectif ReCyF par type de preuve : prouvé (audit Entra) / déclaré / non couvert
-- Élargissement du bridge CloudSec côté identité
+### En cours
+- Approfondir la preuve sur les 3 objectifs ReCyF de résilience (continuité, gestion de crise,
+  exercices) — via un module dédié structuré plutôt qu'un audit technique, qui ne peut pas
+  vérifier une capacité organisationnelle
+- Décider si ReCyF devient le référentiel par défaut ou reste au même niveau que l'Article 21
+- Rebrancher les mappings DORA et ISO 27001 sur les objectifs ReCyF (non renseignés à ce stade)
 
 ### Fait
+- **Bascule ReCyF complète** : référentiel modélisé (20 objectifs, 4 piliers, sourcé ANSSI),
+  exposé via l'API, l'interface web et le rapport HTML ; bridge CloudSec branché dessus
 - Interface web FastAPI, persistance SQLite multi-tenant, Docker
+- Essayer sans installer via GitHub Codespaces (`.devcontainer/`)
 - Volets Art. 3 / 20 / 23 / 21(d), dossier de preuves ZIP intègre
-- 260 tests, CI GitHub Actions (Python 3.11 + 3.12)
+- 288 tests, CI GitHub Actions (Python 3.11 + 3.12)
 - Sécurité : échappement XSS, validation Pydantic, hash des clés API, rate limiting
 
 ---
