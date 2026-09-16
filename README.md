@@ -25,7 +25,7 @@ COMPASS évalue la conformité NIS 2 en combinant :
 | **Conformité structurée** | Article 21 (35 questions, 10 domaines) **ou** ReCyF (20 objectifs, 4 piliers) — scoring pondéré A-F, plan de remédiation priorisé |
 | **Bridge technique** | Audit Entra ID / Azure via CloudSec Toolkit — pré-remplit les réponses avec des preuves techniques horodatées |
 | **Transparence du périmètre** | Chaque rapport distingue **prouvé** / **déclaré** / **non couvert** |
-| **Volets réglementaires** | Qualification Art. 3, gouvernance Art. 20, notification Art. 23, supply chain Art. 21(d) |
+| **Volets réglementaires** | Qualification Art. 3, gouvernance Art. 20, notification Art. 23, supply chain Art. 21(d), résilience ReCyF OS13-15 |
 | **Dossier de preuves** | Export ZIP horodaté et intègre (hash SHA-256) pour un contrôle ANSSI |
 
 ---
@@ -207,7 +207,8 @@ COMPASS/
 │   │   ├── entity_qualification.py  # Qualification Art. 3
 │   │   ├── governance.py            # Gouvernance Art. 20
 │   │   ├── incident_notification.py # Notification Art. 23
-│   │   └── supply_chain.py          # Supply chain Art. 21(d)
+│   │   ├── supply_chain.py          # Supply chain Art. 21(d)
+│   │   └── resilience.py            # Résilience ReCyF OS13-15 (module dédié)
 │   ├── assessment/                  # Questionnaire CLI interactif + export JSON
 │   ├── connectors/
 │   │   └── cloudsec_bridge.py       # Bridge CloudSec (Entra ID) → preuves Article 21 et ReCyF
@@ -222,7 +223,7 @@ COMPASS/
 │   │   └── recyf_framework.json     # Référentiel ReCyF (20 objectifs, 4 piliers)
 │   └── cli.py                       # Orchestration CLI
 ├── docs/recyf-referentiel.md        # Source ANSSI du ReCyF, méthodologie de modélisation
-├── tests/                           # 288 tests unitaires
+├── tests/                           # 313 tests unitaires
 ├── Dockerfile · docker-compose.yml · Makefile
 ├── serve.py                         # Lancement interface web
 └── requirements-web.txt             # Dépendances web uniquement
@@ -262,10 +263,11 @@ dans [`docs/recyf-referentiel.md`](docs/recyf-referentiel.md).
 | Résilience | 3 (OS13-15) | Toutes entités |
 
 **20 objectifs au total, 15 communs aux entités importantes et essentielles, 5 réservés aux
-entités essentielles.** État de couverture par la preuve à date : 8 objectifs disposent d'une
-preuve structurée (bridge technique et/ou module dédié), 12 restent déclaratifs — dont les 3
-objectifs de résilience, qui ne se prêtent pas à une vérification automatisée par nature
-(capacité organisationnelle, pas configuration technique).
+entités essentielles.** État de couverture par la preuve à date : 11 objectifs disposent d'une
+preuve structurée (bridge technique et/ou module dédié — dont les 3 objectifs de résilience,
+désormais couverts par un questionnaire structuré, [`core/resilience.py`](nis2_analyzer/core/resilience.py)),
+9 restent purement déclaratifs. La résilience ne devient pas pour autant une "preuve technique" :
+ce sont des capacités organisationnelles qu'aucune API ne peut vérifier par nature.
 
 ---
 
@@ -301,7 +303,7 @@ python -m pytest tests/ -q
 python -m pytest tests/ --cov=nis2_analyzer --cov-report=term-missing
 ```
 
-**État actuel : 288 tests, CI GitHub Actions verte (Python 3.11 et 3.12).**
+**État actuel : 313 tests, CI GitHub Actions verte (Python 3.11 et 3.12).**
 
 ---
 
@@ -318,19 +320,18 @@ python -m pytest tests/ --cov=nis2_analyzer --cov-report=term-missing
 ## Roadmap
 
 ### En cours
-- Approfondir la preuve sur les 3 objectifs ReCyF de résilience (continuité, gestion de crise,
-  exercices) — via un module dédié structuré plutôt qu'un audit technique, qui ne peut pas
-  vérifier une capacité organisationnelle
 - Décider si ReCyF devient le référentiel par défaut ou reste au même niveau que l'Article 21
 - Rebrancher les mappings DORA et ISO 27001 sur les objectifs ReCyF (non renseignés à ce stade)
 
 ### Fait
 - **Bascule ReCyF complète** : référentiel modélisé (20 objectifs, 4 piliers, sourcé ANSSI),
   exposé via l'API, l'interface web et le rapport HTML ; bridge CloudSec branché dessus
+- **Module Résilience** (OS13-15) : questionnaire structuré dédié, dérive la maturité par
+  objectif ReCyF (principe de prudence) — couverture ReCyF 8/20 → 11/20
 - Interface web FastAPI, persistance SQLite multi-tenant, Docker
 - Essayer sans installer via GitHub Codespaces (`.devcontainer/`)
 - Volets Art. 3 / 20 / 23 / 21(d), dossier de preuves ZIP intègre
-- 288 tests, CI GitHub Actions (Python 3.11 + 3.12)
+- 313 tests, CI GitHub Actions (Python 3.11 + 3.12)
 - Sécurité : échappement XSS, validation Pydantic, hash des clés API, rate limiting
 
 ---
